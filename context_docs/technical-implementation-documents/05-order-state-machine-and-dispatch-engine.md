@@ -8,20 +8,30 @@ This document specifies the internal mechanics of the **Order Finite State Machi
 
 Every order transition must be validated against the formal transition matrix before persisting to PostgreSQL.
 
+## 1. Formal Order State Machine (FSM)
+
+The system supports two sequence modes based on `order_flow_config.mode`:
+- **`RIDER_FIRST` (Zero Food Waste Mode)**: `PLACED` → `RIDER_ASSIGNED` → `ACCEPTED` → `PREPARING` → `READY_FOR_PICKUP` → `DISPATCHED` → `DELIVERED`.
+- **`VENDOR_FIRST` (Traditional Retail Mode)**: `PLACED` → `ACCEPTED` → `PREPARING` → `READY_FOR_PICKUP` → `DISPATCHED` → `DELIVERED`.
+
 ```mermaid
 stateDiagram-v2
-    [*] --> PLACED: Customer Checkout
-    PLACED --> ACCEPTED: Vendor Confirms (sets prep_time)
-    PLACED --> CANCELLED: Vendor Rejects / Customer Aborts
+    [*] --> PLACED: Customer Checkout (Store status verified)
+    
+    state "Config: RIDER_FIRST" as RiderFirstFlow {
+        PLACED --> RIDER_ASSIGNED: Rider claims broadcast
+        RIDER_ASSIGNED --> ACCEPTED: Vendor reviews & manually accepts (sets prep time)
+    }
+    
+    state "Config: VENDOR_FIRST" as VendorFirstFlow {
+        PLACED --> ACCEPTED: Vendor Confirms (sets prep_time)
+    }
 
-    ACCEPTED --> PREPARING: Kitchen / Staff Starts Packing
-    ACCEPTED --> CANCELLED: Support Intervention
-
+    PLACED --> CANCELLED: Vendor Rejects / Timeout
+    ACCEPTED --> PREPARING: Kitchen Starts Preparation
     PREPARING --> READY_FOR_PICKUP: Items Packed & Labeled
-    
     READY_FOR_PICKUP --> DISPATCHED: Rider Confirms Pickup (Step 2)
-    
-    DISPATCHED --> DELIVERED: Rider Confirms Doorstep Handover (Step 3)
+    DISPATCHED --> DELIVERED: Rider Confirms Handover (Step 3)
     
     DELIVERED --> [*]
     CANCELLED --> [*]
@@ -31,13 +41,15 @@ stateDiagram-v2
 
 | From State | Allowed Target State | Triggered By | Side Effects & Actions |
 | :--- | :--- | :--- | :--- |
-| `PLACED` | `ACCEPTED` | Vendor Store Manager | Sets `accepted_at`, stores `prep_time_minutes`, notifies customer. |
-| `PLACED` | `CANCELLED` | Vendor (Reject) or Admin | Sets `cancelled_at`, cancels payment/releases auth hold. |
-| `ACCEPTED` | `PREPARING` | Vendor Store Manager | Updates customer progress stepper. |
-| `PREPARING` | `READY_FOR_PICKUP`| Vendor Store Manager | Triggers **Dispatch Engine Broadcast** to nearby online riders. |
-| `READY_FOR_PICKUP` | `DISPATCHED` | Assigned Rider | Sets `picked_up_at`, locks order, activates live map streaming. |
-| `DISPATCHED` | `DELIVERED` | Assigned Rider | Sets `delivered_at`, writes commission ledger, credits rider wallet, marks COD cash. |
-| *Any* | `CANCELLED` | Super Admin | Admin emergency override. |
+| `PLACED` | `RIDER_ASSIGNED` | Assigned Rider | *In RIDER_FIRST mode*: Rider claims order; triggers vendor kitchen alarm to review & manually accept. |
+| `PLACED` | `ACCEPTED` | Vendor Store Manager | *In VENDOR_FIRST mode*: Vendor sets prep time; sets `accepted_at`. |
+| `PLACED` | `CANCELLED` | Customer, Vendor, Admin | Cancels order before rider claim or kitchen prep. Releases payment hold. |
+| `RIDER_ASSIGNED` | `ACCEPTED` | Vendor Store Manager | Vendor reviews items, chooses prep timer, and manually accepts. Kitchen starts cooking. |
+| `ACCEPTED` | `PREPARING` | Vendor Store Manager | Kitchen prep in progress. |
+| `PREPARING` | `READY_FOR_PICKUP`| Vendor Store Manager | Items packed. If `VENDOR_FIRST`, triggers rider broadcast now. |
+| `READY_FOR_PICKUP` | `DISPATCHED` | Assigned Rider | Rider collects parcel at store counter. Activates live map streaming. |
+| `DISPATCHED` | `DELIVERED` | Assigned Rider | Confirms doorstep delivery, records COD cash collection, writes ledger. |
+| *Any* | `CANCELLED` | Super Admin | Emergency admin cancellation. |
 
 ---
 
@@ -61,10 +73,12 @@ await redis.geoadd(
 
 ## 3. Proximity Radius Broadcast Algorithm
 
-When an order transitions to `READY_FOR_PICKUP` (or when a vendor accepts), the dispatch engine executes a spatial search:
+The dispatch engine initiates search based on `order_flow_config.mode`:
+- **If `RIDER_FIRST`**: Triggered immediately at checkout (after verifying store status).
+- **If `VENDOR_FIRST`**: Triggered after store staff marks order `READY_FOR_PICKUP`.
 
 ```typescript
-// 1. Locate online, available riders within radius (e.g. 4 km of the store)
+// 1. Locate online, available riders within radius (e.g. 3–5 km of the store)
 async function findNearbyRiders(vendorLat: number, vendorLng: number, radiusKm: number = 4) {
   // Redis GEOSEARCH (or GEORADIUS)
   const nearbyRiderIds = await redis.geosearch(
@@ -96,10 +110,10 @@ async function findNearbyRiders(vendorLat: number, vendorLng: number, radiusKm: 
 
 ## 4. Concurrency Protection & Distributed Lock (Atomic Claim)
 
-To prevent the race condition where multiple riders tap "Accept" on the broadcasted trip simultaneously, the backend utilizes an atomic **Redis Distributed Mutex**:
+To prevent multiple riders claiming the same order simultaneously, the backend utilizes an atomic **Redis Distributed Mutex**:
 
 ```typescript
-async function claimOrder(orderId: string, riderId: string): Promise<boolean> {
+async function claimOrder(orderId: string, riderId: string, isRiderFirst: boolean): Promise<boolean> {
   const lockKey = `lock:order_claim:${orderId}`;
   
   // 1. Try to acquire exclusive lock for 10 seconds
@@ -109,26 +123,38 @@ async function claimOrder(orderId: string, riderId: string): Promise<boolean> {
   }
 
   try {
-    // 2. Perform DB Transaction
+    // 2. Atomic Database Transaction
     await prisma.$transaction(async (tx) => {
       const order = await tx.orders.findUnique({ where: { id: orderId } });
       if (order.rider_id !== null) {
         throw new ConflictException('Order already assigned.');
       }
 
-      // Assign rider to order
+      // Assign rider; if RIDER_FIRST, advance state to RIDER_ASSIGNED
       await tx.orders.update({
         where: { id: orderId },
-        data: { rider_id: riderId }
+        data: { 
+          rider_id: riderId,
+          status: isRiderFirst ? OrderStatus.RIDER_ASSIGNED : order.status
+        }
       });
 
       // Mark rider busy in Redis
       await redis.set(`rider:active_order:${riderId}`, orderId);
+
+      // If RIDER_FIRST: Trigger vendor kitchen chime now that rider is guaranteed!
+      if (isRiderFirst) {
+        socketGateway.server.to(`vendor_${order.vendor_id}`).emit('order:new', {
+          orderId: order.id,
+          orderNumber: order.order_number,
+          riderAssigned: true
+        });
+      }
     });
 
     return true;
   } finally {
-    // 3. Release lock
+    // 3. Release distributed lock
     await redis.del(lockKey);
   }
 }

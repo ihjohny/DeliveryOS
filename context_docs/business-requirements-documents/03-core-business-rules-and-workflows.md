@@ -17,22 +17,42 @@ This document defines the mathematical equations, financial ledgers, order state
 
 ---
 
-## 2. Order Lifecycle State Machine
+## 2. Order Lifecycle & Configurable Dispatch Sequences
 
+The platform supports a **dynamically configurable order flow sequence** (`order_flow_mode` in settings) to prevent food waste and adapt to operational requirements.
+
+### Sequence Mode 1: `RIDER_FIRST` (Recommended — Zero Food Waste & Loss Prevention)
+Designed for food delivery where kitchen preparation must only begin after a delivery rider is secured:
 ```
-[PLACED] ──► [ACCEPTED] ──► [PREPARING] ──► [READY_FOR_PICKUP] ──► [DISPATCHED] ──► [DELIVERED]
-   │             │               │
-   ▼             ▼               ▼
-[CANCELLED]   [CANCELLED]   [CANCELLED] (Admin Only)
+1. Customer submits checkout
+2. System checks store status (open hours, active items) BEFORE creating DB order
+3. System broadcasts order immediately to available online riders within radius
+4. Available rider claims order ──► Rider Assigned (RIDER_ASSIGNED)
+5. System sends order to Vendor console (kitchen chime rings with rider-guaranteed badge)
+6. Vendor reviews items, selects prep time, and manually taps ACCEPT (or REJECT if kitchen issue)
+7. Vendor prepares food while rider travels to store ──► [READY_FOR_PICKUP]
+8. Rider arrives, picks up order ──► [DISPATCHED] ──► [DELIVERED]
 ```
+> **Key Benefit**: Eliminates uncollectible food waste and financial loss if no rider is available, while preserving the vendor's explicit manual control over order acceptance and prep timing.
+
+### Sequence Mode 2: `VENDOR_FIRST` (Traditional Retail / Grocery Flow)
+```
+1. Customer submits checkout ──► [PLACED]
+2. Vendor accepts & sets prep timer ──► [ACCEPTED] ──► [PREPARING]
+3. When items are packed, store marks [READY_FOR_PICKUP]
+4. System broadcasts to riders ──► Rider claims ──► [DISPATCHED] ──► [DELIVERED]
+```
+
+### Universal State Transitions:
 
 | Transition | Allowed Roles | Trigger Condition / Validation |
 | :--- | :--- | :--- |
-| `PLACED` → `ACCEPTED` | `VENDOR_ADMIN`, `SUPER_ADMIN` | Requires estimated `prep_time_minutes` (e.g., 15, 25, 40). |
-| `PLACED` → `CANCELLED` | `VENDOR_ADMIN`, `SUPER_ADMIN`, `CUSTOMER` | Customer can cancel only while status is `PLACED`. |
-| `ACCEPTED` → `PREPARING` | `VENDOR_ADMIN`, `SUPER_ADMIN` | Kitchen starts preparation. |
-| `PREPARING` → `READY_FOR_PICKUP` | `VENDOR_ADMIN`, `SUPER_ADMIN` | Triggers radius broadcast dispatch to nearby online riders. |
-| `READY_FOR_PICKUP` → `DISPATCHED` | `RIDER`, `SUPER_ADMIN` | Rider confirms order pickup at store. Activates live GPS streaming. |
+| `PLACED` → `RIDER_ASSIGNED` | `RIDER`, `SUPER_ADMIN` | In `RIDER_FIRST` mode: Rider claims broadcast before kitchen prep begins. |
+| `PLACED` or `RIDER_ASSIGNED` → `ACCEPTED` | `VENDOR_ADMIN`, `SUPER_ADMIN` | Store confirms receipt and starts kitchen preparation. |
+| `PLACED` → `CANCELLED` | `VENDOR_ADMIN`, `SUPER_ADMIN`, `CUSTOMER` | Customer or store cancels before prep / rider lock. |
+| `ACCEPTED` → `PREPARING` | `VENDOR_ADMIN`, `SUPER_ADMIN` | Kitchen / packing in progress. |
+| `PREPARING` → `READY_FOR_PICKUP` | `VENDOR_ADMIN`, `SUPER_ADMIN` | Items packed and waiting on store counter. |
+| `READY_FOR_PICKUP` → `DISPATCHED` | `RIDER`, `SUPER_ADMIN` | Rider confirms physical pickup at store. Activates live GPS streaming. |
 | `DISPATCHED` → `DELIVERED` | `RIDER`, `SUPER_ADMIN` | Rider confirms delivery at customer doorstep + marks COD cash collected. |
 
 ---

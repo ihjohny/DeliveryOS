@@ -18,6 +18,7 @@ This document defines the controls of the **Super Admin Master Console** (`/admi
 
 ### Key Administrative Controls:
 - **Master Vendor & Catalog Authority**: Super Admin has unrestricted create, edit, price-override, and delete rights across all vendors, categories, and products.
+- **Order Flow Mode Configuration**: Switch between `RIDER_FIRST` (zero food waste mode) and `VENDOR_FIRST` (prep-first mode) without altering core code.
 - **Manual Dispatch Override**: Real-time list of unassigned orders. Dispatcher can one-click assign any order to any active online rider.
 - **Delivery Fee Switch**: Toggle between `FIXED_FLAT` (flat rate) and `DISTANCE_TIERED` (base + per km rate).
 - **Financial Export**: Export weekly vendor payout statements (Gross Sales, Commission, Net Balance) to CSV for offline bank transfers.

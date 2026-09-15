@@ -58,6 +58,11 @@ When generating code, you must strictly uphold these inviolable business rules:
    - When a user taps "Re-order", the API **must** validate real-time item stock availability, active prices, and whether the store is currently open before populating the cart.
 7. **Multi-Region & Multi-Currency**:
    - The codebase must be region-agnostic from Day 1. Currencies (`BDT`, `SAR`, `USD`), phone prefixes (`+880`, `+966`), and languages (`en`, `ar`, `bn`) must be config-driven, with first-class RTL layout support for Arabic.
+8. **Configurable Order Dispatch Sequence (Rider-First vs Vendor-First)**:
+   - The order fulfillment sequence must be dynamic and config-driven (`order_flow_mode` in `system_settings`):
+     - **`RIDER_FIRST` (Zero Food Waste Mode)**: When customer orders, verify store status (open/items in stock) before DB write → immediately broadcast to riders → assign rider → send order to vendor for manual acceptance & prep timer selection. Prevents food waste from unassigned orders while preserving vendor control.
+     - **`VENDOR_FIRST`**: Traditional flow where vendor accepts and preps first, broadcasting to riders when food is packing/ready.
+     - **`PARALLEL`**: Simultaneous rider broadcast and vendor alert upon checkout.
 
 ---
 
@@ -154,3 +159,55 @@ Before marking any engineering task as complete, verify that:
      - `feat(auth): implement phone OTP verification with JWT issuance`
      - `fix(dispatch): resolve Redis lock race condition on order claim`
      - `docs(api): update checkout payload schema in TID-03`
+
+---
+
+## 7. Zero-Assumption & Active Interview Protocol
+
+1. **NEVER ASSUME OR GUESS**:
+   - If any requirement, user prompt, architectural path, or business rule is ambiguous, unclear, or underspecified, **do NOT make assumptions or proceed based on guesses**.
+2. **PROACTIVE INTERVIEWING**:
+   - Immediately pause and interview the user to resolve confusion and secure the exact direction.
+   - Present concise, structured choices with your recommended option clearly stated: `"(Recommended) ..."`.
+   - Resolve design decisions step-by-step until mutual understanding is achieved before executing changes.
+3. **CONFIRM BEFORE DESTRUCTIVE / MAJOR ACTIONS**:
+   - For major architectural deviations, schema changes, or breaking refactors, explain the trade-offs and confirm explicit user alignment first.
+
+---
+
+## 8. Pattern Consistency & Living Documentation Protocol
+
+1. **STRICT PATTERN & STYLE CONTINUITY**:
+   - When creating or modifying code, always mirror the established project patterns:
+     - Architecture layers, folder organization, and file naming conventions.
+     - Coding style, type definitions, error envelopes, and state management paradigms.
+     - Design tokens, Tailwind CSS utility patterns, and UI component standards.
+   - Do NOT introduce rogue design styles, inconsistent conventions, or competing architectural libraries.
+2. **MANDATORY CONTEXT DOC SYNCHRONIZATION (LIVING DOCS)**:
+   - When an API endpoint, data model, business workflow, or UI interaction changes, you **MUST immediately update the corresponding documentation in `context_docs/`** (BRDs, TIDs, and Schemas).
+   - Never allow code and documentation to drift out of sync. Documentation is the authoritative single source of truth.
+3. **ENTERPRISE TEAM COLLABORATION MINDSET**:
+   - Build and maintain every module as if collaborating in a large, distributed engineering team.
+   - Ensure clean modular boundaries, explicit type signatures, predictable error handling, and self-documenting code to enable effortless team onboarding and long-term production resilience.
+
+---
+
+## 9. Token-Efficiency & Production Safety Protocol
+
+To minimize AI token consumption while maximizing code correctness and preventing regressions:
+
+1. **TARGETED CONTEXT LOADING (ZERO TOKEN WASTE)**:
+   - **Never read all context documents at once.**
+   - Consult `context_docs/QUICK_REFERENCE.md` to identify the **exact 1 or 2 files** required for your specific task:
+     - *Working on Auth?* Load only `TID-03` + `TID-02 (users table)`.
+     - *Working on Rider Dispatch?* Load only `TID-05` + `TID-04`.
+     - *Working on Kitchen UI?* Load only `BRD-05` + `TID-04 (events)`.
+2. **SURGICAL, DIFF-ORIENTED FILE EDITS**:
+   - Do NOT rewrite whole multi-hundred-line files to change a single function or styling rule.
+   - Use targeted line replacements to conserve input/output tokens and eliminate accidental syntax regressions.
+3. **CONCISE, FLUFF-FREE COMMUNICATION**:
+   - Strip conversational pleasantries and repetitive summaries from tool explanations and responses.
+   - Focus directly on: What was changed, how it was verified, and key technical considerations.
+4. **ZERO-REGRESSION IMPLEMENTATION**:
+   - Never break existing public API interfaces, DTO fields, database foreign keys, or UI component props.
+   - Extend existing types gracefully using optional properties or interface inheritance rather than destructive mutations.

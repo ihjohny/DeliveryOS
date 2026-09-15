@@ -277,7 +277,18 @@ This document specifies the RESTful API endpoints for the **DeliveryOS** backend
 }
 ```
 
-### 6.4 Export Vendor Settlement Report
+### 6.4 Update Order Flow Sequence Settings
+- **Endpoint**: `PATCH /admin/settings/order-flow`
+- **Access**: Authenticated (`SUPER_ADMIN`)
+- **Request Body**:
+```json
+{
+  "mode": "RIDER_FIRST", // "RIDER_FIRST" (Zero Food Waste) | "VENDOR_FIRST" | "PARALLEL"
+  "riderSearchTimeoutSeconds": 90
+}
+```
+
+### 6.5 Export Vendor Settlement Report
 - **Endpoint**: `GET /admin/finance/settlement-export`
 - **Query Params**: `startDate=2026-10-01&endDate=2026-10-07&format=csv`
 - **Response**: Downloadable CSV file containing vendor earnings and platform commissions.

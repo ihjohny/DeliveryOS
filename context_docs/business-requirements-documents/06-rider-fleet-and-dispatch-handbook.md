@@ -22,11 +22,17 @@ This document specifies the delivery workflow, dispatch algorithms, and the **Ri
 
 ## 3. Order Dispatch & Broadcast Logic
 
+The dispatch engine operates dynamically based on the configured `order_flow_mode`:
+
+### In `RIDER_FIRST` Mode (Early Broadcast — Zero Food Waste):
 ```
-[ Store Marks Order READY_FOR_PICKUP ]
+[ Customer Submits Checkout ]
                  │
                  ▼
-[ Redis searches online idle riders within radius (e.g. 3-5 km) ]
+[ System verifies Store Open & Items in Stock BEFORE DB Write ]
+                 │
+                 ▼
+[ Immediate Redis search for online idle riders within radius (3–5 km) ]
                  │
                  ▼
 [ Socket.IO sends dispatch:broadcast alert to matched riders ]
@@ -35,8 +41,12 @@ This document specifies the delivery workflow, dispatch algorithms, and the **Ri
 [ First rider to tap ACCEPT claims order via atomic Redis lock ]
                  │
                  ▼
+[ System alerts Vendor console to review & manually ACCEPT ──► Kitchen Chime Rings ]
 (Fallback: If unaccepted after 90s, escalates to Super Admin manual assign)
 ```
+
+### In `VENDOR_FIRST` Mode:
+- Broadcast is triggered only after vendor marks order `READY_FOR_PICKUP`.
 
 ---
 

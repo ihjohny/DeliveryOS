@@ -1,15 +1,16 @@
 # Autonomous AI Agents & Coding Assistants Guide
 
-Welcome! If you are an AI coding assistant, autonomous agent, or developer working on **DeliveryOS**, please review the comprehensive engineering standards and operating procedures located in:
+Welcome! If you are an AI coding assistant or developer working on **DeliveryOS**:
 
-👉 **[`context_docs/AGENT_RULES.md`](./context_docs/AGENT_RULES.md)**
+⚡ **TOKEN-SAVING FAST ENTRY**:  
+Before loading large documentation files, inspect the **Context Router** to identify the exact 1–2 files needed for your specific task:  
+👉 **[`context_docs/QUICK_REFERENCE.md`](./context_docs/QUICK_REFERENCE.md)**
 
 ---
 
-## 📚 Complete Project Context
+## 📚 Master Engineering Rules & Specifications
 
-All requirements, operational handbooks, system architecture blueprints, and API contracts are centralized in the `context_docs/` directory:
-
-1. **[Master AI Agent Rules & Procedures](./context_docs/AGENT_RULES.md)**
-2. **[Business Requirements Documents (BRD)](./context_docs/business-requirements-documents/README.md)**
-3. **[Technical Implementation Documents (TID)](./context_docs/technical-implementation-documents/README.md)**
+1. **[Master AI Agent Rules & Invariants](./context_docs/AGENT_RULES.md)**
+2. **[Quick Reference & Context Router](./context_docs/QUICK_REFERENCE.md)**
+3. **[Business Requirements Documents (BRD)](./context_docs/business-requirements-documents/README.md)**
+4. **[Technical Implementation Documents (TID)](./context_docs/technical-implementation-documents/README.md)**

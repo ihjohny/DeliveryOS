@@ -47,6 +47,7 @@ CREATE TYPE account_status AS ENUM ('PENDING_APPROVAL', 'ACTIVE', 'SUSPENDED');
 CREATE TYPE vendor_vertical AS ENUM ('FOOD', 'GROCERY', 'SUPER_SHOP', 'PHARMACY');
 CREATE TYPE order_status AS ENUM (
   'PLACED', 
+  'RIDER_ASSIGNED',
   'ACCEPTED', 
   'PREPARING', 
   'READY_FOR_PICKUP', 
@@ -54,6 +55,7 @@ CREATE TYPE order_status AS ENUM (
   'DELIVERED', 
   'CANCELLED'
 );
+CREATE TYPE order_flow_mode AS ENUM ('RIDER_FIRST', 'VENDOR_FIRST', 'PARALLEL');
 CREATE TYPE payment_method AS ENUM ('CASH_ON_DELIVERY', 'ONLINE_GATEWAY');
 CREATE TYPE payment_status AS ENUM ('PENDING', 'PAID', 'REFUNDED', 'FAILED');
 CREATE TYPE settlement_status AS ENUM ('PENDING', 'PROCESSING', 'SETTLED');
@@ -189,6 +191,7 @@ CREATE TABLE system_settings (
 );
 -- Example Default Settings Insert
 INSERT INTO system_settings (key, value, description) VALUES
+('order_flow_config', '{"mode": "RIDER_FIRST", "rider_search_timeout_seconds": 90}', 'Fulfillment flow sequence configuration (RIDER_FIRST vs VENDOR_FIRST)'),
 ('delivery_fee_config', '{"mode": "FIXED_FLAT", "flat_rate": 50.0, "base_fee": 30.0, "base_km": 2.0, "per_km_rate": 10.0}', 'Delivery fee mode and pricing tiers'),
 ('region_config', '{"currency": "BDT", "currency_symbol": "৳", "default_locale": "en", "tax_percentage": 0.0}', 'Regional currency and localization parameters');
 
