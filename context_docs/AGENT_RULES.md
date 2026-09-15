@@ -139,3 +139,18 @@ Before marking any engineering task as complete, verify that:
 - [ ] Error messages are clear, human-understandable, and do not leak internal stack traces to clients.
 - [ ] No hardcoded credentials or API keys exist in the source code (use `.env`).
 - [ ] The implementation aligns 100% with the requirements in `context_docs/`.
+
+---
+
+## 6. Git & Version Control Protocol
+
+1. **NO AUTO-COMMITS**:
+   - Never commit code automatically or autonomously.
+   - You must only run `git commit` when explicitly instructed by the user.
+2. **Commit Message Convention**:
+   - Always adhere to **Conventional Commits**: `<type>(<scope>): <clear description in imperative mood>`.
+   - Types: `feat`, `fix`, `refactor`, `docs`, `test`, `perf`, `chore`.
+   - Examples:
+     - `feat(auth): implement phone OTP verification with JWT issuance`
+     - `fix(dispatch): resolve Redis lock race condition on order claim`
+     - `docs(api): update checkout payload schema in TID-03`
