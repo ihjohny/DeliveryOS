@@ -35,9 +35,9 @@ graph TD
   - [`TID-07: Deployment & Environment Setup`](./context_docs/technical-implementation-documents/07-deployment-devops-and-environment-setup.md)
   - [`TID-01: System Architecture & Tech Stack`](./context_docs/technical-implementation-documents/01-system-architecture-and-tech-stack.md)
 - **Validation Checklist**:
-  - [ ] `docker compose up -d` boots Postgres with PostGIS and Redis without errors.
-  - [ ] Database connection test script confirms PostGIS extensions (`uuid-ossp`, `postgis`) are active.
-  - [ ] Redis responds to `PING` with `PONG`.
+  - [x] `docker compose up -d` boots Postgres with PostGIS and Redis without errors.
+  - [x] Database connection test script confirms PostGIS extensions (`uuid-ossp`, `postgis`) are active.
+  - [x] Redis responds to `PING` with `PONG`.
 
 ---
 

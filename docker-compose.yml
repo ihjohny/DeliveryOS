@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL 16 with PostGIS 3.4
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: deliveryos_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-deliveryos}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secretpassword}
+    volumes:
+      - deliveryos_pgdata:/var/lib/postgresql/data
+      - ./deploy/init-postgis.sql:/docker-entrypoint-initdb.d/10-postgis.sql
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-deliveryos}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - deliveryos_network
+
+  # 2. Redis 7.2 In-Memory Cache & Real-Time Pub/Sub
+  redis:
+    image: redis:7.2-alpine
+    container_name: deliveryos_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispassword}
+    volumes:
+      - deliveryos_redisdata:/data
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redispassword}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - deliveryos_network
+
+volumes:
+  deliveryos_pgdata:
+    name: deliveryos_pgdata
+  deliveryos_redisdata:
+    name: deliveryos_redisdata
+
+networks:
+  deliveryos_network:
+    name: deliveryos_network
+    driver: bridge
