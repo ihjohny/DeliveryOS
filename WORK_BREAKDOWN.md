@@ -49,9 +49,9 @@ graph TD
 - **Context Docs**:
   - [`TID-02: Database Schema & Data Models`](./context_docs/technical-implementation-documents/02-database-schema-and-data-models.md)
 - **Validation Checklist**:
-  - [ ] All database migrations run cleanly (`npx prisma migrate dev`).
-  - [ ] PostGIS spatial distance query executes successfully against sample coordinates.
-  - [ ] Generated TypeScript client types match all domain entities.
+  - [x] All database migrations run cleanly (`npx prisma migrate dev`).
+  - [x] PostGIS spatial distance query executes successfully against sample coordinates.
+  - [x] Generated TypeScript client types match all domain entities.
 
 ---
 

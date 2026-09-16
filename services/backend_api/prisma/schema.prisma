@@ -1,0 +1,459 @@
+// DeliveryOS Prisma Schema Specification
+// PostgreSQL 16 + PostGIS Multi-Vendor Architecture
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum UserRole {
+  SUPER_ADMIN
+  VENDOR_ADMIN
+  RIDER
+  CUSTOMER
+}
+
+enum AccountStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  SUSPENDED
+}
+
+enum VendorVertical {
+  FOOD
+  GROCERY
+  SUPER_SHOP
+  PHARMACY
+}
+
+enum PermissionScope {
+  PARTICULAR_OUTLET
+  ALL_OUTLETS_MASTER
+}
+
+enum OrderStatus {
+  PLACED
+  RIDER_ASSIGNED
+  ACCEPTED
+  PREPARING
+  READY_FOR_PICKUP
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+  ONLINE_GATEWAY
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  SETTLED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FLAT
+}
+
+enum BannerLinkType {
+  OUTLET
+  CATEGORY
+  EXTERNAL
+}
+
+// -----------------------------------------------------------------------------
+// 1. Users & Customer Addresses
+// -----------------------------------------------------------------------------
+
+model User {
+  id        String        @id @default(uuid()) @db.Uuid
+  phone     String        @unique @db.VarChar(20)
+  fullName  String        @map("full_name") @db.VarChar(100)
+  email     String?       @db.VarChar(100)
+  role      UserRole      @default(CUSTOMER)
+  status    AccountStatus @default(ACTIVE)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  addresses   CustomerAddress[]
+  rider       Rider?
+  vendorStaff VendorStaff[]
+  orders      Order[]
+
+  @@map("users")
+}
+
+model CustomerAddress {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  label         String   @default("Home") @db.VarChar(30)
+  addressLine   String   @map("address_line") @db.Text
+  buildingFloor String?  @map("building_floor") @db.VarChar(100)
+  deliveryNote  String?  @map("delivery_note") @db.Text
+  latitude      Float
+  longitude     Float
+  isDefault     Boolean  @default(false) @map("is_default")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("customer_addresses")
+}
+
+// -----------------------------------------------------------------------------
+// 2. Vendor Brands & Outlets
+// -----------------------------------------------------------------------------
+
+model VendorBrand {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(150)
+  logoUrl   String?  @map("logo_url") @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  outlets Vendor[]
+  staff   VendorStaff[]
+
+  @@map("vendor_brands")
+}
+
+model Vendor {
+  id                     String         @id @default(uuid()) @db.Uuid
+  brandId                String?        @map("brand_id") @db.Uuid
+  name                   String         @db.VarChar(150)
+  vertical               VendorVertical @default(FOOD)
+  contactPhone           String         @map("contact_phone") @db.VarChar(20)
+  logoUrl                String?        @map("logo_url") @db.Text
+  bannerUrl              String?        @map("banner_url") @db.Text
+  latitude               Float
+  longitude              Float
+  addressText            String         @map("address_text") @db.Text
+  commissionRate         Decimal        @default(15.00) @map("commission_rate") @db.Decimal(5, 2)
+  deliveryRadiusKm       Decimal        @default(5.00) @map("delivery_radius_km") @db.Decimal(5, 2)
+  defaultPrepTimeMinutes Int            @default(20) @map("default_prep_time_minutes")
+  isActive               Boolean        @default(true) @map("is_active")
+  isBusy                 Boolean        @default(false) @map("is_busy")
+  createdAt              DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  brand          VendorBrand?          @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  staff          VendorStaff[]
+  operatingHours VendorOperatingHour[]
+  categories     Category[]
+  products       Product[]
+  orders         Order[]
+  commissions    CommissionLedger[]
+
+  @@index([brandId])
+  @@map("vendors")
+}
+
+model VendorStaff {
+  id        String          @id @default(uuid()) @db.Uuid
+  userId    String          @map("user_id") @db.Uuid
+  vendorId  String?         @map("vendor_id") @db.Uuid
+  brandId   String?         @map("brand_id") @db.Uuid
+  scope     PermissionScope @default(PARTICULAR_OUTLET)
+  isActive  Boolean         @default(true) @map("is_active")
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor Vendor?      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  brand  VendorBrand? @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vendorId])
+  @@map("vendor_staff")
+}
+
+model VendorOperatingHour {
+  id        String   @id @default(uuid()) @db.Uuid
+  vendorId  String   @map("vendor_id") @db.Uuid
+  dayOfWeek Int      @map("day_of_week") @db.SmallInt
+  openTime  String   @map("open_time") @db.VarChar(8) // "09:00:00"
+  closeTime String   @map("close_time") @db.VarChar(8) // "22:00:00"
+  isClosed  Boolean  @default(false) @map("is_closed")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, dayOfWeek])
+  @@map("vendor_operating_hours")
+}
+
+// -----------------------------------------------------------------------------
+// 3. Catalog, Categories, Products, Variants & Addons
+// -----------------------------------------------------------------------------
+
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  vendorId  String?  @map("vendor_id") @db.Uuid // NULL = Global Central Category
+  name      String   @db.VarChar(100)
+  imageUrl  String?  @map("image_url") @db.Text
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+
+  vendor   Vendor?   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendorId    String   @map("vendor_id") @db.Uuid
+  categoryId  String?  @map("category_id") @db.Uuid
+  name        String   @db.VarChar(150)
+  description String?  @db.Text
+  basePrice   Decimal  @map("base_price") @db.Decimal(10, 2)
+  unitType    String   @default("piece") @map("unit_type") @db.VarChar(20)
+  imageUrl    String?  @map("image_url") @db.Text
+  isInStock   Boolean  @default(true) @map("is_in_stock")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  vendor      Vendor               @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category    Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  variants    ProductVariant[]
+  addonGroups ProductAddonGroup[]
+  orderItems  OrderItem[]
+
+  @@index([vendorId])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id            String   @id @default(uuid()) @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  name          String   @db.VarChar(100)
+  priceModifier Decimal  @default(0.00) @map("price_modifier") @db.Decimal(10, 2)
+  isInStock     Boolean  @default(true) @map("is_in_stock")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model ProductAddonGroup {
+  id           String   @id @default(uuid()) @db.Uuid
+  productId    String   @map("product_id") @db.Uuid
+  title        String   @db.VarChar(100)
+  minSelection Int      @default(0) @map("min_selection")
+  maxSelection Int      @default(5) @map("max_selection")
+
+  product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  addons  ProductAddon[]
+
+  @@index([productId])
+  @@map("product_addon_groups")
+}
+
+model ProductAddon {
+  id           String   @id @default(uuid()) @db.Uuid
+  addonGroupId String   @map("addon_group_id") @db.Uuid
+  name         String   @db.VarChar(100)
+  price        Decimal  @default(0.00) @db.Decimal(10, 2)
+  isInStock    Boolean  @default(true) @map("is_in_stock")
+
+  group ProductAddonGroup @relation(fields: [addonGroupId], references: [id], onDelete: Cascade)
+
+  @@index([addonGroupId])
+  @@map("product_addons")
+}
+
+// -----------------------------------------------------------------------------
+// 4. Promotions: Banners & Coupons
+// -----------------------------------------------------------------------------
+
+model Banner {
+  id        String         @id @default(uuid()) @db.Uuid
+  title     String         @db.VarChar(150)
+  imageUrl  String         @map("image_url") @db.Text
+  linkType  BannerLinkType @default(OUTLET) @map("link_type")
+  targetId  String?        @map("target_id") @db.VarChar(100)
+  sortOrder Int            @default(0) @map("sort_order")
+  isActive  Boolean        @default(true) @map("is_active")
+  startsAt  DateTime       @default(now()) @map("starts_at") @db.Timestamptz
+  endsAt    DateTime?      @map("ends_at") @db.Timestamptz
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("banners")
+}
+
+model Coupon {
+  id                String       @id @default(uuid()) @db.Uuid
+  code              String       @unique @db.VarChar(50)
+  description       String?      @db.Text
+  discountType      DiscountType @default(PERCENTAGE) @map("discount_type")
+  discountValue     Decimal      @map("discount_value") @db.Decimal(10, 2)
+  minOrderAmount    Decimal      @default(0.00) @map("min_order_amount") @db.Decimal(10, 2)
+  maxDiscountAmount Decimal?     @map("max_discount_amount") @db.Decimal(10, 2)
+  usageLimit        Int          @default(1000) @map("usage_limit")
+  currentUses       Int          @default(0) @map("current_uses")
+  validFrom         DateTime     @map("valid_from") @db.Timestamptz
+  validTo           DateTime     @map("valid_to") @db.Timestamptz
+  isActive          Boolean      @default(true) @map("is_active")
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  orders Order[]
+
+  @@map("coupons")
+}
+
+// -----------------------------------------------------------------------------
+// 5. Riders Fleet & Trip Ledgers
+// -----------------------------------------------------------------------------
+
+model Rider {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @unique @map("user_id") @db.Uuid
+  vehicleType  String    @default("motorcycle") @map("vehicle_type") @db.VarChar(50)
+  isOnline     Boolean   @default(false) @map("is_online")
+  cashInHand   Decimal   @default(0.00) @map("cash_in_hand") @db.Decimal(10, 2)
+  maxCashLimit Decimal   @default(5000.00) @map("max_cash_limit") @db.Decimal(10, 2)
+  latitude     Float?
+  longitude    Float?
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+  trips  RiderTripLedger[]
+
+  @@map("riders")
+}
+
+// -----------------------------------------------------------------------------
+// 6. System Settings & Configuration
+// -----------------------------------------------------------------------------
+
+model SystemSetting {
+  key         String   @id @db.VarChar(50)
+  value       Json
+  description String?  @db.Text
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("system_settings")
+}
+
+// -----------------------------------------------------------------------------
+// 7. Orders & Financial Ledgers
+// -----------------------------------------------------------------------------
+
+model Order {
+  id                      String        @id @default(uuid()) @db.Uuid
+  orderNumber             String        @unique @map("order_number") @db.VarChar(20)
+  customerId              String        @map("customer_id") @db.Uuid
+  vendorId                String        @map("vendor_id") @db.Uuid
+  riderId                 String?       @map("rider_id") @db.Uuid
+  couponId                String?       @map("coupon_id") @db.Uuid
+  status                  OrderStatus   @default(PLACED)
+
+  subtotal                Decimal       @db.Decimal(10, 2)
+  couponDiscount          Decimal       @default(0.00) @map("coupon_discount") @db.Decimal(10, 2)
+  deliveryFee             Decimal       @map("delivery_fee") @db.Decimal(10, 2)
+  taxAmount               Decimal       @default(0.00) @map("tax_amount") @db.Decimal(10, 2)
+  totalAmount             Decimal       @map("total_amount") @db.Decimal(10, 2)
+
+  paymentMethod           PaymentMethod @default(CASH_ON_DELIVERY) @map("payment_method")
+  paymentStatus           PaymentStatus @default(PENDING) @map("payment_status")
+
+  deliveryAddressSnapshot Json          @map("delivery_address_snapshot")
+  customerPhoneSnapshot   String        @map("customer_phone_snapshot") @db.VarChar(20)
+
+  prepTimeMinutes         Int?          @map("prep_time_minutes")
+  customerNotes           String?       @map("customer_notes") @db.Text
+  rejectionReason         String?       @map("rejection_reason") @db.Text
+
+  placedAt                DateTime      @default(now()) @map("placed_at") @db.Timestamptz
+  acceptedAt              DateTime?     @map("accepted_at") @db.Timestamptz
+  pickedUpAt              DateTime?     @map("picked_up_at") @db.Timestamptz
+  deliveredAt             DateTime?     @map("delivered_at") @db.Timestamptz
+  cancelledAt             DateTime?     @map("cancelled_at") @db.Timestamptz
+
+  customer   User               @relation(fields: [customerId], references: [id])
+  vendor     Vendor             @relation(fields: [vendorId], references: [id])
+  rider      Rider?             @relation(fields: [riderId], references: [id])
+  coupon     Coupon?            @relation(fields: [couponId], references: [id])
+  orderItems OrderItem[]
+  commission CommissionLedger?
+  riderTrip  RiderTripLedger?
+
+  @@index([customerId])
+  @@index([vendorId])
+  @@index([riderId])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String  @id @default(uuid()) @db.Uuid
+  orderId             String  @map("order_id") @db.Uuid
+  productId           String  @map("product_id") @db.Uuid
+  productNameSnapshot String  @map("product_name_snapshot") @db.VarChar(150)
+  unitPrice           Decimal @map("unit_price") @db.Decimal(10, 2)
+  quantity            Int
+  totalPrice          Decimal @map("total_price") @db.Decimal(10, 2)
+  variantSnapshot     Json?   @map("variant_snapshot")
+  addonsSnapshot      Json?   @map("addons_snapshot")
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model CommissionLedger {
+  id               String           @id @default(uuid()) @db.Uuid
+  orderId          String           @unique @map("order_id") @db.Uuid
+  vendorId         String           @map("vendor_id") @db.Uuid
+  grossAmount      Decimal          @map("gross_amount") @db.Decimal(10, 2)
+  commissionRate   Decimal          @map("commission_rate") @db.Decimal(5, 2)
+  commissionAmount Decimal          @map("commission_amount") @db.Decimal(10, 2)
+  netVendorPayable Decimal          @map("net_vendor_payable") @db.Decimal(10, 2)
+  settlementStatus SettlementStatus @default(PENDING) @map("settlement_status")
+  settledAt        DateTime?        @map("settled_at") @db.Timestamptz
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId])
+  @@index([settlementStatus])
+  @@map("commission_ledgers")
+}
+
+model RiderTripLedger {
+  id               String           @id @default(uuid()) @db.Uuid
+  orderId          String           @unique @map("order_id") @db.Uuid
+  riderId          String           @map("rider_id") @db.Uuid
+  deliveryEarnings Decimal          @map("delivery_earnings") @db.Decimal(10, 2)
+  codCollected     Decimal          @default(0.00) @map("cod_collected") @db.Decimal(10, 2)
+  status           SettlementStatus @default(PENDING)
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  rider Rider @relation(fields: [riderId], references: [id])
+
+  @@index([riderId])
+  @@map("rider_trip_ledgers")
+}
