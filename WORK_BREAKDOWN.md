@@ -68,8 +68,8 @@ graph TD
   - [`TID-02: Section 2 (DDL & Inserts)`](./context_docs/technical-implementation-documents/02-database-schema-and-data-models.md)
   - [`BRD-03: Multi-Region Parameters`](./context_docs/business-requirements-documents/03-core-business-rules-and-workflows.md)
 - **Validation Checklist**:
-  - [ ] `npx prisma db seed` executes idempotently without duplicate key errors.
-  - [ ] Querying `system_settings` returns active JSON configs.
+  - [x] `npx prisma db seed` executes idempotently without duplicate key errors.
+  - [x] Querying `system_settings` returns active JSON configs.
 
 ---
 
