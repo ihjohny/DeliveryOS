@@ -85,8 +85,8 @@ graph TD
 - **Context Docs**:
   - [`TID-03: Section 2 (Auth Endpoints)`](./context_docs/technical-implementation-documents/03-api-specifications-and-endpoints.md)
 - **Validation Checklist**:
-  - [ ] Unit/E2E test: Request OTP -> Verify with mock OTP -> Receive valid JWT token.
-  - [ ] Protected route test: Accessing admin endpoint with customer token returns 403 Forbidden.
+  - [x] Unit/E2E test: Request OTP -> Verify with mock OTP -> Receive valid JWT token.
+  - [x] Protected route test: Accessing admin endpoint with customer token returns 403 Forbidden.
 
 ---
 
