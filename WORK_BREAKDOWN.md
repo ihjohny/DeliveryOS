@@ -101,8 +101,8 @@ graph TD
   - [`TID-03: Section 3 (Discovery & Cart)`](./context_docs/technical-implementation-documents/03-api-specifications-and-endpoints.md)
   - [`TID-02: Section 3 (Spatial Queries)`](./context_docs/technical-implementation-documents/02-database-schema-and-data-models.md)
 - **Validation Checklist**:
-  - [ ] Nearby vendor query only returns stores whose radius encompasses test coordinates.
-  - [ ] Out-of-coverage coordinates submitted to `/cart/validate-address-coverage` return HTTP 422 error.
+  - [x] Nearby vendor query only returns stores whose radius encompasses test coordinates.
+  - [x] Out-of-coverage coordinates submitted to `/cart/validate-address-coverage` return HTTP 422 error.
 
 ---
 

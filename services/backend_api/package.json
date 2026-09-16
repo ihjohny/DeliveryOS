@@ -12,7 +12,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts",
     "db:test": "ts-node scripts/test-db.ts",
-    "auth:test": "ts-node scripts/test-auth-rbac.ts"
+    "auth:test": "ts-node scripts/test-auth-rbac.ts",
+    "vendor:test": "ts-node scripts/test-vendor-discovery.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
