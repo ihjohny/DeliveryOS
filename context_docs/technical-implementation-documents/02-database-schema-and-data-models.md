@@ -2,7 +2,7 @@
 
 This document defines the production relational database schema and spatial models for **DeliveryOS** using **PostgreSQL 16** with the **PostGIS** extension. 
 
-It provides both the complete **Prisma Schema definition** and raw **PostgreSQL DDL with Spatial Indexes** ready for migrations.
+It provides both the complete entity relationships and raw **PostgreSQL DDL with Spatial Indexes** ready for migrations.
 
 ---
 
@@ -12,8 +12,9 @@ It provides both the complete **Prisma Schema definition** and raw **PostgreSQL 
 erDiagram
     USERS ||--o{ CUSTOMER_ADDRESSES : has
     USERS ||--o| RIDERS : profile
-    USERS ||--o| VENDOR_STAFF : manages
+    USERS ||--o{ VENDOR_STAFF : assigned_to
 
+    VENDOR_BRANDS ||--o{ VENDORS : owns
     VENDORS ||--o{ VENDOR_STAFF : employs
     VENDORS ||--o{ VENDOR_OPERATING_HOURS : schedules
     VENDORS ||--o{ CATEGORIES : owns
@@ -25,11 +26,15 @@ erDiagram
     VENDORS ||--o{ ORDERS : receives
     USERS ||--o{ ORDERS : places
     RIDERS ||--o{ ORDERS : delivers
+    COUPONS ||--o{ ORDERS : applies_to
     ORDERS ||--o{ ORDER_ITEMS : contains
     ORDER_ITEMS ||--o{ ORDER_ITEM_ADDONS : has
 
     ORDERS ||--o| COMMISSION_LEDGERS : generates
     ORDERS ||--o| RIDER_TRIP_LEDGERS : tracks
+
+    BANNERS }o--o| VENDORS : links_to
+    BANNERS }o--o| CATEGORIES : links_to
 ```
 
 ---
@@ -45,6 +50,7 @@ CREATE EXTENSION IF NOT EXISTS "postgis";
 CREATE TYPE user_role AS ENUM ('SUPER_ADMIN', 'VENDOR_ADMIN', 'RIDER', 'CUSTOMER');
 CREATE TYPE account_status AS ENUM ('PENDING_APPROVAL', 'ACTIVE', 'SUSPENDED');
 CREATE TYPE vendor_vertical AS ENUM ('FOOD', 'GROCERY', 'SUPER_SHOP', 'PHARMACY');
+CREATE TYPE permission_scope AS ENUM ('PARTICULAR_OUTLET', 'ALL_OUTLETS_MASTER');
 CREATE TYPE order_status AS ENUM (
   'PLACED', 
   'RIDER_ASSIGNED',
@@ -60,6 +66,8 @@ CREATE TYPE payment_method AS ENUM ('CASH_ON_DELIVERY', 'ONLINE_GATEWAY');
 CREATE TYPE payment_status AS ENUM ('PENDING', 'PAID', 'REFUNDED', 'FAILED');
 CREATE TYPE settlement_status AS ENUM ('PENDING', 'PROCESSING', 'SETTLED');
 CREATE TYPE delivery_fee_mode AS ENUM ('FIXED_FLAT', 'DISTANCE_TIERED');
+CREATE TYPE discount_type AS ENUM ('PERCENTAGE', 'FLAT');
+CREATE TYPE banner_link_type AS ENUM ('OUTLET', 'CATEGORY', 'EXTERNAL');
 
 -- 3. Users Table
 CREATE TABLE users (
@@ -87,18 +95,28 @@ CREATE TABLE customer_addresses (
 );
 CREATE INDEX idx_customer_addresses_geo ON customer_addresses USING GIST(coordinates);
 
--- 5. Vendors / Merchants Table (With PostGIS Location & Radius)
-CREATE TABLE vendors (
+-- 5. Vendor Brands Table (For Multi-Outlet Chains)
+CREATE TABLE vendor_brands (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(150) NOT NULL,
+    logo_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 6. Vendors / Outlets Table (With PostGIS Location & Radius)
+CREATE TABLE vendors (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    brand_id UUID REFERENCES vendor_brands(id) ON DELETE SET NULL,
+    name VARCHAR(150) NOT NULL, -- e.g. "Pizza Point - Downtown Branch"
     vertical vendor_vertical NOT NULL DEFAULT 'FOOD',
     contact_phone VARCHAR(20) NOT NULL,
     logo_url TEXT,
     banner_url TEXT,
     coordinates GEOGRAPHY(Point, 4326) NOT NULL,
     address_text TEXT NOT NULL,
-    commission_rate NUMERIC(5, 2) NOT NULL DEFAULT 15.00, -- e.g. 15.00%
+    commission_rate NUMERIC(5, 2) NOT NULL DEFAULT 15.00, -- 15.00%
     delivery_radius_km NUMERIC(5, 2) NOT NULL DEFAULT 5.00,
+    default_prep_time_minutes INT NOT NULL DEFAULT 20,
     is_active BOOLEAN DEFAULT TRUE,
     is_busy BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -106,18 +124,30 @@ CREATE TABLE vendors (
 );
 CREATE INDEX idx_vendors_geo ON vendors USING GIST(coordinates);
 
--- 6. Vendor Operating Hours Table
+-- 7. Vendor Staff & Permission Scopes
+CREATE TABLE vendor_staff (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE, -- NULL if brand-wide master
+    brand_id UUID REFERENCES vendor_brands(id) ON DELETE CASCADE,
+    scope permission_scope NOT NULL DEFAULT 'PARTICULAR_OUTLET',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, vendor_id)
+);
+
+-- 8. Vendor Operating Hours Table
 CREATE TABLE vendor_operating_hours (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     vendor_id UUID NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
-    day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), -- 0=Sunday, 6=Saturday
+    day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), -- 0=Sun, 6=Sat
     open_time TIME NOT NULL,
     close_time TIME NOT NULL,
     is_closed BOOLEAN DEFAULT FALSE,
     UNIQUE(vendor_id, day_of_week)
 );
 
--- 7. Categories Table
+-- 9. Categories Table
 CREATE TABLE categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE, -- NULL = Global Category
@@ -127,7 +157,7 @@ CREATE TABLE categories (
     is_active BOOLEAN DEFAULT TRUE
 );
 
--- 8. Products / Items Table
+-- 10. Products / Items Table
 CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     vendor_id UUID NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
@@ -144,32 +174,65 @@ CREATE TABLE products (
 );
 CREATE INDEX idx_products_vendor ON products(vendor_id);
 
--- 9. Product Variants Table
+-- 11. Product Variants Table (Single Choice)
 CREATE TABLE product_variants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    name VARCHAR(100) NOT NULL, -- 'Small', 'Medium', 'Large'
-    price_modifier NUMERIC(10, 2) NOT NULL DEFAULT 0.00, -- +/- relative to base_price
+    name VARCHAR(100) NOT NULL, -- 'Small', 'Regular', 'Large'
+    price_modifier NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
     is_in_stock BOOLEAN DEFAULT TRUE
 );
 
--- 10. Product Addon Groups & Addons Table
+-- 12. Product Add-on Groups & Toppings (Multiple Add-ons)
 CREATE TABLE product_addon_groups (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    title VARCHAR(100) NOT NULL, -- e.g. "Choose Sauce", "Extras"
+    title VARCHAR(100) NOT NULL, -- e.g. "Extra Toppings", "Sauces"
     min_selection INT DEFAULT 0,
-    max_selection INT DEFAULT 1
+    max_selection INT DEFAULT 5
 );
 
 CREATE TABLE product_addons (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     addon_group_id UUID NOT NULL REFERENCES product_addon_groups(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
-    price NUMERIC(10, 2) NOT NULL DEFAULT 0.00
+    price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    is_in_stock BOOLEAN DEFAULT TRUE
 );
 
--- 11. Riders Table
+-- 13. Promotional / Offer Banners Table
+CREATE TABLE banners (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(150) NOT NULL,
+    image_url TEXT NOT NULL,
+    link_type banner_link_type NOT NULL DEFAULT 'OUTLET',
+    target_id VARCHAR(100), -- vendor_id, category_id, or web url
+    sort_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    starts_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    ends_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 14. Promotional Coupons Table
+CREATE TABLE coupons (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    discount_type discount_type NOT NULL DEFAULT 'PERCENTAGE',
+    discount_value NUMERIC(10, 2) NOT NULL, -- e.g. 20.00 (%) or 50.00 (flat)
+    min_order_amount NUMERIC(10, 2) DEFAULT 0.00,
+    max_discount_amount NUMERIC(10, 2), -- Cap for percentage discounts
+    usage_limit INT DEFAULT 1000,
+    current_uses INT DEFAULT 0,
+    valid_from TIMESTAMP WITH TIME ZONE NOT NULL,
+    valid_to TIMESTAMP WITH TIME ZONE NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_coupons_code ON coupons(code);
+
+-- 15. Riders Table
 CREATE TABLE riders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -182,29 +245,26 @@ CREATE TABLE riders (
 );
 CREATE INDEX idx_riders_geo ON riders USING GIST(current_location);
 
--- 12. System Settings Table (Master Platform Config)
+-- 16. System Settings Table
 CREATE TABLE system_settings (
     key VARCHAR(50) PRIMARY KEY,
     value JSONB NOT NULL,
     description TEXT,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
--- Example Default Settings Insert
-INSERT INTO system_settings (key, value, description) VALUES
-('order_flow_config', '{"mode": "RIDER_FIRST", "rider_search_timeout_seconds": 90}', 'Fulfillment flow sequence configuration (RIDER_FIRST vs VENDOR_FIRST)'),
-('delivery_fee_config', '{"mode": "FIXED_FLAT", "flat_rate": 50.0, "base_fee": 30.0, "base_km": 2.0, "per_km_rate": 10.0}', 'Delivery fee mode and pricing tiers'),
-('region_config', '{"currency": "BDT", "currency_symbol": "৳", "default_locale": "en", "tax_percentage": 0.0}', 'Regional currency and localization parameters');
 
--- 13. Orders Table
+-- 17. Orders Table
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    order_number VARCHAR(20) UNIQUE NOT NULL, -- e.g. "ORD-20261001-1042"
+    order_number VARCHAR(20) UNIQUE NOT NULL,
     customer_id UUID NOT NULL REFERENCES users(id),
     vendor_id UUID NOT NULL REFERENCES vendors(id),
     rider_id UUID REFERENCES riders(id),
+    coupon_id UUID REFERENCES coupons(id) ON DELETE SET NULL,
     status order_status NOT NULL DEFAULT 'PLACED',
     
     subtotal NUMERIC(10, 2) NOT NULL,
+    coupon_discount NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
     delivery_fee NUMERIC(10, 2) NOT NULL,
     tax_amount NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
     total_amount NUMERIC(10, 2) NOT NULL,
@@ -212,7 +272,7 @@ CREATE TABLE orders (
     payment_method payment_method NOT NULL DEFAULT 'CASH_ON_DELIVERY',
     payment_status payment_status NOT NULL DEFAULT 'PENDING',
     
-    delivery_address_snapshot JSONB NOT NULL, -- Freezes address and coords at time of order
+    delivery_address_snapshot JSONB NOT NULL, -- Freezes address and coords
     customer_phone_snapshot VARCHAR(20) NOT NULL,
     
     prep_time_minutes INT,
@@ -229,7 +289,7 @@ CREATE INDEX idx_orders_customer ON orders(customer_id);
 CREATE INDEX idx_orders_vendor ON orders(vendor_id);
 CREATE INDEX idx_orders_status ON orders(status);
 
--- 14. Order Items Table
+-- 18. Order Items Table
 CREATE TABLE order_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -242,7 +302,7 @@ CREATE TABLE order_items (
     addons_snapshot JSONB
 );
 
--- 15. Commission & Financial Ledgers
+-- 19. Financial Ledgers
 CREATE TABLE commission_ledgers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID UNIQUE NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -256,9 +316,7 @@ CREATE TABLE commission_ledgers (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_commission_vendor ON commission_ledgers(vendor_id);
-CREATE INDEX idx_commission_status ON commission_ledgers(settlement_status);
 
--- 16. Rider Trip Ledgers
 CREATE TABLE rider_trip_ledgers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID UNIQUE NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -272,10 +330,9 @@ CREATE TABLE rider_trip_ledgers (
 
 ---
 
-## 3. Critical Spatial Discovery Query
+## 3. Critical Spatial Queries
 
-To locate vendors within delivery radius of a customer's location `(lat, lng)`:
-
+### 3.1 Outlet Discovery by Customer Location
 ```sql
 SELECT 
     v.id, 
@@ -287,4 +344,14 @@ FROM vendors v
 WHERE v.is_active = TRUE
   AND ST_DWithin(v.coordinates, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, v.delivery_radius_km * 1000)
 ORDER BY distance_km ASC;
+```
+
+### 3.2 Cart Address Geofence Guard (Strict Coverage Enforcement)
+```sql
+-- Returns TRUE if address is inside outlet coverage, FALSE otherwise:
+SELECT ST_DWithin(
+    (SELECT coordinates FROM customer_addresses WHERE id = :address_id),
+    (SELECT coordinates FROM vendors WHERE id = :vendor_id),
+    (SELECT delivery_radius_km * 1000 FROM vendors WHERE id = :vendor_id)
+) AS is_within_coverage;
 ```

@@ -19,6 +19,7 @@ DeliveryOS/
     │
     ├── business-requirements-documents/         # For founders, business stakeholders & non-tech users
     │   ├── README.md                            # Business suite guide & index
+    │   ├── 00-master-product-overview.md        # Master non-technical showcase & 4-app feature guide
     │   ├── 01-executive-summary-and-vision.md   # High-level vision, multi-vertical model & KPIs
     │   ├── 02-stakeholder-roles-and-personas.md # Customer, Store Manager, Rider & Admin personas
     │   ├── 03-core-business-rules-and-workflows.md# Order lifecycle, Flat vs Distance fees, commissions
@@ -53,6 +54,7 @@ DeliveryOS/
 
 ## 📖 Quick Links
 
+- 🌟 **[Master Product Overview & Feature Guide (Non-Technical)](./context_docs/business-requirements-documents/00-master-product-overview.md)**
 - [AI Agent Rules & Operating Procedures](./context_docs/AGENT_RULES.md)
 - [Business Requirements Suite](./context_docs/business-requirements-documents/README.md)
 - [Technical Implementation Suite](./context_docs/technical-implementation-documents/README.md)

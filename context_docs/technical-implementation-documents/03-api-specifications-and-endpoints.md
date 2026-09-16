@@ -45,15 +45,6 @@ This document specifies the RESTful API endpoints for the **DeliveryOS** backend
   "role": "CUSTOMER" // "CUSTOMER" | "RIDER"
 }
 ```
-- **Response**:
-```json
-{
-  "success": true,
-  "statusCode": 200,
-  "message": "OTP sent successfully",
-  "data": { "retryAfterSeconds": 60 }
-}
-```
 
 ### 2.2 Verify Phone OTP & Issue Tokens
 - **Endpoint**: `POST /auth/otp/verify`
@@ -65,62 +56,68 @@ This document specifies the RESTful API endpoints for the **DeliveryOS** backend
   "otp": "123456"
 }
 ```
-- **Response**:
-```json
-{
-  "success": true,
-  "statusCode": 200,
-  "data": {
-    "user": {
-      "id": "c1f7a4e2-...",
-      "phone": "+8801700000000",
-      "fullName": "Tariq Ahmed",
-      "role": "CUSTOMER",
-      "status": "ACTIVE"
-    },
-    "accessToken": "eyJhbGciOi...",
-    "refreshToken": "d8e3b1c..."
-  }
-}
-```
 
 ---
 
-## 3. Customer Discovery & Ordering Module
+## 3. Customer Discovery, Cart & Ordering Module
 
-### 3.1 Get Nearby Vendors
+### 3.1 Get Active Promotional Banners
+- **Endpoint**: `GET /banners/active`
+- **Access**: Public
+- **Response**: Returns sorted list of active home screen banners with deep-link metadata (outlet, category, or web campaign).
+
+### 3.2 Get Nearby Outlets by Location
 - **Endpoint**: `GET /vendors/nearby`
 - **Access**: Public / Authenticated
-- **Query Params**:
-  - `lat` (required, float): e.g. `23.780887`
-  - `lng` (required, float): e.g. `90.419065`
-  - `vertical` (optional, string): `FOOD` | `GROCERY` | `SUPER_SHOP`
-- **Response**:
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "v-101-...",
-      "name": "Burger Spot",
-      "vertical": "FOOD",
-      "logoUrl": "https://cdn.../logo.png",
-      "distanceKm": 1.45,
-      "deliveryFee": 50.0,
-      "isOpen": true,
-      "rating": 4.8
-    }
-  ]
-}
-```
+- **Query Params**: `lat` (required), `lng` (required), `vertical` (optional: `FOOD` | `GROCERY` | `SUPER_SHOP`)
+- **Action**: Queries PostGIS using `ST_DWithin` to return only outlets whose delivery coverage encompasses the coordinates.
 
-### 3.2 Validate Re-Order
-- **Endpoint**: `POST /orders/validate-reorder`
+### 3.3 Search Outlets & Menu Items
+- **Endpoint**: `GET /vendors/search`
+- **Access**: Public / Authenticated
+- **Query Params**: `q` (keyword), `lat`, `lng`
+- **Response**: Grouped results matching outlet names and individual dish/item names available within delivery radius.
+
+### 3.4 Cart Address Coverage Check (Geofence Guard)
+- **Endpoint**: `POST /cart/validate-address-coverage`
 - **Access**: Authenticated (`CUSTOMER`)
 - **Request Body**:
 ```json
 {
-  "previousOrderId": "ord-uuid-..."
+  "vendorId": "v-101-...",
+  "addressId": "addr-uuid-..."
+}
+```
+- **Response (Valid)**:
+```json
+{
+  "success": true,
+  "data": {
+    "isWithinCoverage": true,
+    "distanceKm": 2.3,
+    "deliveryFee": 50.0
+  }
+}
+```
+- **Response (Out of Coverage)**:
+```json
+{
+  "success": false,
+  "statusCode": 422,
+  "error": "ADDRESS_OUT_OF_COVERAGE",
+  "message": "Selected address is outside this outlet's delivery coverage radius."
+}
+```
+
+### 3.5 Validate Coupon Code
+- **Endpoint**: `POST /coupons/validate`
+- **Access**: Authenticated (`CUSTOMER`)
+- **Request Body**:
+```json
+{
+  "code": "WELCOME50",
+  "cartSubtotal": 500.0,
+  "vendorId": "v-101-..."
 }
 ```
 - **Response**:
@@ -128,23 +125,15 @@ This document specifies the RESTful API endpoints for the **DeliveryOS** backend
 {
   "success": true,
   "data": {
-    "isStoreOperational": true,
-    "hasStockChanges": false,
-    "validItems": [
-      {
-        "productId": "p-201-...",
-        "name": "Classic Burger",
-        "currentPrice": 250.0,
-        "quantity": 2,
-        "isAvailable": true
-      }
-    ],
-    "unavailableItems": []
+    "isValid": true,
+    "couponId": "c-901-...",
+    "discountAmount": 50.0,
+    "finalSubtotal": 450.0
   }
 }
 ```
 
-### 3.3 Create Order Checkout
+### 3.6 Create Order Checkout
 - **Endpoint**: `POST /orders/checkout`
 - **Access**: Authenticated (`CUSTOMER`)
 - **Request Body**:
@@ -152,64 +141,57 @@ This document specifies the RESTful API endpoints for the **DeliveryOS** backend
 {
   "vendorId": "v-101-...",
   "deliveryAddressId": "addr-uuid-...",
+  "deliveryMethod": "HOME_DELIVERY", // or "TAKEAWAY"
   "paymentMethod": "CASH_ON_DELIVERY", // or "ONLINE_GATEWAY"
-  "customerNotes": "Please leave at security desk",
+  "couponCode": "WELCOME50",
+  "customerNotes": "Please ring door bell",
   "items": [
     {
       "productId": "p-201-...",
       "quantity": 2,
       "variantId": "var-301-...",
-      "addonIds": ["add-401-...", "add-402-..."]
+      "addonIds": ["add-401-..."]
     }
   ]
 }
 ```
-- **Response**:
-```json
-{
-  "success": true,
-  "statusCode": 201,
-  "data": {
-    "orderId": "ord-uuid-...",
-    "orderNumber": "ORD-20261001-1042",
-    "subtotal": 500.0,
-    "deliveryFee": 50.0,
-    "totalAmount": 550.0,
-    "status": "PLACED"
-  }
-}
-```
+
+### 3.7 Validate Re-Order
+- **Endpoint**: `POST /orders/validate-reorder`
+- **Access**: Authenticated (`CUSTOMER`)
+- **Request Body**: `{ "previousOrderId": "ord-uuid-..." }`
+- **Action**: Validates outlet operating hours, address geofence coverage, and active stock availability for all items/variants.
 
 ---
 
-## 4. Vendor Store Console Module
+## 4. Vendor Store Console Module (`/vendor`)
 
 ### 4.1 Get Live Store Orders (Kitchen Display)
 - **Endpoint**: `GET /vendor/orders/live`
 - **Access**: Authenticated (`VENDOR_ADMIN`, `SUPER_ADMIN`)
-- **Response**: Returns arrays of orders grouped by `PLACED`, `ACCEPTED`, `PREPARING`, `READY_FOR_PICKUP`.
+- **Scope Enforced**: Restricted to user's assigned outlet (`vendor_id`) if `PARTICULAR_OUTLET` scope.
 
 ### 4.2 Accept Incoming Order
 - **Endpoint**: `PATCH /vendor/orders/:id/accept`
+- **Access**: Authenticated (`VENDOR_ADMIN`, `SUPER_ADMIN`)
 - **Request Body**:
 ```json
 {
-  "prepTimeMinutes": 20
+  "prepTimeMinutes": 25 // Optional: if omitted/null, backend defaults to outlet's default_prep_time_minutes
 }
 ```
 
 ### 4.3 Mark Order Ready for Pickup
 - **Endpoint**: `PATCH /vendor/orders/:id/ready`
-- **Action**: Transitions status to `READY_FOR_PICKUP` and broadcasts to nearby riders.
+- **Action**: Transitions status to `READY_FOR_PICKUP` and notifies the waiting rider.
 
-### 4.4 Toggle Product Stock Availability
+### 4.4 Confirm Handover to Rider
+- **Endpoint**: `PATCH /vendor/orders/:id/handover`
+- **Action**: Confirms physical food transfer at the counter and transitions status to `DISPATCHED`.
+
+### 4.5 Toggle Product & Variant Stock Availability
 - **Endpoint**: `PATCH /vendor/products/:id/stock`
-- **Request Body**:
-```json
-{
-  "isInStock": false
-}
-```
+- **Request Body**: `{ "isInStock": false }`
 
 ---
 
@@ -218,77 +200,69 @@ This document specifies the RESTful API endpoints for the **DeliveryOS** backend
 ### 5.1 Toggle Duty Status
 - **Endpoint**: `PATCH /rider/duty`
 - **Access**: Authenticated (`RIDER`)
-- **Request Body**:
-```json
-{
-  "isOnline": true
-}
-```
+- **Request Body**: `{ "isOnline": true }`
 
 ### 5.2 Claim Broadcasted Order
 - **Endpoint**: `POST /rider/orders/:id/claim`
-- **Action**: Claims order via atomic distributed lock (Redis mutex). Returns 409 Conflict if already claimed by another rider.
+- **Action**: Atomically locks and claims the incoming delivery trip via Redis mutex.
 
-### 5.3 Order Picked Up (Step 2)
+### 5.3 Confirm Pickup at Store (Step 2)
 - **Endpoint**: `PATCH /rider/orders/:id/pickup`
-- **Action**: Transitions status to `DISPATCHED`.
+- **Action**: Transitions status to `DISPATCHED` and activates live GPS location streaming.
 
-### 5.4 Order Delivered (Step 3)
+### 5.4 Confirm Delivery & COD Collection (Step 3)
 - **Endpoint**: `PATCH /rider/orders/:id/deliver`
 - **Request Body**:
 ```json
 {
   "codCashCollected": true,
-  "amountCollected": 550.0
+  "amountCollected": 500.0
 }
 ```
-- **Action**: Transitions status to `DELIVERED`, updates rider cash ledger, and closes the trip.
 
 ---
 
-## 6. Super Admin Master Governance Module
+## 6. Super Admin Master Governance Module (`/admin`)
 
-### 6.1 Real-Time Fleet Radar
-- **Endpoint**: `GET /admin/fleet`
-- **Access**: Authenticated (`SUPER_ADMIN`)
-- **Response**: List of all online riders with current latitude, longitude, and active trip status.
+### 6.1 Promotional Banner Management
+- **List Banners**: `GET /admin/banners`
+- **Create Banner**: `POST /admin/banners`
+- **Update/Toggle Banner**: `PATCH /admin/banners/:id`
+- **Delete Banner**: `DELETE /admin/banners/:id`
 
-### 6.2 Manual Dispatch Override
+### 6.2 Coupon Code Management
+- **List Coupons**: `GET /admin/coupons`
+- **Create Coupon**: `POST /admin/coupons`
+- **Update Coupon**: `PATCH /admin/coupons/:id`
+- **Delete Coupon**: `DELETE /admin/coupons/:id`
+
+### 6.3 Rider Fleet & Approval Management
+- **List Fleet / Live Radar**: `GET /admin/fleet`
+- **Approve Rider Account**: `PATCH /admin/riders/:id/approve`
+- **Update Cash Safety Limit**: `PATCH /admin/riders/:id/cash-limit`
+
+### 6.4 Vendor Onboarding & Staff Permission Management
+- **Approve Vendor Application**: `PATCH /admin/vendors/:id/approve`
+- **Create Vendor Directly**: `POST /admin/vendors`
+- **Assign Vendor Staff & Permission Scope**: `POST /admin/vendors/:id/staff`
+```json
+{
+  "userId": "user-uuid-...",
+  "scope": "PARTICULAR_OUTLET", // or "ALL_OUTLETS_MASTER"
+  "role": "BRANCH_MANAGER"
+}
+```
+
+### 6.5 Master Catalog Authority
+- **Create Central Category**: `POST /admin/catalog/categories`
+- **Global Item Override**: `PUT /admin/catalog/products/:id/override`
+- **Disable Product Across Stores**: `PATCH /admin/catalog/products/:id/disable`
+
+### 6.6 Manual Dispatch Override
 - **Endpoint**: `POST /admin/orders/:id/force-assign`
-- **Access**: Authenticated (`SUPER_ADMIN`)
-- **Request Body**:
-```json
-{
-  "riderId": "rider-uuid-..."
-}
-```
+- **Request Body**: `{ "riderId": "rider-uuid-..." }`
 
-### 6.3 Update Delivery Fee Settings
-- **Endpoint**: `PATCH /admin/settings/delivery-fee`
-- **Access**: Authenticated (`SUPER_ADMIN`)
-- **Request Body**:
-```json
-{
-  "mode": "FIXED_FLAT", // or "DISTANCE_TIERED"
-  "flatRate": 50.0,
-  "baseFee": 30.0,
-  "baseKm": 2.0,
-  "perKmRate": 10.0
-}
-```
-
-### 6.4 Update Order Flow Sequence Settings
-- **Endpoint**: `PATCH /admin/settings/order-flow`
-- **Access**: Authenticated (`SUPER_ADMIN`)
-- **Request Body**:
-```json
-{
-  "mode": "RIDER_FIRST", // "RIDER_FIRST" (Zero Food Waste) | "VENDOR_FIRST" | "PARALLEL"
-  "riderSearchTimeoutSeconds": 90
-}
-```
-
-### 6.5 Export Vendor Settlement Report
-- **Endpoint**: `GET /admin/finance/settlement-export`
-- **Query Params**: `startDate=2026-10-01&endDate=2026-10-07&format=csv`
-- **Response**: Downloadable CSV file containing vendor earnings and platform commissions.
+### 6.7 Order Flow & Delivery Fee Settings
+- **Update Order Flow**: `PATCH /admin/settings/order-flow` (`RIDER_FIRST` vs `VENDOR_FIRST`)
+- **Update Delivery Fee Mode**: `PATCH /admin/settings/delivery-fee` (`FIXED_FLAT` vs `DISTANCE_TIERED`)
+- **Export Settlements**: `GET /admin/finance/settlement-export`

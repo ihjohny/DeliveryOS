@@ -11,7 +11,8 @@ It is written specifically for business stakeholders, operations managers, vendo
 
 | File | Document Title | Target Audience & Summary |
 | :--- | :--- | :--- |
-| **[01-executive-summary-and-vision.md](./01-executive-summary-and-vision.md)** | **Executive Summary & Platform Vision** | High-level commercial mission, market positioning, multi-vertical strategy, and strategic goals. |
+| **[00-master-product-overview.md](./00-master-product-overview.md)** | **Master Product Overview & Feature Guide** | **Primary Non-Technical Showcase**: Complete plain-English product guide, 4-app breakdown, and business model. |
+| **[01-executive-summary-and-vision.md](./01-executive-summary-and-vision.md)** | **Executive Summary & Platform Scope** | High-level commercial mission, market positioning, multi-vertical strategy, and strategic goals. |
 | **[02-stakeholder-roles-and-personas.md](./02-stakeholder-roles-and-personas.md)** | **Stakeholders, Personas & User Needs** | Deep-dive into Customer, Store Owner, Rider, Super Admin, and Ops Support personas and pain points. |
 | **[03-core-business-rules-and-workflows.md](./03-core-business-rules-and-workflows.md)** | **Core Business Rules & Commercial Logic** | Rules governing order lifecycle, delivery fees (Flat vs Distance), commission splits, ledger balance, and cancellations. |
 | **[04-customer-experience-and-journey.md](./04-customer-experience-and-journey.md)** | **Customer Experience & App Journey** | Complete walkthrough of discovery, customizable cart, checkout, live tracking, smart re-ordering, and calling. |

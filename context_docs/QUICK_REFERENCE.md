@@ -7,15 +7,18 @@
 
 | If Your Task Involves... | Load ONLY These Documents |
 | :--- | :--- |
+| **Non-Technical Master Product Overview** | `BRD-00` (`00-master-product-overview.md`) |
 | **Authentication, OTP, JWT, Role Guards** | `TID-03` (API Specs: Section 2) + `TID-02` (Users table) |
-| **Customer App UI, Cart, Checkout** | `BRD-04` (Customer Journey) + `TID-03` (API Specs: Section 3) |
-| **Re-Order Validation Logic** | `BRD-04` (Step 7) + `TID-03` (Endpoint 3.2) + `BRD-03` |
-| **Vendor Kitchen Console (KDS) & Audio Alert** | `BRD-05` (Vendor Ops) + `TID-04` (Events: 3.1) + `TID-06` (Audio) |
-| **Vendor Catalog, Menu, Variants & Stock Toggle**| `BRD-05` + `TID-02` (Products/Variants tables) + `TID-03` (4.4) |
+| **Customer App UI, Cart, Banners, Coupons** | `BRD-04` (Customer Journey) + `TID-03` (API Specs: Section 3) |
+| **Cart Address Geofence Guard & Radius Check**| `BRD-03` (Sec 1.3) + `BRD-04` (Screen 6) + `TID-02` (Sec 3.2) + `TID-03` (Sec 3.4) |
+| **Re-Order Validation Logic** | `BRD-04` (Screen 9) + `TID-03` (Endpoint 3.7) + `BRD-03` |
+| **Vendor Kitchen Console, Audio Alert & Prep Time**| `BRD-05` (Vendor Ops) + `TID-04` (Events: 3.1) + `TID-06` (Audio) |
+| **Vendor 2-Tier Permissions (Outlet vs Master)**| `BRD-03` (Sec 3) + `BRD-05` (Sec 2) + `TID-02` (Sec 7) + `TID-03` (Sec 6.4) |
+| **Vendor Catalog, Menu, Variants & Stock Toggle**| `BRD-05` + `TID-02` (Products/Variants tables) + `TID-03` (Sec 4.5) |
 | **Rider App UI & 3-Step Delivery Fulfillment** | `BRD-06` (Rider Ops) + `TID-03` (API Specs: Section 5) |
 | **Rider Dispatch, Radius Search, Redis Mutex** | `TID-05` (State Machine & Dispatch) + `TID-04` (Events: 3.2) |
-| **Super Admin Console, Manual Dispatch, Settings**| `BRD-07` (Admin Guide) + `TID-03` (API Specs: Section 6) |
-| **Delivery Fees (Flat vs Distance) & Ledgers** | `BRD-03` (Business Rules: Sec 3 & 4) + `TID-02` (Ledger tables) |
+| **Super Admin Console, Banners, Coupons, Orders**| `BRD-07` (Admin Guide) + `TID-03` (API Specs: Section 6) |
+| **Delivery Fees (Flat vs Distance) & Ledgers** | `BRD-03` (Business Rules: Sec 4 & 5) + `TID-02` (Ledger tables) |
 | **Database Schema, PostGIS Queries, Migrations** | `TID-02` (Database Schema & DDL) |
 | **WebSockets, Realtime Rooms & Payloads** | `TID-04` (WebSocket Protocol) |
 | **Docker, Nginx, Environment Variables, Setup** | `TID-07` (DevOps & Environment Setup) |
@@ -25,12 +28,14 @@
 ## 2. Core Enums & Invariant Values
 
 ```typescript
-// Roles
+// Roles & Permissions
 enum UserRole { SUPER_ADMIN = 'SUPER_ADMIN', VENDOR_ADMIN = 'VENDOR_ADMIN', RIDER = 'RIDER', CUSTOMER = 'CUSTOMER' }
+enum PermissionScope { PARTICULAR_OUTLET = 'PARTICULAR_OUTLET', ALL_OUTLETS_MASTER = 'ALL_OUTLETS_MASTER' }
 
 // Order Lifecycle FSM
 enum OrderStatus { 
   PLACED = 'PLACED', 
+  RIDER_ASSIGNED = 'RIDER_ASSIGNED',
   ACCEPTED = 'ACCEPTED', 
   PREPARING = 'PREPARING', 
   READY_FOR_PICKUP = 'READY_FOR_PICKUP', 
@@ -42,6 +47,7 @@ enum OrderStatus {
 // Payment & Fees
 enum PaymentMethod { CASH_ON_DELIVERY = 'CASH_ON_DELIVERY', ONLINE_GATEWAY = 'ONLINE_GATEWAY' }
 enum DeliveryFeeMode { FIXED_FLAT = 'FIXED_FLAT', DISTANCE_TIERED = 'DISTANCE_TIERED' }
+enum DiscountType { PERCENTAGE = 'PERCENTAGE', FLAT = 'FLAT' }
 
 // Configurable Order Dispatch Flow Sequence
 enum OrderFlowMode { 
