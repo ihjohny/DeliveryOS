@@ -7,6 +7,7 @@
 
 | If Your Task Involves... | Load ONLY These Documents |
 | :--- | :--- |
+| **Engineering Roadmap & Step-by-Step WBS** | `WORK_BREAKDOWN.md` |
 | **Non-Technical Master Product Overview** | `BRD-00` (`00-master-product-overview.md`) |
 | **Authentication, OTP, JWT, Role Guards** | `TID-03` (API Specs: Section 2) + `TID-02` (Users table) |
 | **Customer App UI, Cart, Banners, Coupons** | `BRD-04` (Customer Journey) + `TID-03` (API Specs: Section 3) |
