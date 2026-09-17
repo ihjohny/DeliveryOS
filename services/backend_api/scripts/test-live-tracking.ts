@@ -92,6 +92,9 @@ async function runLiveTrackingTest() {
       }),
     });
     const orderJson = await orderRes.json();
+    if (!orderJson.data) {
+      throw new Error(`Order checkout failed: status ${orderRes.status}, ${JSON.stringify(orderJson)}`);
+    }
     const testOrderId = orderJson.data.orderId;
     console.log(`   Order Created: ${orderJson.data.orderNumber} (ID: ${testOrderId})`);
 

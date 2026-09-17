@@ -27,6 +27,17 @@ import { ToggleStockDto } from './dto/toggle-stock.dto';
 export class VendorStaffController {
   constructor(private readonly vendorStaffService: VendorStaffService) {}
 
+  @Get('me')
+  @ApiOperation({ summary: 'Get current vendor staff profile and assigned outlet info' })
+  @ApiResponse({ status: 200, description: 'Vendor staff profile' })
+  async getProfile(@CurrentUser() user: User) {
+    const profile = await this.vendorStaffService.getStaffProfile(user);
+    return {
+      message: 'Vendor staff profile retrieved',
+      data: profile,
+    };
+  }
+
   @Get('orders/live')
   @ApiOperation({ summary: 'Get live orders queue for vendor kitchen console' })
   @ApiResponse({ status: 200, description: 'Live kitchen orders list' })

@@ -326,4 +326,57 @@ export class VendorStaffService {
       data: { isInStock },
     });
   }
+
+  /**
+   * 7. Get Vendor Staff Profile and Assigned Outlet Info
+   */
+  async getStaffProfile(user: User) {
+    if (user.role === UserRole.SUPER_ADMIN) {
+      return {
+        id: user.id,
+        fullName: user.fullName,
+        phone: user.phone,
+        role: user.role,
+        outletScope: PermissionScope.ALL_OUTLETS_MASTER,
+        vendorId: null,
+        vendorName: 'All Outlets (Super Admin)',
+        managedVendorIds: [],
+      };
+    }
+
+    const staffRecord = await this.prisma.vendorStaff.findFirst({
+      where: { userId: user.id, isActive: true },
+      include: {
+        vendor: true,
+        brand: {
+          include: {
+            outlets: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    if (!staffRecord) {
+      throw new ForbiddenException('No active vendor staff assignment found');
+    }
+
+    let managedVendorIds: string[] = [];
+    if (staffRecord.scope === PermissionScope.ALL_OUTLETS_MASTER && staffRecord.brand) {
+      managedVendorIds = staffRecord.brand.outlets.map((o) => o.id);
+    } else if (staffRecord.vendorId) {
+      managedVendorIds = [staffRecord.vendorId];
+    }
+
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      phone: user.phone,
+      role: user.role,
+      outletScope: staffRecord.scope,
+      vendorId: staffRecord.vendorId || (staffRecord.brand?.outlets[0]?.id ?? null),
+      vendorName: staffRecord.vendor?.name || staffRecord.brand?.name || 'Assigned Outlet',
+      brandId: staffRecord.brandId,
+      managedVendorIds,
+    };
+  }
 }

@@ -232,8 +232,8 @@ graph TD
 - **Context Docs**:
   - [`BRD-05: Module 1 & 2 (Kitchen Console & Stock)`](./context_docs/business-requirements-documents/05-merchant-and-vendor-operations.md)
 - **Validation Checklist**:
-  - [ ] Incoming WebSocket event plays chime and renders order card in `New Orders`.
-  - [ ] Tapping accept silences chime and moves card to `In Preparation` with active countdown timer.
+  - [x] Incoming WebSocket event plays chime and renders order card in `New Orders`.
+  - [x] Tapping accept silences chime and moves card to `In Preparation` with active countdown timer.
 
 ---
 

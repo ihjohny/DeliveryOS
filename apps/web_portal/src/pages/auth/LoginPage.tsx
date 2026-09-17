@@ -131,20 +131,20 @@ export const LoginPage: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => handleQuickFill('+8801700000004')}
+            onClick={() => handleQuickFill('+8801700000002')}
             className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-800/50 px-3 py-2 text-left text-xs transition-colors hover:border-amber-500/50 hover:bg-slate-800 text-slate-300"
           >
             <span className="font-semibold text-amber-400">{t('auth.branchManager')}</span>
-            <span className="text-[11px] text-slate-500">+8801700000004</span>
+            <span className="text-[11px] text-slate-500">+8801700000002</span>
           </button>
 
           <button
             type="button"
-            onClick={() => handleQuickFill('+8801700000005')}
+            onClick={() => handleQuickFill('+8801700000003')}
             className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-800/50 px-3 py-2 text-left text-xs transition-colors hover:border-purple-500/50 hover:bg-slate-800 text-slate-300"
           >
             <span className="font-semibold text-purple-400">{t('auth.brandOwner')}</span>
-            <span className="text-[11px] text-slate-500">+8801700000005</span>
+            <span className="text-[11px] text-slate-500">+8801700000003</span>
           </button>
         </div>
       </div>

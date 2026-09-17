@@ -41,7 +41,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (phone: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await apiClient.post('/api/auth/login', { phone, password });
+      const response = await apiClient.post('/api/v1/auth/otp/verify', {
+        phone,
+        otp: password || '123456',
+      });
       const payload = response.data?.data || response.data;
       const accessToken = payload.accessToken || payload.token;
       const userData = payload.user;
@@ -59,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // If user is VENDOR_ADMIN, check staff profile
       if (userData.role === UserRole.VENDOR_ADMIN && !outletScope) {
         try {
-          const staffProfileRes = await apiClient.get('/api/staff/me', {
+          const staffProfileRes = await apiClient.get('/api/v1/vendor/me', {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
           const staffProfile = staffProfileRes.data?.data || staffProfileRes.data;

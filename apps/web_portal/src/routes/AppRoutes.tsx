@@ -16,6 +16,7 @@ import { NotFoundPage } from '../pages/common/NotFoundPage';
 import { PlaceholderPage } from '../pages/common/PlaceholderPage';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { VendorDashboardPage } from '../pages/vendor/VendorDashboardPage';
+import { VendorCatalogPage } from '../pages/vendor/VendorCatalogPage';
 
 export const AppRoutes: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -83,10 +84,7 @@ export const AppRoutes: React.FC = () => {
         }
       >
         <Route index element={<VendorDashboardPage />} />
-        <Route
-          path="catalog"
-          element={<PlaceholderPage title="Menu & Stock Catalog" subtitle="Live item availability toggle and variant customization" />}
-        />
+        <Route path="catalog" element={<VendorCatalogPage />} />
         <Route
           path="orders"
           element={<PlaceholderPage title="Order History" subtitle="Completed and past fulfilled kitchen orders" />}
