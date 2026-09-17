@@ -15,7 +15,8 @@
     "auth:test": "ts-node scripts/test-auth-rbac.ts",
     "vendor:test": "ts-node scripts/test-vendor-discovery.ts",
     "promotions:test": "ts-node scripts/test-promotions-pricing.ts",
-    "order:test": "ts-node scripts/test-order-checkout.ts"
+    "order:test": "ts-node scripts/test-order-checkout.ts",
+    "vendor-rider:test": "ts-node scripts/test-vendor-rider.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

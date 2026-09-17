@@ -153,8 +153,8 @@ graph TD
   - [`BRD-05: Merchant & Vendor Operations`](./context_docs/business-requirements-documents/05-merchant-and-vendor-operations.md)
   - [`TID-03: Sections 4 & 5`](./context_docs/technical-implementation-documents/03-api-specifications-and-endpoints.md)
 - **Validation Checklist**:
-  - [ ] Particular outlet manager cannot access or accept orders from a different outlet.
-  - [ ] Acceptance without `prepTimeMinutes` correctly applies the vendor's `default_prep_time_minutes`.
+  - [x] Particular outlet manager cannot access or accept orders from a different outlet.
+  - [x] Acceptance without `prepTimeMinutes` correctly applies the vendor's `default_prep_time_minutes`.
 
 ---
 
