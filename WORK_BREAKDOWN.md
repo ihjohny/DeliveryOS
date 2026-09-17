@@ -246,8 +246,8 @@ graph TD
 - **Context Docs**:
   - [`BRD-05: Sections 2, 6 & 7`](./context_docs/business-requirements-documents/05-merchant-and-vendor-operations.md)
 - **Validation Checklist**:
-  - [ ] Brand owner can switch between outlets and view aggregated sales reports.
-  - [ ] Branch manager view is locked to their assigned physical outlet.
+  - [x] Brand owner can switch between outlets and view aggregated sales reports.
+  - [x] Branch manager view is locked to their assigned physical outlet.
 
 ---
 

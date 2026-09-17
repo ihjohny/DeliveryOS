@@ -8,8 +8,9 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "tsx scripts/test-scaffolding.ts && tsx scripts/test-kds-operations.ts",
-    "test:kds": "tsx scripts/test-kds-operations.ts"
+    "test": "tsx scripts/test-scaffolding.ts && tsx scripts/test-kds-operations.ts && tsx scripts/test-vendor-multi-tier.ts",
+    "test:kds": "tsx scripts/test-kds-operations.ts",
+    "test:tier": "tsx scripts/test-vendor-multi-tier.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.56.0",

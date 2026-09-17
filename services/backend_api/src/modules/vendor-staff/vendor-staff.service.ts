@@ -379,4 +379,278 @@ export class VendorStaffService {
       managedVendorIds,
     };
   }
+
+  /**
+   * 8. Get Accessible Outlets (Scoped by user role / tier)
+   */
+  async getAccessibleOutlets(user: User) {
+    if (user.role === UserRole.SUPER_ADMIN) {
+      return this.prisma.vendor.findMany({
+        select: {
+          id: true,
+          name: true,
+          addressText: true,
+          isBusy: true,
+          isActive: true,
+          defaultPrepTimeMinutes: true,
+          brandId: true,
+        },
+        orderBy: { name: 'asc' },
+      });
+    }
+
+    const staffRecord = await this.prisma.vendorStaff.findFirst({
+      where: { userId: user.id, isActive: true },
+      include: {
+        brand: {
+          include: {
+            outlets: {
+              select: {
+                id: true,
+                name: true,
+                addressText: true,
+                isBusy: true,
+                isActive: true,
+                defaultPrepTimeMinutes: true,
+                brandId: true,
+              },
+              orderBy: { name: 'asc' },
+            },
+          },
+        },
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            addressText: true,
+            isBusy: true,
+            isActive: true,
+            defaultPrepTimeMinutes: true,
+            brandId: true,
+          },
+        },
+      },
+    });
+
+    if (!staffRecord) {
+      throw new ForbiddenException('No active vendor staff assignment found');
+    }
+
+    if (staffRecord.scope === PermissionScope.ALL_OUTLETS_MASTER && staffRecord.brand) {
+      return staffRecord.brand.outlets;
+    }
+
+    return staffRecord.vendor ? [staffRecord.vendor] : [];
+  }
+
+  /**
+   * 9. Get Outlet Settings & Operating Hours
+   */
+  async getOutletSettings(user: User, vendorId?: string) {
+    let targetVendorId = vendorId;
+
+    if (!targetVendorId) {
+      const profile = await this.getStaffProfile(user);
+      targetVendorId = profile.vendorId || profile.managedVendorIds[0];
+      if (!targetVendorId) {
+        throw new BadRequestException('No vendor outlet specified or assigned');
+      }
+    } else {
+      await this.validateStaffOutletAccess(user, targetVendorId);
+    }
+
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { id: targetVendorId },
+      include: {
+        operatingHours: {
+          orderBy: { dayOfWeek: 'asc' },
+        },
+        brand: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException('Vendor outlet not found');
+    }
+
+    return vendor;
+  }
+
+  /**
+   * 10. Update Outlet Settings (Default Prep Time, Rush Pause, Active State)
+   */
+  async updateOutletSettings(
+    user: User,
+    vendorId: string | undefined,
+    data: {
+      defaultPrepTimeMinutes?: number;
+      isBusy?: boolean;
+      isActive?: boolean;
+    },
+  ) {
+    let targetVendorId = vendorId;
+    if (!targetVendorId) {
+      const accessible = await this.getAccessibleOutlets(user);
+      if (accessible.length === 0) {
+        throw new ForbiddenException('No accessible outlet found');
+      }
+      targetVendorId = accessible[0].id;
+    }
+
+    await this.validateStaffOutletAccess(user, targetVendorId);
+
+    return this.prisma.vendor.update({
+      where: { id: targetVendorId },
+      data: {
+        ...(data.defaultPrepTimeMinutes !== undefined && {
+          defaultPrepTimeMinutes: data.defaultPrepTimeMinutes,
+        }),
+        ...(data.isBusy !== undefined && { isBusy: data.isBusy }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+      },
+    });
+  }
+
+  /**
+   * 11. Update Weekly Operating Hours Schedule
+   */
+  async updateOperatingHours(
+    user: User,
+    vendorId: string | undefined,
+    hours: Array<{
+      dayOfWeek: number;
+      openTime: string;
+      closeTime: string;
+      isClosed: boolean;
+    }>,
+  ) {
+    let targetVendorId = vendorId;
+    if (!targetVendorId) {
+      const accessible = await this.getAccessibleOutlets(user);
+      if (accessible.length === 0) {
+        throw new ForbiddenException('No accessible outlet found');
+      }
+      targetVendorId = accessible[0].id;
+    }
+
+    await this.validateStaffOutletAccess(user, targetVendorId);
+
+    for (const h of hours) {
+      await this.prisma.vendorOperatingHour.upsert({
+        where: {
+          vendorId_dayOfWeek: {
+            vendorId,
+            dayOfWeek: h.dayOfWeek,
+          },
+        },
+        update: {
+          openTime: h.openTime,
+          closeTime: h.closeTime,
+          isClosed: h.isClosed,
+        },
+        create: {
+          vendorId,
+          dayOfWeek: h.dayOfWeek,
+          openTime: h.openTime,
+          closeTime: h.closeTime,
+          isClosed: h.isClosed,
+        },
+      });
+    }
+
+    return this.prisma.vendorOperatingHour.findMany({
+      where: { vendorId },
+      orderBy: { dayOfWeek: 'asc' },
+    });
+  }
+
+  /**
+   * 12. Get Sales Ledger & Commission Breakdown
+   */
+  async getSalesLedger(user: User, vendorId?: string) {
+    let targetVendorIds: string[] = [];
+
+    if (vendorId && vendorId !== 'ALL') {
+      await this.validateStaffOutletAccess(user, vendorId);
+      targetVendorIds = [vendorId];
+    } else {
+      const accessible = await this.getAccessibleOutlets(user);
+      targetVendorIds = accessible.map((v) => v.id);
+    }
+
+    const ledgers = await this.prisma.commissionLedger.findMany({
+      where: {
+        vendorId: { in: targetVendorIds },
+      },
+      include: {
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            paymentMethod: true,
+            totalAmount: true,
+            placedAt: true,
+            customer: {
+              select: {
+                fullName: true,
+                phone: true,
+              },
+            },
+          },
+        },
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    let totalGross = 0;
+    let totalCommission = 0;
+    let totalNet = 0;
+
+    const formattedLedgers = ledgers.map((l) => {
+      const gross = Number(l.grossAmount);
+      const commission = Number(l.commissionAmount);
+      const net = Number(l.netVendorPayable);
+
+      totalGross += gross;
+      totalCommission += commission;
+      totalNet += net;
+
+      return {
+        id: l.id,
+        orderId: l.orderId,
+        orderNumber: l.order?.orderNumber || 'N/A',
+        vendorId: l.vendorId,
+        vendorName: l.vendor?.name || 'Unknown Outlet',
+        customerName: l.order?.customer?.fullName || 'Guest Customer',
+        paymentMethod: l.order?.paymentMethod || 'CASH_ON_DELIVERY',
+        orderStatus: l.order?.status || 'UNKNOWN',
+        grossAmount: gross,
+        commissionRate: Number(l.commissionRate),
+        commissionAmount: commission,
+        netVendorPayable: net,
+        settlementStatus: l.settlementStatus,
+        settledAt: l.settledAt,
+        createdAt: l.createdAt,
+      };
+    });
+
+    return {
+      summary: {
+        totalOrders: formattedLedgers.length,
+        grossSales: Math.round(totalGross * 100) / 100,
+        commissionDeducted: Math.round(totalCommission * 100) / 100,
+        netVendorPayable: Math.round(totalNet * 100) / 100,
+      },
+      ledgers: formattedLedgers,
+    };
+  }
 }

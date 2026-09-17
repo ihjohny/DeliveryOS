@@ -12,15 +12,19 @@ import {
   Menu,
   X,
   BellRing,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { VendorOutletProvider, useVendorOutlet } from '../contexts/VendorOutletContext';
+import { OutletSwitcher } from '../components/vendor/OutletSwitcher';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { Badge } from '../components/ui/Badge';
 import { soundEngine } from '../utils/sound';
 
-export const VendorLayout: React.FC = () => {
+const VendorLayoutInner: React.FC = () => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const { activeOutlet } = useVendorOutlet();
   const location = useLocation();
   const [isMuted, setIsMuted] = useState(soundEngine.getIsMuted());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -56,7 +60,7 @@ export const VendorLayout: React.FC = () => {
           </div>
           <div className="overflow-hidden">
             <h1 className="text-base font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate">
-              {user?.vendorName || 'Merchant Console'}
+              {activeOutlet?.name || user?.vendorName || 'Merchant Console'}
             </h1>
             <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
               Kitchen & Store Ops
@@ -128,11 +132,8 @@ export const VendorLayout: React.FC = () => {
             >
               {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                {user?.vendorName || 'Kitchen Operations'}
-              </span>
-            </div>
+            {/* Dynamic Outlet Switcher in Navbar */}
+            <OutletSwitcher />
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
@@ -163,6 +164,24 @@ export const VendorLayout: React.FC = () => {
             <LanguageSelector />
           </div>
         </header>
+
+        {/* Emergency Pause Active Warning Banner */}
+        {activeOutlet?.isBusy && (
+          <div className="flex items-center justify-between bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-inner">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span>
+                Emergency Rush Hour Pause Active for {activeOutlet.name} — Incoming customer orders are temporarily blocked.
+              </span>
+            </div>
+            <Link
+              to="/vendor/settings"
+              className="rounded bg-slate-950/20 px-2 py-0.5 text-slate-950 hover:bg-slate-950/30 transition-colors"
+            >
+              Manage
+            </Link>
+          </div>
+        )}
 
         {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
@@ -207,5 +226,13 @@ export const VendorLayout: React.FC = () => {
         </main>
       </div>
     </div>
+  );
+};
+
+export const VendorLayout: React.FC = () => {
+  return (
+    <VendorOutletProvider>
+      <VendorLayoutInner />
+    </VendorOutletProvider>
   );
 };

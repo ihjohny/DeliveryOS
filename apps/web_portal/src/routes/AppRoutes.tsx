@@ -17,6 +17,8 @@ import { PlaceholderPage } from '../pages/common/PlaceholderPage';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { VendorDashboardPage } from '../pages/vendor/VendorDashboardPage';
 import { VendorCatalogPage } from '../pages/vendor/VendorCatalogPage';
+import { VendorSettingsPage } from '../pages/vendor/VendorSettingsPage';
+import { VendorOrdersPage } from '../pages/vendor/VendorOrdersPage';
 
 export const AppRoutes: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -85,14 +87,8 @@ export const AppRoutes: React.FC = () => {
       >
         <Route index element={<VendorDashboardPage />} />
         <Route path="catalog" element={<VendorCatalogPage />} />
-        <Route
-          path="orders"
-          element={<PlaceholderPage title="Order History" subtitle="Completed and past fulfilled kitchen orders" />}
-        />
-        <Route
-          path="settings"
-          element={<PlaceholderPage title="Outlet Settings" subtitle="Preparation times, store hours, and operational status" />}
-        />
+        <Route path="orders" element={<VendorOrdersPage />} />
+        <Route path="settings" element={<VendorSettingsPage />} />
       </Route>
 
       {/* 404 Fallback */}

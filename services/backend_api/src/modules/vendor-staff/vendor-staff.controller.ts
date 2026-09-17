@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -35,6 +36,100 @@ export class VendorStaffController {
     return {
       message: 'Vendor staff profile retrieved',
       data: profile,
+    };
+  }
+
+  @Get('outlets')
+  @ApiOperation({ summary: 'Get accessible outlets based on staff scope (Particular vs Brand Owner)' })
+  @ApiResponse({ status: 200, description: 'List of accessible vendor outlets' })
+  async getOutlets(@CurrentUser() user: User) {
+    const outlets = await this.vendorStaffService.getAccessibleOutlets(user);
+    return {
+      message: `Retrieved ${outlets.length} accessible outlets`,
+      data: outlets,
+    };
+  }
+
+  @Get('settings')
+  @ApiOperation({ summary: 'Get outlet settings, preparation time, and operating schedule' })
+  @ApiResponse({ status: 200, description: 'Outlet settings and schedule' })
+  async getSettings(
+    @CurrentUser() user: User,
+    @Query('vendorId') vendorId?: string,
+  ) {
+    const settings = await this.vendorStaffService.getOutletSettings(user, vendorId);
+    return {
+      message: 'Outlet settings retrieved successfully',
+      data: settings,
+    };
+  }
+
+  @Patch('settings')
+  @ApiOperation({ summary: 'Update outlet settings, default prep time, or emergency rush pause' })
+  @ApiResponse({ status: 200, description: 'Outlet settings updated' })
+  async updateSettings(
+    @CurrentUser() user: User,
+    @Query('vendorId') queryVendorId: string,
+    @Body()
+    dto: {
+      vendorId?: string;
+      defaultPrepTimeMinutes?: number;
+      isBusy?: boolean;
+      busyReason?: string;
+      isActive?: boolean;
+    },
+  ) {
+    const targetVendorId = queryVendorId || dto.vendorId;
+    const updated = await this.vendorStaffService.updateOutletSettings(user, targetVendorId, dto);
+    return {
+      message: 'Outlet settings updated successfully',
+      data: updated,
+    };
+  }
+
+  @Put('operating-hours')
+  @ApiOperation({ summary: 'Update weekly operating hours schedule' })
+  @ApiResponse({ status: 200, description: 'Weekly operating schedule updated' })
+  async updateOperatingHours(
+    @CurrentUser() user: User,
+    @Query('vendorId') queryVendorId: string,
+    @Body()
+    dto: {
+      vendorId?: string;
+      hours?: Array<{
+        dayOfWeek: number;
+        openTime: string;
+        closeTime: string;
+        isClosed: boolean;
+      }>;
+      operatingHours?: Array<{
+        dayOfWeek: number;
+        openTime: string;
+        closeTime: string;
+        isClosed: boolean;
+      }>;
+    },
+  ) {
+    const targetVendorId = queryVendorId || dto.vendorId;
+    const hours = dto.hours || dto.operatingHours || [];
+    const schedule = await this.vendorStaffService.updateOperatingHours(user, targetVendorId, hours);
+    return {
+      message: 'Operating hours schedule updated successfully',
+      data: schedule,
+    };
+  }
+
+  @Get('sales')
+  @ApiOperation({ summary: 'Get daily sales ledger and platform commission breakdown' })
+  @ApiResponse({ status: 200, description: 'Sales metrics and commission ledger records' })
+  async getSales(
+    @CurrentUser() user: User,
+    @Query('vendorId') vendorId?: string,
+  ) {
+    const sales = await this.vendorStaffService.getSalesLedger(user, vendorId);
+    return {
+      message: 'Sales ledger retrieved successfully',
+      data: sales,
     };
   }
 
