@@ -282,8 +282,8 @@ graph TD
   - [`BRD-04: Screens 1 & 2`](./context_docs/business-requirements-documents/04-customer-experience-and-journey.md)
   - [`TID-06: Section 1 (Flutter Architecture)`](./context_docs/technical-implementation-documents/06-frontend-and-mobile-architecture.md)
 - **Validation Checklist**:
-  - [ ] App launches smoothly on simulator/device.
-  - [ ] Dropping pin on map sets delivery coordinates and updates available outlet listings.
+  - [x] App launches smoothly on simulator/device.
+  - [x] Dropping pin on map sets delivery coordinates and updates available outlet listings.
 
 ---
 
