@@ -200,7 +200,7 @@ graph TD
 - **Context Docs**:
   - [`TID-04: Section 3.2 (Live Rider Coordinate Streaming)`](./context_docs/technical-implementation-documents/04-realtime-events-and-websocket-protocol.md)
 - **Validation Checklist**:
-  - [ ] Location update sent from simulated rider updates customer tracking subscriber in real time.
+  - [x] Location update sent from simulated rider updates customer tracking subscriber in real time.
 
 ---
 

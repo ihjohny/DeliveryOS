@@ -15,6 +15,7 @@ import { OrderStatus, PaymentStatus, SettlementStatus, UserRole } from '@prisma/
 
 import { TrackingGateway } from '../realtime/tracking.gateway';
 import { OrderFlowService } from '../order-flow/order-flow.service';
+import { RedisService } from '../../common/redis/redis.service';
 
 @Injectable()
 export class OrderService {
@@ -24,6 +25,7 @@ export class OrderService {
     private readonly deliveryFeeService: DeliveryFeeService,
     private readonly trackingGateway: TrackingGateway,
     private readonly orderFlowService: OrderFlowService,
+    private readonly redis: RedisService,
   ) {}
 
   /**
@@ -451,5 +453,130 @@ export class OrderService {
         orderItems: true,
       },
     });
+  }
+
+  /**
+   * 5. Live Tracking Fallback Polling Endpoint
+   * Returns store coordinates, destination, latest rider telemetry, and route snapshot.
+   */
+  async getLiveTracking(orderId: string, userId: string, role: UserRole) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        vendor: true,
+        rider: {
+          include: {
+            user: { select: { fullName: true, phone: true } },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (role === UserRole.CUSTOMER && order.customerId !== userId) {
+      throw new ForbiddenException('You do not have permission to view live tracking for this order');
+    }
+
+    const destSnap = order.deliveryAddressSnapshot as any;
+    const storeLocation = {
+      id: order.vendor.id,
+      name: order.vendor.name,
+      address: order.vendor.addressText,
+      latitude: order.vendor.latitude,
+      longitude: order.vendor.longitude,
+    };
+
+    const destinationLocation = {
+      label: destSnap?.label || 'Home',
+      addressLine: destSnap?.addressLine || '',
+      latitude: destSnap?.latitude,
+      longitude: destSnap?.longitude,
+    };
+
+    // Retrieve latest rider telemetry: 1st from Redis live order, 2nd from Redis telemetry, 3rd from DB
+    let riderLocation: any = null;
+    let estimatedMinutesRemaining = 10;
+
+    const liveLocRaw = await this.redis.get(`order:live_location:${orderId}`);
+    if (liveLocRaw) {
+      try {
+        const live = JSON.parse(liveLocRaw);
+        riderLocation = {
+          riderId: live.riderId,
+          fullName: live.fullName || order.rider?.user?.fullName,
+          phone: live.phone || order.rider?.user?.phone,
+          latitude: live.latitude,
+          longitude: live.longitude,
+          bearing: live.bearing ?? 0,
+          speed: live.speed ?? 0,
+          updatedAt: live.updatedAt,
+        };
+        estimatedMinutesRemaining = live.estimatedMinutesRemaining ?? 10;
+      } catch {}
+    }
+
+    if (!riderLocation && order.rider) {
+      const telemetryRaw = await this.redis.get(`rider:telemetry:${order.rider.id}`);
+      if (telemetryRaw) {
+        try {
+          const telem = JSON.parse(telemetryRaw);
+          riderLocation = {
+            riderId: order.rider.id,
+            fullName: order.rider.user.fullName,
+            phone: order.rider.user.phone,
+            latitude: telem.latitude,
+            longitude: telem.longitude,
+            bearing: telem.bearing ?? 0,
+            speed: telem.speed ?? 0,
+            updatedAt: telem.updatedAt,
+          };
+        } catch {}
+      }
+
+      if (!riderLocation && order.rider.latitude && order.rider.longitude) {
+        riderLocation = {
+          riderId: order.rider.id,
+          fullName: order.rider.user.fullName,
+          phone: order.rider.user.phone,
+          latitude: order.rider.latitude,
+          longitude: order.rider.longitude,
+          bearing: 0,
+          speed: 0,
+          updatedAt: order.rider.updatedAt.toISOString(),
+        };
+      }
+    }
+
+    const routeSnapshot = {
+      origin: {
+        latitude: storeLocation.latitude,
+        longitude: storeLocation.longitude,
+      },
+      rider: riderLocation
+        ? { latitude: riderLocation.latitude, longitude: riderLocation.longitude }
+        : null,
+      destination: {
+        latitude: destinationLocation.latitude,
+        longitude: destinationLocation.longitude,
+      },
+    };
+
+    return {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      storeLocation,
+      destinationLocation,
+      riderLocation,
+      estimatedMinutesRemaining,
+      routeSnapshot,
+      placedAt: order.placedAt,
+      acceptedAt: order.acceptedAt,
+      pickedUpAt: order.pickedUpAt,
+      deliveredAt: order.deliveredAt,
+    };
   }
 }

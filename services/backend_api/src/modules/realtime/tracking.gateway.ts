@@ -10,6 +10,7 @@ import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { RedisService } from '../../common/redis/redis.service';
 import { PermissionScope, UserRole } from '@prisma/client';
 
 @WebSocketGateway({
@@ -24,7 +25,10 @@ export class TrackingGateway
 
   private readonly logger = new Logger(TrackingGateway.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+  ) {}
 
   afterInit() {
     this.logger.log('📡 TrackingGateway initialized on namespace /events');
@@ -153,6 +157,7 @@ export class TrackingGateway
   }
 
   @SubscribeMessage('rider:location:update')
+  @SubscribeMessage('rider:location_update')
   async handleRiderLocationUpdate(
     client: Socket,
     payload: {
@@ -166,13 +171,93 @@ export class TrackingGateway
     const user = client.data?.user;
     if (!user || user.role !== UserRole.RIDER) return;
 
-    if (payload.activeOrderId) {
-      this.notifyRiderLocationMoved(payload.activeOrderId, {
+    const riderId = user.rider?.id || user.id;
+
+    // 1. Update Redis Geospatial index
+    await this.redis.geoadd(
+      'riders:locations:active',
+      payload.longitude,
+      payload.latitude,
+      riderId,
+    );
+
+    // 2. Cache Telemetry in Redis
+    const telemetry = {
+      riderId,
+      fullName: user.fullName,
+      phone: user.phone,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+      bearing: payload.bearing ?? 0,
+      speed: payload.speed ?? 0,
+      updatedAt: new Date().toISOString(),
+    };
+    await this.redis.set(`rider:telemetry:${riderId}`, JSON.stringify(telemetry), 300);
+
+    // 3. Check for active order
+    const activeOrderId =
+      payload.activeOrderId || (await this.redis.get(`rider:active_order:${riderId}`));
+
+    if (activeOrderId) {
+      let estimatedMinutesRemaining = 10;
+
+      // Compute dynamic ETA to customer destination
+      const order = await this.prisma.order.findUnique({
+        where: { id: activeOrderId },
+        select: { deliveryAddressSnapshot: true },
+      });
+
+      if (order?.deliveryAddressSnapshot) {
+        const dest = order.deliveryAddressSnapshot as any;
+        if (dest.latitude && dest.longitude) {
+          const distanceKm = this.calculateHaversineDistanceKm(
+            payload.latitude,
+            payload.longitude,
+            dest.latitude,
+            dest.longitude,
+          );
+          // Average speed 25 km/h
+          estimatedMinutesRemaining = Math.max(1, Math.round((distanceKm / 25) * 60));
+        }
+      }
+
+      // Cache live location snapshot for the order in Redis
+      await this.redis.set(
+        `order:live_location:${activeOrderId}`,
+        JSON.stringify({
+          ...telemetry,
+          estimatedMinutesRemaining,
+        }),
+        300,
+      );
+
+      // Stream to customer tracking screen room
+      this.notifyRiderLocationMoved(activeOrderId, {
         latitude: payload.latitude,
         longitude: payload.longitude,
         bearing: payload.bearing ?? 0,
+        estimatedMinutesRemaining,
       });
     }
+  }
+
+  private calculateHaversineDistanceKm(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
+    const R = 6371; // Earth's radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c * 100) / 100;
   }
 
   // ---------------------------------------------------------------------------
