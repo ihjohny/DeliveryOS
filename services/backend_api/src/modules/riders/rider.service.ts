@@ -8,12 +8,14 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { DeliverOrderDto } from './dto/deliver-order.dto';
 import { OrderStatus, PaymentMethod, PaymentStatus, SettlementStatus } from '@prisma/client';
 import { TrackingGateway } from '../realtime/tracking.gateway';
+import { OrderFlowService } from '../order-flow/order-flow.service';
 
 @Injectable()
 export class RiderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly trackingGateway: TrackingGateway,
+    private readonly orderFlowService: OrderFlowService,
   ) {}
 
   /**
@@ -55,7 +57,14 @@ export class RiderService {
   }
 
   /**
-   * 2. Confirm Order Pickup at Vendor Outlet
+   * 2. Claim Broadcasted Order
+   */
+  async claimOrder(userId: string, orderId: string) {
+    return this.orderFlowService.claimOrder(userId, orderId);
+  }
+
+  /**
+   * 3. Confirm Order Pickup at Vendor Outlet
    */
   async pickupOrder(userId: string, orderId: string) {
     const rider = await this.getRiderProfile(userId);
@@ -187,6 +196,9 @@ export class RiderService {
       OrderStatus.DELIVERED,
       { codCollected },
     );
+
+    // Release rider active trip state in Redis
+    await this.orderFlowService.releaseRiderActiveTrip(rider.id);
 
     return result;
   }

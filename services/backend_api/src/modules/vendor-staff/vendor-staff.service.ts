@@ -8,12 +8,14 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { AcceptOrderDto } from './dto/accept-order.dto';
 import { OrderStatus, PermissionScope, User, UserRole } from '@prisma/client';
 import { TrackingGateway } from '../realtime/tracking.gateway';
+import { OrderFlowService } from '../order-flow/order-flow.service';
 
 @Injectable()
 export class VendorStaffService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly trackingGateway: TrackingGateway,
+    private readonly orderFlowService: OrderFlowService,
   ) {}
 
   /**
@@ -238,6 +240,9 @@ export class VendorStaffService {
       order.status,
       OrderStatus.READY_FOR_PICKUP,
     );
+
+    // If running in VENDOR_FIRST mode, broadcast to riders now that items are ready
+    await this.orderFlowService.handleOrderReady(order.id);
 
     return updatedOrder;
   }

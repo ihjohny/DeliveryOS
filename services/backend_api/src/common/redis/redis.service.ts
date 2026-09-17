@@ -34,6 +34,57 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.client.del(key);
   }
 
+  async geoadd(
+    key: string,
+    longitude: number,
+    latitude: number,
+    member: string,
+  ): Promise<number> {
+    return this.client.geoadd(key, longitude, latitude, member);
+  }
+
+  async geosearch(
+    key: string,
+    longitude: number,
+    latitude: number,
+    radiusKm: number,
+  ): Promise<any[]> {
+    // Redis 6.2+ GEOSEARCH with distance in ascending order
+    return this.client.geosearch(
+      key,
+      'FROMLONLAT',
+      longitude,
+      latitude,
+      'BYRADIUS',
+      radiusKm,
+      'km',
+      'WITHDIST',
+      'ASC',
+    ) as Promise<any[]>;
+  }
+
+  async acquireLock(
+    key: string,
+    value: string,
+    ttlSeconds: number = 10,
+  ): Promise<boolean> {
+    const result = await this.client.set(key, value, 'EX', ttlSeconds, 'NX');
+    return result === 'OK';
+  }
+
+  async releaseLock(key: string, value: string): Promise<boolean> {
+    // Lua script to safely release lock only if the value matches
+    const luaScript = `
+      if redis.call("get", KEYS[1]) == ARGV[1] then
+        return redis.call("del", KEYS[1])
+      else
+        return 0
+      end
+    `;
+    const result = await this.client.eval(luaScript, 1, key, value);
+    return result === 1;
+  }
+
   async onModuleDestroy() {
     if (this.client) {
       await this.client.quit();

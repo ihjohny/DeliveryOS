@@ -17,7 +17,8 @@
     "promotions:test": "ts-node scripts/test-promotions-pricing.ts",
     "order:test": "ts-node scripts/test-order-checkout.ts",
     "vendor-rider:test": "ts-node scripts/test-vendor-rider.ts",
-    "ws:test": "ts-node scripts/test-websocket-tracking.ts"
+    "ws:test": "ts-node scripts/test-websocket-tracking.ts",
+    "dispatch:test": "ts-node scripts/test-order-dispatch-fsm.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

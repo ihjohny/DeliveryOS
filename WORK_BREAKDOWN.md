@@ -186,8 +186,8 @@ graph TD
   - [`TID-05: Order State Machine & Dispatch Engine`](./context_docs/technical-implementation-documents/05-order-state-machine-and-dispatch-engine.md)
   - [`BRD-03: Section 2 (Dispatch Sequences)`](./context_docs/business-requirements-documents/03-core-business-rules-and-workflows.md)
 - **Validation Checklist**:
-  - [ ] In `RIDER_FIRST` mode, order transitions to `RIDER_ASSIGNED` before store accepts.
-  - [ ] Concurrent rider claim test: Two simultaneous claims on the same order result in exactly one 200 OK and one 409 Conflict.
+  - [x] In `RIDER_FIRST` mode, order transitions to `RIDER_ASSIGNED` before store accepts.
+  - [x] Concurrent rider claim test: Two simultaneous claims on the same order result in exactly one 200 OK and one 409 Conflict.
 
 ---
 

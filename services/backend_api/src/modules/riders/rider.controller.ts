@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -49,6 +50,22 @@ export class RiderController {
     return {
       message: `Rider is now ${rider.isOnline ? 'ONLINE' : 'OFFLINE'}`,
       data: rider,
+    };
+  }
+
+  @Post('orders/:id/claim')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Atomically claim broadcasted order protected by Redis distributed lock' })
+  @ApiResponse({ status: 200, description: 'Order successfully claimed by rider' })
+  @ApiResponse({ status: 409, description: 'Conflict if order already claimed or lock held' })
+  async claimOrder(
+    @CurrentUser() user: User,
+    @Param('id') orderId: string,
+  ) {
+    const order = await this.riderService.claimOrder(user.id, orderId);
+    return {
+      message: 'Order claimed successfully',
+      data: order,
     };
   }
 

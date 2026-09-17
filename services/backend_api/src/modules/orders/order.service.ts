@@ -14,6 +14,7 @@ import { ValidateReorderDto } from './dto/validate-reorder.dto';
 import { OrderStatus, PaymentStatus, SettlementStatus, UserRole } from '@prisma/client';
 
 import { TrackingGateway } from '../realtime/tracking.gateway';
+import { OrderFlowService } from '../order-flow/order-flow.service';
 
 @Injectable()
 export class OrderService {
@@ -22,6 +23,7 @@ export class OrderService {
     private readonly couponService: CouponService,
     private readonly deliveryFeeService: DeliveryFeeService,
     private readonly trackingGateway: TrackingGateway,
+    private readonly orderFlowService: OrderFlowService,
   ) {}
 
   /**
@@ -291,24 +293,8 @@ export class OrderService {
       return newOrder;
     });
 
-    // Broadcast Realtime Event: order:new to vendor tablet and admin console
-    this.trackingGateway.notifyNewOrder(vendor.id, {
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      vendorId: vendor.id,
-      vendorName: vendor.name,
-      itemCount: itemsToCreate.reduce((sum, item) => sum + item.quantity, 0),
-      totalAmount: Number(order.totalAmount),
-      paymentMethod: order.paymentMethod,
-      customerNotes: order.customerNotes,
-      items: itemsToCreate.map((item) => ({
-        name: item.productNameSnapshot,
-        quantity: item.quantity,
-        variant: item.variantSnapshot?.name,
-        addons: item.addonsSnapshot ? item.addonsSnapshot.map((a: any) => a.name) : [],
-      })),
-      placedAt: order.placedAt.toISOString(),
-    });
+    // Trigger Dispatch FSM based on active mode (RIDER_FIRST vs VENDOR_FIRST)
+    await this.orderFlowService.handleOrderPlaced(order.id);
 
     return {
       orderId: order.id,

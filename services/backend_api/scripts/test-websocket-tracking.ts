@@ -43,10 +43,18 @@ async function runWebSocketTrackingTest() {
     }
 
     console.log('🔑 Authenticating Stakeholders...');
+    const superAdmin = await login('+8801700000001');   // Super Admin
     const branchManager = await login('+8801700000002'); // Gulshan Branch Manager
     const customer = await login('+8801700000005');      // Customer
     const rider = await login('+8801700000004');         // Delivery Rider
-    console.log('   ✅ Branch Manager, Customer, and Rider authenticated.\n');
+    console.log('   ✅ Super Admin, Branch Manager, Customer, and Rider authenticated.\n');
+
+    // Ensure VENDOR_FIRST mode so order:new fires immediately on checkout for benchmark
+    await fetch(`${baseUrl}/admin/settings/order-flow`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${superAdmin.token}` },
+      body: JSON.stringify({ mode: 'VENDOR_FIRST' }),
+    });
 
     // -------------------------------------------------------------------------
     // Test 1: Handshake JWT Authentication
@@ -249,6 +257,13 @@ async function runWebSocketTrackingTest() {
     });
     const deliverEvent = await deliverPromise;
     console.log(`     ✅ Customer received [order:status:changed]: newStatus=${deliverEvent.newStatus}`);
+
+    // Restore pilot default to RIDER_FIRST
+    await fetch(`${baseUrl}/admin/settings/order-flow`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${superAdmin.token}` },
+      body: JSON.stringify({ mode: 'RIDER_FIRST' }),
+    });
 
     console.log('\n====================================================');
     console.log(' 🎉 All Socket.IO WebSocket Tracking Tests Passed!');

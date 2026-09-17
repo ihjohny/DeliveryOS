@@ -9,6 +9,7 @@ import { OrderModule } from './modules/orders/order.module';
 import { VendorStaffModule } from './modules/vendor-staff/vendor-staff.module';
 import { RiderModule } from './modules/riders/rider.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { OrderFlowModule } from './modules/order-flow/order-flow.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     VendorStaffModule,
     RiderModule,
     RealtimeModule,
+    OrderFlowModule,
   ],
 })
 export class AppModule {}
