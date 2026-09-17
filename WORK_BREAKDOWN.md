@@ -169,8 +169,8 @@ graph TD
 - **Context Docs**:
   - [`TID-04: Realtime Events & WebSocket Protocol`](./context_docs/technical-implementation-documents/04-realtime-events-and-websocket-protocol.md)
 - **Validation Checklist**:
-  - [ ] Test client connects to WebSocket gateway with JWT and joins vendor room.
-  - [ ] Triggering a test order emits `order:new` to the vendor room within 200ms.
+  - [x] Test client connects to WebSocket gateway with JWT and joins vendor room.
+  - [x] Triggering a test order emits `order:new` to the vendor room within 200ms.
 
 ---
 

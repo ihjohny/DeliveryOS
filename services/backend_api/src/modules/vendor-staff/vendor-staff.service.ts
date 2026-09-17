@@ -7,10 +7,14 @@ import {
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AcceptOrderDto } from './dto/accept-order.dto';
 import { OrderStatus, PermissionScope, User, UserRole } from '@prisma/client';
+import { TrackingGateway } from '../realtime/tracking.gateway';
 
 @Injectable()
 export class VendorStaffService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly trackingGateway: TrackingGateway,
+  ) {}
 
   /**
    * Enforces 2-Tier Vendor Staff Scope:
@@ -172,7 +176,7 @@ export class VendorStaffService {
 
     const prepTimeMinutes = dto.prepTimeMinutes ?? order.vendor.defaultPrepTimeMinutes;
 
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status: OrderStatus.PREPARING,
@@ -184,6 +188,17 @@ export class VendorStaffService {
         vendor: true,
       },
     });
+
+    // Realtime Broadcast
+    this.trackingGateway.notifyOrderStatusChanged(
+      order.id,
+      order.customerId,
+      order.status,
+      OrderStatus.PREPARING,
+      { prepTimeMinutes },
+    );
+
+    return updatedOrder;
   }
 
   /**
@@ -209,12 +224,22 @@ export class VendorStaffService {
       );
     }
 
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status: OrderStatus.READY_FOR_PICKUP,
       },
     });
+
+    // Realtime Broadcast
+    this.trackingGateway.notifyOrderStatusChanged(
+      order.id,
+      order.customerId,
+      order.status,
+      OrderStatus.READY_FOR_PICKUP,
+    );
+
+    return updatedOrder;
   }
 
   /**
@@ -237,13 +262,23 @@ export class VendorStaffService {
       );
     }
 
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status: OrderStatus.DISPATCHED,
         pickedUpAt: new Date(),
       },
     });
+
+    // Realtime Broadcast
+    this.trackingGateway.notifyOrderStatusChanged(
+      order.id,
+      order.customerId,
+      order.status,
+      OrderStatus.DISPATCHED,
+    );
+
+    return updatedOrder;
   }
 
   /**

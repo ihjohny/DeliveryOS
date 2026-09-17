@@ -8,6 +8,7 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
 import { OrderModule } from './modules/orders/order.module';
 import { VendorStaffModule } from './modules/vendor-staff/vendor-staff.module';
 import { RiderModule } from './modules/riders/rider.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RiderModule } from './modules/riders/rider.module';
     OrderModule,
     VendorStaffModule,
     RiderModule,
+    RealtimeModule,
   ],
 })
 export class AppModule {}

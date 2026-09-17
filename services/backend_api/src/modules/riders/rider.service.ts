@@ -7,10 +7,14 @@ import {
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { DeliverOrderDto } from './dto/deliver-order.dto';
 import { OrderStatus, PaymentMethod, PaymentStatus, SettlementStatus } from '@prisma/client';
+import { TrackingGateway } from '../realtime/tracking.gateway';
 
 @Injectable()
 export class RiderService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly trackingGateway: TrackingGateway,
+  ) {}
 
   /**
    * Helper: Retrieve rider profile by userId
@@ -79,7 +83,7 @@ export class RiderService {
       );
     }
 
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         riderId: rider.id,
@@ -87,6 +91,17 @@ export class RiderService {
         pickedUpAt: new Date(),
       },
     });
+
+    // Realtime Broadcast: order:status:changed (DISPATCHED)
+    this.trackingGateway.notifyOrderStatusChanged(
+      order.id,
+      order.customerId,
+      order.status,
+      OrderStatus.DISPATCHED,
+      { riderId: rider.id },
+    );
+
+    return updatedOrder;
   }
 
   /**
@@ -117,7 +132,7 @@ export class RiderService {
 
     const codCollected = dto.amountCollected ?? (dto.codCashCollected ? Number(order.totalAmount) : 0);
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // 1. Update Order Status
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
@@ -163,5 +178,16 @@ export class RiderService {
         tripLedger,
       };
     });
+
+    // Realtime Broadcast: order:status:changed (DELIVERED)
+    this.trackingGateway.notifyOrderStatusChanged(
+      order.id,
+      order.customerId,
+      order.status,
+      OrderStatus.DELIVERED,
+      { codCollected },
+    );
+
+    return result;
   }
 }

@@ -16,7 +16,8 @@
     "vendor:test": "ts-node scripts/test-vendor-discovery.ts",
     "promotions:test": "ts-node scripts/test-promotions-pricing.ts",
     "order:test": "ts-node scripts/test-order-checkout.ts",
-    "vendor-rider:test": "ts-node scripts/test-vendor-rider.ts"
+    "vendor-rider:test": "ts-node scripts/test-vendor-rider.ts",
+    "ws:test": "ts-node scripts/test-websocket-tracking.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
@@ -24,7 +25,9 @@
     "@nestjs/core": "^10.4.15",
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/platform-express": "^10.4.15",
+    "@nestjs/platform-socket.io": "^10.4.22",
     "@nestjs/swagger": "^7.4.2",
+    "@nestjs/websockets": "^10.4.22",
     "@prisma/client": "^5.22.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -33,7 +36,9 @@
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@types/ioredis": "^5.0.0",
