@@ -135,8 +135,8 @@ graph TD
   - [`BRD-03: Section 1 & 5 (Financial Equations & Ledgers)`](./context_docs/business-requirements-documents/03-core-business-rules-and-workflows.md)
   - [`TID-03: Section 3.6 & 3.7`](./context_docs/technical-implementation-documents/03-api-specifications-and-endpoints.md)
 - **Validation Checklist**:
-  - [ ] Submitting multi-vendor items in a single order payload is rejected.
-  - [ ] Completed order generates mathematically balanced entries in `commission_ledgers`.
+  - [x] Submitting multi-vendor items in a single order payload is rejected.
+  - [x] Completed order generates mathematically balanced entries in `commission_ledgers`.
 
 ---
 
