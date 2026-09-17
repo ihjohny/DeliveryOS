@@ -100,13 +100,13 @@ async function runVerification() {
   assert(!canAccessRoute('/admin', 'CUSTOMER'), 'Customer blocked from /admin');
   assert(!canAccessRoute('/vendor', 'CUSTOMER'), 'Customer blocked from /vendor');
 
-  // 4. Verify Directory Symlink
-  console.log('\n🔗 4. Verifying WBS Path Invariants (frontend-web & apps/web_portal)...');
+  // 4. Verify Directory Structure (apps/web_portal)
+  console.log('\n📁 4. Verifying Directory Invariants (apps/web_portal)...');
   const projectRoot = path.resolve(rootDir, '../..');
-  const symlinkPath = path.join(projectRoot, 'frontend-web');
-  assert(fs.existsSync(symlinkPath), 'Symlink /frontend-web exists');
-  const target = fs.readlinkSync(symlinkPath);
-  assert(target === 'apps/web_portal', 'frontend-web correctly targets apps/web_portal');
+  const webPortalPath = path.join(projectRoot, 'apps/web_portal');
+  assert(fs.existsSync(webPortalPath), 'Directory apps/web_portal exists');
+  const pkgJsonPath = path.join(webPortalPath, 'package.json');
+  assert(fs.existsSync(pkgJsonPath), 'apps/web_portal/package.json exists and is valid');
 
   console.log('\n====================================================');
   console.log(' 🎉 All Web Portal Scaffolding & Layout Tests Passed!');

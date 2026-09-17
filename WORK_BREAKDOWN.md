@@ -28,7 +28,7 @@ graph TD
 ### Task 1.1: Project Scaffolding & Multi-App Monorepo Setup
 - **Objective**: Establish the workspace structure for backend, web portal, and shared configurations.
 - **Deliverables**:
-  - Root directory organization (`/backend`, `/frontend-web`, `/apps-mobile` or modular structure).
+  - Root directory organization (`/services`, `/apps`, shared configurations, and modular monorepo structure).
   - Docker Compose setup (`docker-compose.yml`) spinning up PostgreSQL 16 (with PostGIS extension) and Redis 7.
   - Environment variables blueprint (`.env.example`) with multi-region presets (`BD` / `KSA`).
 - **Context Docs**:
@@ -209,7 +209,7 @@ graph TD
 ### Task 4.1: Web Portal Scaffolding & Responsive Layout
 - **Objective**: Set up the React.js Single Page Application with TailwindCSS and role-based routing.
 - **Deliverables**:
-  - Vite + React + TypeScript setup in `/frontend-web`.
+  - Vite + React + TypeScript setup in `apps/web_portal`.
   - Role-based route protection (`/admin/*` vs `/vendor/*`).
   - Shared design system: alerts, modals, tables, badges, and sound trigger utility.
   - i18n support with RTL mirroring for Arabic (`en.json`, `ar.json`, `bn.json`).
