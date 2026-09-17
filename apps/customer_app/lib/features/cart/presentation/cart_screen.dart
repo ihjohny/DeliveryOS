@@ -1,0 +1,540 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../auth/presentation/phone_input_screen.dart';
+import '../../location/providers/location_provider.dart';
+import '../domain/cart_item_model.dart';
+import '../providers/cart_provider.dart';
+import 'widgets/address_geofence_banner.dart';
+import 'widgets/coupon_input_section.dart';
+import 'widgets/delivery_mode_selector.dart';
+import 'widgets/payment_method_selector.dart';
+
+class CartScreen extends ConsumerStatefulWidget {
+  const CartScreen({super.key});
+
+  @override
+  ConsumerState<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends ConsumerState<CartScreen> {
+  final TextEditingController _notesController = TextEditingController();
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handlePlaceOrder() async {
+    final auth = ref.read(authProvider);
+
+    // If guest, prompt to login before submitting order
+    if (auth.isGuest) {
+      final shouldLogin = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Login Required to Order', style: TextStyle(fontWeight: FontWeight.w800)),
+          content: const Text(
+            'Please login with your phone number so we can track and deliver your order.',
+            style: TextStyle(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Login Now'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldLogin == true && mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const PhoneInputScreen()),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    final result = await ref.read(cartProvider.notifier).checkout(
+          customerNotes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        );
+    setState(() => _isSubmitting = false);
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: AppColors.secondary, size: 28),
+              SizedBox(width: 8),
+              Text('Order Confirmed!', style: TextStyle(fontWeight: FontWeight.w900)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your order ${result['orderNumber']} has been placed successfully!',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'We have dispatched the order to the kitchen and our rider fleet.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).pop(); // Back to discovery home
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Return to Home'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] as String? ?? 'Checkout failed. Please try again.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cartState = ref.watch(cartProvider);
+    final userLocation = ref.watch(locationProvider).location;
+
+    if (cartState.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0.5,
+          title: const Text(
+            'My Cart',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.remove_shopping_cart_rounded, size: 64, color: AppColors.primary),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Your cart is empty',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Browse restaurants and stores to add your favorite items',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: const Text('Start Exploring', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'My Cart',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            ),
+            if (cartState.vendorName != null)
+              Text(
+                cartState.vendorName!,
+                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+              ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_rounded, color: AppColors.error),
+            tooltip: 'Clear Cart',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Clear Cart?'),
+                  content: const Text('Are you sure you want to remove all items from your cart?'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+                    TextButton(
+                      onPressed: () {
+                        ref.read(cartProvider.notifier).clearCart();
+                        Navigator.of(ctx).pop();
+                      },
+                      child: const Text('Clear', style: TextStyle(color: AppColors.error)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 1. Delivery Method Selector
+          DeliveryModeSelector(
+            selectedMethod: cartState.deliveryMethod,
+            onMethodChanged: (method) {
+              ref.read(cartProvider.notifier).setDeliveryMethod(method);
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // 2. Address Geofence Guard Banner
+          if (cartState.deliveryMethod == DeliveryMethod.homeDelivery)
+            AddressGeofenceBanner(
+              isWithinCoverage: cartState.isWithinCoverage,
+              currentAddress: userLocation.addressLine,
+              coverageError: cartState.coverageError,
+              onAddressChanged: () {
+                ref.read(cartProvider.notifier).validateCoverage();
+              },
+            ),
+          const SizedBox(height: 14),
+
+          // 3. Cart Items Section
+          const Text(
+            'Order Items',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 8),
+          ...List.generate(cartState.items.length, (index) {
+            final item = cartState.items[index];
+            return _buildCartItemCard(item, index);
+          }),
+          const SizedBox(height: 16),
+
+          // 4. Coupon Code Input Section
+          const Text(
+            'Promotions & Vouchers',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 8),
+          CouponInputSection(
+            appliedCoupon: cartState.couponCode,
+            couponDiscount: cartState.couponDiscount,
+            isLoading: cartState.isApplyingCoupon,
+            message: cartState.couponMessage,
+            onApplyCoupon: (code) {
+              ref.read(cartProvider.notifier).applyCoupon(code);
+            },
+            onRemoveCoupon: () {
+              ref.read(cartProvider.notifier).removeCoupon();
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // 5. Cooking & Delivery Instructions
+          const Text(
+            'Cooking & Delivery Notes',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _notesController,
+            decoration: InputDecoration(
+              hintText: 'e.g. Ring doorbell, leave at door, extra napkins...',
+              hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 6. Payment Method Choice
+          const Text(
+            'Payment Method',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 8),
+          PaymentMethodSelector(
+            selectedMethod: cartState.paymentMethod,
+            onMethodChanged: (method) {
+              ref.read(cartProvider.notifier).setPaymentMethod(method);
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // 7. Order Summary Card
+          _buildSummaryCard(cartState),
+          const SizedBox(height: 24),
+        ],
+      ),
+
+      // Bottom Bar with "Place Order" CTA
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 52,
+            child: ElevatedButton(
+              onPressed: (cartState.canCheckout && !_isSubmitting) ? _handlePlaceOrder : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.35),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          !cartState.isWithinCoverage && cartState.deliveryMethod == DeliveryMethod.homeDelivery
+                              ? 'Address Out of Coverage'
+                              : 'Place Order (${cartState.totalItemCount} items)',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                        ),
+                        Text(
+                          '৳${cartState.totalPayable.toStringAsFixed(0)}',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCartItemCard(CartItem item, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.product.name,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+                if (item.selectedVariant != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Portion: ${item.selectedVariant!.name}',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
+                  ),
+                ],
+                if (item.selectedAddons.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Extras: ${item.selectedAddons.map((a) => a.name).join(", ")}',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                ],
+                if (item.specialInstructions != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Note: "${item.specialInstructions}"',
+                    style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppColors.textMuted),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  '৳${item.totalPrice.toStringAsFixed(0)}',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                ),
+              ],
+            ),
+          ),
+
+          // Stepper Controls
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove_rounded, size: 16),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    ref.read(cartProvider.notifier).updateQuantity(index, item.quantity - 1);
+                  },
+                ),
+                Text(
+                  '${item.quantity}',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    ref.read(cartProvider.notifier).updateQuantity(index, item.quantity + 1);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(CartState cart) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Bill Summary',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 10),
+          _buildSummaryRow('Item Subtotal', '৳${cart.grossSubtotal.toStringAsFixed(0)}'),
+          if (cart.couponDiscount > 0)
+            _buildSummaryRow(
+              'Coupon Discount (${cart.couponCode})',
+              '-৳${cart.couponDiscount.toStringAsFixed(0)}',
+              color: AppColors.secondary,
+            ),
+          _buildSummaryRow(
+            'Delivery Fee',
+            cart.deliveryMethod == DeliveryMethod.takeaway ? 'FREE' : '৳${cart.deliveryFee.toStringAsFixed(0)}',
+          ),
+          const Divider(height: 20, color: AppColors.border),
+          _buildSummaryRow(
+            'Total Payable',
+            '৳${cart.totalPayable.toStringAsFixed(0)}',
+            isBold: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value, {bool isBold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isBold ? 14 : 12,
+              fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
+              color: color ?? (isBold ? AppColors.textPrimary : AppColors.textSecondary),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isBold ? 15 : 12,
+              fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
+              color: color ?? AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

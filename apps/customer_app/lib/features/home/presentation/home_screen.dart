@@ -6,6 +6,8 @@ import '../../../core/localization/language_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/presentation/phone_input_screen.dart';
 import '../../banners/presentation/banner_carousel.dart';
+import '../../cart/presentation/cart_screen.dart';
+import '../../cart/providers/cart_provider.dart';
 import '../../discovery/presentation/search_screen.dart';
 import '../../location/providers/location_provider.dart';
 import '../../location/presentation/map_location_picker_screen.dart';
@@ -21,6 +23,7 @@ class HomeScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final locState = ref.watch(locationProvider);
     final currentLocale = ref.watch(languageProvider);
+    final cartState = ref.watch(cartProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -34,7 +37,7 @@ class HomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                 child: Column(
                   children: [
-                    // Row 1: Logo & Language / Auth Controls
+                    // Row 1: Logo & Language / Cart / Auth Controls
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -101,6 +104,24 @@ class HomeScreen extends ConsumerWidget {
                               ],
                             ),
                             const SizedBox(width: 6),
+
+                            // Cart Icon Button with Badge
+                            IconButton(
+                              icon: Badge(
+                                isLabelVisible: cartState.items.isNotEmpty,
+                                label: Text('${cartState.totalItemCount}'),
+                                backgroundColor: AppColors.primary,
+                                child: const Icon(Icons.shopping_bag_outlined, size: 22, color: AppColors.textPrimary),
+                              ),
+                              tooltip: 'Cart',
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const CartScreen()),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 2),
+
                             // Profile / Logout
                             IconButton(
                               icon: const Icon(Icons.logout_rounded, size: 20, color: AppColors.textSecondary),
@@ -415,6 +436,66 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
       ),
+      bottomNavigationBar: cartState.isEmpty
+          ? null
+          : Container(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: AppColors.border)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, -2)),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const CartScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '${cartState.totalItemCount}',
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'View Cart (${cartState.vendorName ?? "Outlet"})',
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '৳${cartState.totalPayable.toStringAsFixed(0)}',
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }

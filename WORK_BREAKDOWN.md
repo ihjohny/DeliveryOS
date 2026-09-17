@@ -314,8 +314,8 @@ graph TD
   - [`BRD-04: Screens 6 & 7`](./context_docs/business-requirements-documents/04-customer-experience-and-journey.md)
   - [`BRD-03: Section 1.3 (Geofence Invariant)`](./context_docs/business-requirements-documents/03-core-business-rules-and-workflows.md)
 - **Validation Checklist**:
-  - [ ] Moving address outside outlet coverage disables "Place Order" CTA and displays warning.
-  - [ ] Applying coupon `WELCOME50` reduces cart total by exact discount amount.
+  - [x] Moving address outside outlet coverage disables "Place Order" CTA and displays warning.
+  - [x] Applying coupon `WELCOME50` reduces cart total by exact discount amount.
 
 ---
 

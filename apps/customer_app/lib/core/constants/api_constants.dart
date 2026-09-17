@@ -24,6 +24,7 @@ class ApiConstants {
   static String vendorCatalog(String id) => '/vendors/$id/catalog';
   static const String activeBanners = '/banners/active';
   static const String validateCoupon = '/coupons/validate';
+  static const String cartValidateCoverage = '/cart/validate-address-coverage';
 
   // Order & Customer Endpoints
   static const String customerAddresses = '/customer/addresses';
