@@ -1,0 +1,791 @@
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { RedisService } from '../../common/redis/redis.service';
+import { TrackingGateway } from '../realtime/tracking.gateway';
+import { OrderFlowService } from '../order-flow/order-flow.service';
+import { OrderFlowMode } from '../order-flow/dto/update-order-flow.dto';
+import {
+  BannerLinkType,
+  DiscountType,
+  OrderStatus,
+  PermissionScope,
+  UserRole,
+} from '@prisma/client';
+
+@Injectable()
+export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+    private readonly trackingGateway: TrackingGateway,
+    private readonly orderFlowService: OrderFlowService,
+  ) {}
+
+  // ===========================================================================
+  // 1. Overview & Dashboard Statistics
+  // ===========================================================================
+  async getOverviewStats() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [
+      totalOrdersCount,
+      todayOrdersCount,
+      totalVendors,
+      activeVendors,
+      totalRiders,
+      onlineRiders,
+      ledgersToday,
+      recentOrders,
+    ] = await Promise.all([
+      this.prisma.order.count(),
+      this.prisma.order.count({ where: { placedAt: { gte: today } } }),
+      this.prisma.vendor.count(),
+      this.prisma.vendor.count({ where: { isActive: true } }),
+      this.prisma.rider.count(),
+      this.prisma.rider.count({ where: { isOnline: true } }),
+      this.prisma.commissionLedger.findMany({
+        where: { createdAt: { gte: today } },
+        select: {
+          grossAmount: true,
+          commissionAmount: true,
+          netVendorPayable: true,
+        },
+      }),
+      this.prisma.order.findMany({
+        take: 8,
+        orderBy: { placedAt: 'desc' },
+        include: {
+          customer: { select: { fullName: true, phone: true } },
+          vendor: { select: { name: true } },
+          rider: { include: { user: { select: { fullName: true, phone: true } } } },
+        },
+      }),
+    ]);
+
+    let todayGrossSales = 0;
+    let todayCommission = 0;
+    let todayNetPayable = 0;
+
+    for (const l of ledgersToday) {
+      todayGrossSales += Number(l.grossAmount);
+      todayCommission += Number(l.commissionAmount);
+      todayNetPayable += Number(l.netVendorPayable);
+    }
+
+    // Active trips currently in progress
+    const activeTripsCount = await this.prisma.order.count({
+      where: {
+        status: {
+          in: [
+            OrderStatus.RIDER_ASSIGNED,
+            OrderStatus.ACCEPTED,
+            OrderStatus.PREPARING,
+            OrderStatus.READY_FOR_PICKUP,
+            OrderStatus.DISPATCHED,
+          ],
+        },
+        riderId: { not: null },
+      },
+    });
+
+    return {
+      metrics: {
+        totalOrders: totalOrdersCount,
+        todayOrders: todayOrdersCount,
+        activeRiders: onlineRiders,
+        ridersOnTrip: activeTripsCount,
+        totalRiders,
+        onlineVendors: activeVendors,
+        totalVendors,
+        todayVolume: Math.round(todayGrossSales * 100) / 100,
+        todayCommission: Math.round(todayCommission * 100) / 100,
+        todayNetPayable: Math.round(todayNetPayable * 100) / 100,
+      },
+      recentOrders: recentOrders.map((o) => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        customerName: o.customer?.fullName || 'Guest',
+        outletName: o.vendor?.name || 'Unknown Outlet',
+        riderName: o.rider?.user?.fullName || null,
+        status: o.status,
+        totalAmount: Number(o.totalAmount),
+        paymentMethod: o.paymentMethod,
+        placedAt: o.placedAt,
+      })),
+    };
+  }
+
+  // ===========================================================================
+  // 2. Fleet Radar & Rider Fleet Oversight
+  // ===========================================================================
+  async getFleetRadar() {
+    const riders = await this.prisma.rider.findMany({
+      include: {
+        user: { select: { id: true, fullName: true, phone: true, status: true } },
+      },
+      orderBy: { isOnline: 'desc' },
+    });
+
+    const fleet = await Promise.all(
+      riders.map(async (r) => {
+        const activeOrderId = await this.redis.get(`rider:active_order:${r.id}`);
+        let activeOrder = null;
+
+        if (activeOrderId) {
+          const ord = await this.prisma.order.findUnique({
+            where: { id: activeOrderId },
+            select: { id: true, orderNumber: true, status: true, vendor: { select: { name: true } } },
+          });
+          if (ord) {
+            activeOrder = {
+              id: ord.id,
+              orderNumber: ord.orderNumber,
+              status: ord.status,
+              vendorName: ord.vendor?.name,
+            };
+          }
+        }
+
+        let status: 'ONLINE' | 'ON_TRIP' | 'OFFLINE' = 'OFFLINE';
+        if (r.isOnline) {
+          status = activeOrderId ? 'ON_TRIP' : 'ONLINE';
+        }
+
+        return {
+          id: r.id,
+          userId: r.userId,
+          riderName: r.user.fullName,
+          phone: r.user.phone,
+          vehicleType: r.vehicleType,
+          isOnline: r.isOnline,
+          status,
+          cashInHand: Number(r.cashInHand),
+          maxCashLimit: Number(r.maxCashLimit),
+          cashSafetyWarning: Number(r.cashInHand) >= Number(r.maxCashLimit) * 0.9,
+          latitude: r.latitude ?? 23.7925,
+          longitude: r.longitude ?? 90.4078,
+          activeOrder,
+          updatedAt: r.updatedAt,
+        };
+      }),
+    );
+
+    return fleet;
+  }
+
+  async updateRiderCashLimit(riderId: string, maxCashLimit: number) {
+    const rider = await this.prisma.rider.findUnique({ where: { id: riderId } });
+    if (!rider) throw new NotFoundException('Rider not found');
+
+    return this.prisma.rider.update({
+      where: { id: riderId },
+      data: { maxCashLimit },
+    });
+  }
+
+  // ===========================================================================
+  // 3. Live Order Lifecycle Monitor & Manual Dispatch Force-Assign
+  // ===========================================================================
+  async getLiveOrders(statusFilter?: string) {
+    const where: any = {};
+    if (statusFilter && statusFilter !== 'ALL') {
+      where.status = statusFilter;
+    }
+
+    const orders = await this.prisma.order.findMany({
+      where,
+      orderBy: { placedAt: 'desc' },
+      take: 100,
+      include: {
+        customer: { select: { fullName: true, phone: true } },
+        vendor: { select: { id: true, name: true, addressText: true } },
+        rider: {
+          include: {
+            user: { select: { fullName: true, phone: true } },
+          },
+        },
+        orderItems: true,
+      },
+    });
+
+    return orders.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      vendorId: o.vendorId,
+      vendorName: o.vendor?.name || 'Store',
+      vendorAddress: o.vendor?.addressText || '',
+      customerId: o.customerId,
+      customerName: o.customer?.fullName || 'Customer',
+      customerPhone: o.customer?.phone || '',
+      riderId: o.riderId,
+      riderName: o.rider?.user?.fullName || null,
+      riderPhone: o.rider?.user?.phone || null,
+      status: o.status,
+      paymentMethod: o.paymentMethod,
+      paymentStatus: o.paymentStatus,
+      totalAmount: Number(o.totalAmount),
+      deliveryFee: Number(o.deliveryFee),
+      placedAt: o.placedAt,
+      acceptedAt: o.acceptedAt,
+      prepTimeMinutes: o.prepTimeMinutes,
+      items: o.orderItems.map((i) => ({
+        id: i.id,
+        name: i.productNameSnapshot,
+        quantity: i.quantity,
+        unitPrice: Number(i.unitPrice),
+      })),
+      deliveryAddress: (o.deliveryAddressSnapshot as any)?.addressLine || 'Address',
+    }));
+  }
+
+  /**
+   * Super Admin Manual Dispatch Override:
+   * Forces assignment of a specific online rider to an active order.
+   */
+  async forceAssignRider(orderId: string, riderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        vendor: true,
+        orderItems: true,
+        customer: { select: { fullName: true, phone: true } },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status === OrderStatus.DELIVERED || order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException(`Cannot reassign order in status "${order.status}"`);
+    }
+
+    const rider = await this.prisma.rider.findUnique({
+      where: { id: riderId },
+      include: { user: { select: { fullName: true, phone: true } } },
+    });
+
+    if (!rider) {
+      throw new NotFoundException('Rider not found');
+    }
+
+    // Release any previous rider if reassigned
+    if (order.riderId && order.riderId !== riderId) {
+      await this.redis.del(`rider:active_order:${order.riderId}`);
+    }
+
+    // Advance status to RIDER_ASSIGNED if it was still in PLACED
+    const newStatus = order.status === OrderStatus.PLACED ? OrderStatus.RIDER_ASSIGNED : order.status;
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        riderId: rider.id,
+        status: newStatus,
+      },
+      include: {
+        customer: { select: { fullName: true, phone: true } },
+        vendor: true,
+        orderItems: true,
+      },
+    });
+
+    // Mark rider busy in Redis
+    await this.redis.set(`rider:active_order:${rider.id}`, orderId);
+
+    // Broadcast tracking events to customer and store
+    this.trackingGateway.notifyOrderStatusChanged(
+      order.id,
+      order.customerId,
+      order.status,
+      newStatus,
+      {
+        riderId: rider.id,
+        riderName: rider.user.fullName,
+        riderPhone: rider.user.phone,
+        forcedByAdmin: true,
+      },
+    );
+
+    this.logger.log(
+      `[ADMIN FORCE-ASSIGN] Order #${order.orderNumber} manually assigned to rider ${rider.user.fullName} (${rider.id})`,
+    );
+
+    return {
+      orderId: updatedOrder.id,
+      orderNumber: updatedOrder.orderNumber,
+      status: updatedOrder.status,
+      assignedRider: {
+        id: rider.id,
+        name: rider.user.fullName,
+        phone: rider.user.phone,
+      },
+    };
+  }
+
+  // ===========================================================================
+  // 4. Promotional Banners Management
+  // ===========================================================================
+  async getAllBanners() {
+    return this.prisma.banner.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  async createBanner(data: {
+    title: string;
+    imageUrl: string;
+    linkType?: BannerLinkType;
+    targetId?: string;
+    sortOrder?: number;
+    isActive?: boolean;
+    startsAt?: Date;
+    endsAt?: Date;
+  }) {
+    return this.prisma.banner.create({
+      data: {
+        title: data.title,
+        imageUrl: data.imageUrl,
+        linkType: data.linkType || BannerLinkType.OUTLET,
+        targetId: data.targetId || null,
+        sortOrder: data.sortOrder || 0,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+        startsAt: data.startsAt || new Date(),
+        endsAt: data.endsAt || null,
+      },
+    });
+  }
+
+  async updateBanner(
+    id: string,
+    data: {
+      title?: string;
+      imageUrl?: string;
+      linkType?: BannerLinkType;
+      targetId?: string;
+      sortOrder?: number;
+      isActive?: boolean;
+      startsAt?: Date;
+      endsAt?: Date;
+    },
+  ) {
+    const banner = await this.prisma.banner.findUnique({ where: { id } });
+    if (!banner) throw new NotFoundException('Banner not found');
+
+    return this.prisma.banner.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deleteBanner(id: string) {
+    const banner = await this.prisma.banner.findUnique({ where: { id } });
+    if (!banner) throw new NotFoundException('Banner not found');
+
+    await this.prisma.banner.delete({ where: { id } });
+    return { success: true, message: 'Banner deleted successfully' };
+  }
+
+  // ===========================================================================
+  // 5. Coupon Engine Management
+  // ===========================================================================
+  async getAllCoupons() {
+    return this.prisma.coupon.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: { select: { orders: true } },
+      },
+    });
+  }
+
+  async createCoupon(data: {
+    code: string;
+    description?: string;
+    discountType: DiscountType;
+    discountValue: number;
+    minOrderAmount?: number;
+    maxDiscountAmount?: number;
+    usageLimit?: number;
+    validFrom?: Date;
+    validTo?: Date;
+    isActive?: boolean;
+  }) {
+    const existing = await this.prisma.coupon.findUnique({ where: { code: data.code.toUpperCase() } });
+    if (existing) {
+      throw new ConflictException(`Coupon code "${data.code}" already exists`);
+    }
+
+    return this.prisma.coupon.create({
+      data: {
+        code: data.code.toUpperCase(),
+        description: data.description || null,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
+        minOrderAmount: data.minOrderAmount || 0,
+        maxDiscountAmount: data.maxDiscountAmount || null,
+        usageLimit: data.usageLimit || 1000,
+        validFrom: data.validFrom || new Date(),
+        validTo: data.validTo || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        isActive: data.isActive !== undefined ? data.isActive : true,
+      },
+    });
+  }
+
+  async updateCoupon(
+    id: string,
+    data: {
+      description?: string;
+      discountType?: DiscountType;
+      discountValue?: number;
+      minOrderAmount?: number;
+      maxDiscountAmount?: number;
+      usageLimit?: number;
+      validFrom?: Date;
+      validTo?: Date;
+      isActive?: boolean;
+    },
+  ) {
+    const coupon = await this.prisma.coupon.findUnique({ where: { id } });
+    if (!coupon) throw new NotFoundException('Coupon not found');
+
+    return this.prisma.coupon.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deleteCoupon(id: string) {
+    const coupon = await this.prisma.coupon.findUnique({ where: { id } });
+    if (!coupon) throw new NotFoundException('Coupon not found');
+
+    await this.prisma.coupon.delete({ where: { id } });
+    return { success: true, message: 'Coupon deleted successfully' };
+  }
+
+  // ===========================================================================
+  // 6. Vendor & Staff Governance
+  // ===========================================================================
+  async getAllVendors() {
+    const vendors = await this.prisma.vendor.findMany({
+      include: {
+        brand: { select: { id: true, name: true } },
+        operatingHours: true,
+        staff: {
+          include: {
+            user: { select: { id: true, fullName: true, phone: true } },
+          },
+        },
+        _count: { select: { orders: true, products: true } },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return vendors.map((v) => ({
+      id: v.id,
+      name: v.name,
+      brandId: v.brandId,
+      brandName: v.brand?.name || null,
+      addressText: v.addressText,
+      contactPhone: v.contactPhone,
+      isBusy: v.isBusy,
+      isActive: v.isActive,
+      commissionRate: Number(v.commissionRate),
+      defaultPrepTimeMinutes: v.defaultPrepTimeMinutes,
+      totalOrders: v._count.orders,
+      totalProducts: v._count.products,
+      staff: v.staff.map((s) => ({
+        id: s.id,
+        userId: s.userId,
+        fullName: s.user?.fullName || 'Staff User',
+        phone: s.user?.phone || '',
+        scope: s.scope,
+        isActive: s.isActive,
+      })),
+    }));
+  }
+
+  async createVendor(data: {
+    name: string;
+    brandId?: string;
+    addressText: string;
+    latitude: number;
+    longitude: number;
+    contactPhone: string;
+    commissionRate?: number;
+    defaultPrepTimeMinutes?: number;
+  }) {
+    return this.prisma.vendor.create({
+      data: {
+        name: data.name,
+        brandId: data.brandId || null,
+        addressText: data.addressText,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        contactPhone: data.contactPhone,
+        commissionRate: data.commissionRate ?? 15.00,
+        defaultPrepTimeMinutes: data.defaultPrepTimeMinutes ?? 20,
+        isActive: true,
+      },
+    });
+  }
+
+  async assignVendorStaff(
+    vendorId: string,
+    data: {
+      userId: string;
+      scope: PermissionScope;
+      role?: string;
+      brandId?: string;
+    },
+  ) {
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
+    if (!vendor) throw new NotFoundException('Vendor outlet not found');
+
+    const user = await this.prisma.user.findUnique({ where: { id: data.userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    // Ensure user role is VENDOR_ADMIN
+    if (user.role !== UserRole.VENDOR_ADMIN && user.role !== UserRole.SUPER_ADMIN) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { role: UserRole.VENDOR_ADMIN },
+      });
+    }
+
+    const effectiveBrandId = data.scope === PermissionScope.ALL_OUTLETS_MASTER
+      ? (data.brandId || vendor.brandId)
+      : null;
+
+    return this.prisma.vendorStaff.create({
+      data: {
+        userId: data.userId,
+        vendorId: data.scope === PermissionScope.PARTICULAR_OUTLET ? vendorId : null,
+        brandId: effectiveBrandId,
+        scope: data.scope,
+        isActive: true,
+      },
+    });
+  }
+
+  // ===========================================================================
+  // 7. Master Catalog Authority
+  // ===========================================================================
+  async getCentralCategories() {
+    return this.prisma.category.findMany({
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        _count: { select: { products: true } },
+      },
+    });
+  }
+
+  async createCentralCategory(data: { name: string; imageUrl?: string; sortOrder?: number; isActive?: boolean }) {
+    return this.prisma.category.create({
+      data: {
+        name: data.name,
+        imageUrl: data.imageUrl || null,
+        sortOrder: data.sortOrder || 0,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+      },
+    });
+  }
+
+  async overrideProduct(
+    productId: string,
+    data: {
+      name?: string;
+      description?: string;
+      basePrice?: number;
+      categoryId?: string;
+      isInStock?: boolean;
+    },
+  ) {
+    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    if (!product) throw new NotFoundException('Product not found');
+
+    return this.prisma.product.update({
+      where: { id: productId },
+      data,
+    });
+  }
+
+  async toggleProductDisable(productId: string, isInStock: boolean) {
+    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    if (!product) throw new NotFoundException('Product not found');
+
+    return this.prisma.product.update({
+      where: { id: productId },
+      data: { isInStock },
+    });
+  }
+
+  // ===========================================================================
+  // 8. Platform System Settings
+  // ===========================================================================
+  async getSystemSettings() {
+    const [orderFlowSetting, deliveryFeeSetting] = await Promise.all([
+      this.prisma.systemSetting.findUnique({ where: { key: 'order_flow_config' } }),
+      this.prisma.systemSetting.findUnique({ where: { key: 'delivery_fee_config' } }),
+    ]);
+
+    return {
+      orderFlow: (orderFlowSetting?.value as any) || {
+        mode: OrderFlowMode.RIDER_FIRST,
+        rider_search_timeout_seconds: 90,
+      },
+      deliveryFee: (deliveryFeeSetting?.value as any) || {
+        mode: 'FIXED_FLAT',
+        flatFee: 50.0,
+        baseFee: 40.0,
+        perKmRate: 15.0,
+      },
+    };
+  }
+
+  async updateOrderFlow(mode: OrderFlowMode, riderSearchTimeoutSeconds?: number) {
+    return this.orderFlowService.setOrderFlowConfig({
+      mode,
+      riderSearchTimeoutSeconds,
+    });
+  }
+
+  async updateDeliveryFeeMode(data: {
+    mode: 'FIXED_FLAT' | 'DISTANCE_TIERED';
+    flatFee?: number;
+    baseFee?: number;
+    perKmRate?: number;
+  }) {
+    const updated = await this.prisma.systemSetting.upsert({
+      where: { key: 'delivery_fee_config' },
+      update: {
+        value: {
+          mode: data.mode,
+          flatFee: data.flatFee ?? 50.0,
+          baseFee: data.baseFee ?? 40.0,
+          perKmRate: data.perKmRate ?? 15.0,
+        },
+      },
+      create: {
+        key: 'delivery_fee_config',
+        value: {
+          mode: data.mode,
+          flatFee: data.flatFee ?? 50.0,
+          baseFee: data.baseFee ?? 40.0,
+          perKmRate: data.perKmRate ?? 15.0,
+        },
+        description: 'Delivery fee pricing mode: FIXED_FLAT vs DISTANCE_TIERED',
+      },
+    });
+
+    return updated.value;
+  }
+
+  // ===========================================================================
+  // 9. Financial Settlements & CSV Export
+  // ===========================================================================
+  async getSettlementStatements(startDate?: Date, endDate?: Date) {
+    const where: any = {};
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = startDate;
+      if (endDate) where.createdAt.lte = endDate;
+    }
+
+    const ledgers = await this.prisma.commissionLedger.findMany({
+      where,
+      include: {
+        vendor: {
+          include: { brand: true },
+        },
+      },
+    });
+
+    const vendorMap = new Map<
+      string,
+      {
+        vendorId: string;
+        vendorName: string;
+        brandName: string;
+        totalOrders: number;
+        grossSales: number;
+        platformCommission: number;
+        netVendorPayable: number;
+        settlementStatus: string;
+      }
+    >();
+
+    for (const l of ledgers) {
+      const vId = l.vendorId;
+      const gross = Number(l.grossAmount);
+      const commission = Number(l.commissionAmount);
+      const net = Number(l.netVendorPayable);
+
+      if (!vendorMap.has(vId)) {
+        vendorMap.set(vId, {
+          vendorId: vId,
+          vendorName: l.vendor?.name || 'Store',
+          brandName: l.vendor?.brand?.name || 'Independent',
+          totalOrders: 0,
+          grossSales: 0,
+          platformCommission: 0,
+          netVendorPayable: 0,
+          settlementStatus: l.settlementStatus,
+        });
+      }
+
+      const existing = vendorMap.get(vId)!;
+      existing.totalOrders += 1;
+      existing.grossSales = Math.round((existing.grossSales + gross) * 100) / 100;
+      existing.platformCommission = Math.round((existing.platformCommission + commission) * 100) / 100;
+      existing.netVendorPayable = Math.round((existing.netVendorPayable + net) * 100) / 100;
+    }
+
+    return Array.from(vendorMap.values());
+  }
+
+  generateSettlementCsv(statements: Array<{
+    vendorId: string;
+    vendorName: string;
+    brandName: string;
+    totalOrders: number;
+    grossSales: number;
+    platformCommission: number;
+    netVendorPayable: number;
+    settlementStatus: string;
+  }>): string {
+    const header = [
+      'Vendor ID',
+      'Vendor Name',
+      'Brand',
+      'Total Orders',
+      'Gross Sales (BDT)',
+      'Platform Commission (BDT)',
+      'Net Vendor Payable (BDT)',
+      'Settlement Status',
+    ].join(',');
+
+    const rows = statements.map((s) =>
+      [
+        `"${s.vendorId}"`,
+        `"${s.vendorName.replace(/"/g, '""')}"`,
+        `"${s.brandName.replace(/"/g, '""')}"`,
+        s.totalOrders,
+        s.grossSales.toFixed(2),
+        s.platformCommission.toFixed(2),
+        s.netVendorPayable.toFixed(2),
+        `"${s.settlementStatus}"`,
+      ].join(','),
+    );
+
+    return [header, ...rows].join('\n');
+  }
+}

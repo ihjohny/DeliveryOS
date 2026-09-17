@@ -15,6 +15,11 @@ import { UnauthorizedPage } from '../pages/common/UnauthorizedPage';
 import { NotFoundPage } from '../pages/common/NotFoundPage';
 import { PlaceholderPage } from '../pages/common/PlaceholderPage';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
+import { AdminDispatchPage } from '../pages/admin/AdminDispatchPage';
+import { AdminOrdersPage } from '../pages/admin/AdminOrdersPage';
+import { AdminPromotionsPage } from '../pages/admin/AdminPromotionsPage';
+import { AdminVendorsPage } from '../pages/admin/AdminVendorsPage';
+import { AdminSettingsPage } from '../pages/admin/AdminSettingsPage';
 import { VendorDashboardPage } from '../pages/vendor/VendorDashboardPage';
 import { VendorCatalogPage } from '../pages/vendor/VendorCatalogPage';
 import { VendorSettingsPage } from '../pages/vendor/VendorSettingsPage';
@@ -54,26 +59,11 @@ export const AppRoutes: React.FC = () => {
         }
       >
         <Route index element={<AdminDashboardPage />} />
-        <Route
-          path="vendors"
-          element={<PlaceholderPage title="Merchants & Outlets" subtitle="Manage vendor branches and outlet onboardings" />}
-        />
-        <Route
-          path="dispatch"
-          element={<PlaceholderPage title="Live Dispatch & Fleet Map" subtitle="Real-time rider fleet oversight and active order routes" />}
-        />
-        <Route
-          path="orders"
-          element={<PlaceholderPage title="Master Order Ledger" subtitle="Complete historical orders and financial ledgers" />}
-        />
-        <Route
-          path="promotions"
-          element={<PlaceholderPage title="Promotions & Coupons" subtitle="Discount campaigns and billboard banners" />}
-        />
-        <Route
-          path="settings"
-          element={<PlaceholderPage title="System Settings" subtitle="Platform configuration and order flow mode" />}
-        />
+        <Route path="vendors" element={<AdminVendorsPage />} />
+        <Route path="dispatch" element={<AdminDispatchPage />} />
+        <Route path="orders" element={<AdminOrdersPage />} />
+        <Route path="promotions" element={<AdminPromotionsPage />} />
+        <Route path="settings" element={<AdminSettingsPage />} />
       </Route>
 
       {/* Vendor Staff & Merchant Protected Routes */}

@@ -265,8 +265,8 @@ graph TD
   - [`BRD-07: Admin Operations Guide`](./context_docs/business-requirements-documents/07-admin-operations-and-pilot-guide.md)
   - [`TID-03: Section 6 (Admin Endpoints)`](./context_docs/technical-implementation-documents/03-api-specifications-and-endpoints.md)
 - **Validation Checklist**:
-  - [ ] Admin can manually override rider assignment on an unassigned order.
-  - [ ] CSV export generates accurate net payable calculations matching ledger records.
+  - [x] Admin can manually override rider assignment on an unassigned order.
+  - [x] CSV export generates accurate net payable calculations matching ledger records.
 
 ---
 
