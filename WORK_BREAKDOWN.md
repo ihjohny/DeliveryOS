@@ -116,8 +116,8 @@ graph TD
   - [`BRD-03: Section 1.4 & 4 (Coupon & Delivery Fee Logic)`](./context_docs/business-requirements-documents/03-core-business-rules-and-workflows.md)
   - [`TID-03: Endpoints 3.1 & 3.5`](./context_docs/technical-implementation-documents/03-api-specifications-and-endpoints.md)
 - **Validation Checklist**:
-  - [ ] Coupon validation correctly applies percentage discount and enforces `max_discount_amount`.
-  - [ ] Flat delivery fee correctly computes based on active system settings.
+  - [x] Coupon validation correctly applies percentage discount and enforces `max_discount_amount`.
+  - [x] Flat delivery fee correctly computes based on active system settings.
 
 ---
 
