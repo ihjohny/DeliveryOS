@@ -20,6 +20,8 @@ class ApiConstants {
   // Vendor Discovery Endpoints
   static const String nearbyVendors = '/vendors/nearby';
   static const String vendorDetails = '/vendors';
+  static const String searchVendors = '/vendors/search';
+  static String vendorCatalog(String id) => '/vendors/$id/catalog';
   static const String activeBanners = '/banners/active';
   static const String validateCoupon = '/coupons/validate';
 

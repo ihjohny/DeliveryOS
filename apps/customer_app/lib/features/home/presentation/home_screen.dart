@@ -5,9 +5,12 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/presentation/phone_input_screen.dart';
+import '../../banners/presentation/banner_carousel.dart';
+import '../../discovery/presentation/search_screen.dart';
 import '../../location/providers/location_provider.dart';
 import '../../location/presentation/map_location_picker_screen.dart';
 import '../../splash/presentation/splash_screen.dart';
+import '../../store/presentation/outlet_detail_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -256,39 +259,71 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
 
-            // Search Bar
+            // Search Bar (Interactive Tap Trigger)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                child: Container(
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 12),
-                      const Icon(Icons.search_rounded, color: AppColors.textMuted, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          l10n.translate('search_hint'),
-                          style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SearchScreen()),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    height: 46,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search_rounded, color: AppColors.textMuted, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n.translate('search_hint'),
+                            style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                          ),
                         ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.all(6),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(8),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.tune_rounded, size: 16, color: AppColors.textSecondary),
                         ),
-                        child: const Icon(Icons.tune_rounded, size: 16, color: AppColors.textSecondary),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                ),
+              ),
+            ),
+
+            // Promotional Banner Carousel
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 6.0, bottom: 8.0),
+                child: BannerCarousel(
+                  onBannerTap: (banner) {
+                    if (banner.actionType == 'OUTLET' && banner.actionValue != null) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OutletDetailScreen(
+                            vendorId: banner.actionValue!,
+                            initialVendorName: banner.title,
+                          ),
+                        ),
+                      );
+                    } else {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SearchScreen()),
+                      );
+                    }
+                  },
                 ),
               ),
             ),
@@ -342,12 +377,13 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
 
-            // Pilot Outlets Feed
+            // Outlets Feed
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _OutletCard(
+                    vendorId: 'b8b33bf6-6b22-4bb3-9d41-e9fb94c25601',
                     name: "Sultan's Dine - Banani",
                     cuisine: 'Biryani, Kacchi, Traditional',
                     rating: 4.8,
@@ -356,6 +392,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   _OutletCard(
+                    vendorId: 'c7c44cf7-7c33-4cc4-8e52-f0fc05d36712',
                     name: 'Kacchi Bhai - Gulshan 1',
                     cuisine: 'Platters, Kebabs, Desserts',
                     rating: 4.6,
@@ -364,6 +401,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   _OutletCard(
+                    vendorId: 'd6d55df8-8d44-5dd5-9f63-01fd16e47823',
                     name: 'Shwapno Superstore Express',
                     cuisine: 'Groceries, Fresh Produce, Dairy',
                     rating: 4.9,
@@ -410,6 +448,7 @@ class _CategoryChip extends StatelessWidget {
 }
 
 class _OutletCard extends StatelessWidget {
+  final String vendorId;
   final String name;
   final String cuisine;
   final double rating;
@@ -417,6 +456,7 @@ class _OutletCard extends StatelessWidget {
   final bool isOpen;
 
   const _OutletCard({
+    required this.vendorId,
     required this.name,
     required this.cuisine,
     required this.rating,
@@ -426,86 +466,99 @@ class _OutletCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.storefront_rounded,
-                color: AppColors.primary,
-                size: 28,
-              ),
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OutletDetailScreen(
+              vendorId: vendorId,
+              initialVendorName: name,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    cuisine,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(Icons.star_rounded, size: 16, color: Color(0xFFF59E0B)),
-                      const SizedBox(width: 2),
-                      Text(
-                        rating.toString(),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      const Icon(Icons.timer_outlined, size: 14, color: AppColors.textMuted),
-                      const SizedBox(width: 4),
-                      Text(
-                        deliveryTime,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: Offset(0, 2),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.storefront_rounded,
+                  color: AppColors.primary,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      cuisine,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.star_rounded, size: 16, color: Color(0xFFF59E0B)),
+                        const SizedBox(width: 2),
+                        Text(
+                          rating.toString(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Icon(Icons.timer_outlined, size: 14, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          deliveryTime,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

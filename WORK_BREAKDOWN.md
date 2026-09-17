@@ -297,8 +297,8 @@ graph TD
 - **Context Docs**:
   - [`BRD-04: Screens 3, 4 & 5`](./context_docs/business-requirements-documents/04-customer-experience-and-journey.md)
 - **Validation Checklist**:
-  - [ ] Customizer dynamically recalculates total price when selecting variant and toppings.
-  - [ ] Sold-out items cannot be added to cart.
+  - [x] Customizer dynamically recalculates total price when selecting variant and toppings.
+  - [x] Sold-out items cannot be added to cart.
 
 ---
 
