@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/presentation/phone_input_screen.dart';
 import '../../location/providers/location_provider.dart';
+import '../../tracking/presentation/order_tracking_screen.dart';
 import '../domain/cart_item_model.dart';
 import '../providers/cart_provider.dart';
 import 'widgets/address_geofence_banner.dart';
@@ -104,17 +105,32 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             ],
           ),
           actions: [
-            ElevatedButton(
+            TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
                 Navigator.of(context).pop(); // Back to discovery home
+              },
+              child: const Text('Return to Home', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => OrderTrackingScreen(
+                      orderId: result['orderId'] as String? ?? 'mock-order-uuid',
+                      orderNumber: result['orderNumber'] as String? ?? '#ORD-001',
+                    ),
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              child: const Text('Return to Home'),
+              icon: const Icon(Icons.navigation_rounded, size: 16),
+              label: const Text('Track Order', style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ],
         ),

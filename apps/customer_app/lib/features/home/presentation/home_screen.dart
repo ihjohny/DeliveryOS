@@ -11,6 +11,7 @@ import '../../cart/providers/cart_provider.dart';
 import '../../discovery/presentation/search_screen.dart';
 import '../../location/providers/location_provider.dart';
 import '../../location/presentation/map_location_picker_screen.dart';
+import '../../orders/presentation/order_history_screen.dart';
 import '../../splash/presentation/splash_screen.dart';
 import '../../store/presentation/outlet_detail_screen.dart';
 
@@ -117,6 +118,18 @@ class HomeScreen extends ConsumerWidget {
                               onPressed: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(builder: (_) => const CartScreen()),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 2),
+
+                            // My Orders / History
+                            IconButton(
+                              icon: const Icon(Icons.receipt_long_outlined, size: 22, color: AppColors.textPrimary),
+                              tooltip: 'My Orders',
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const OrderHistoryScreen()),
                                 );
                               },
                             ),

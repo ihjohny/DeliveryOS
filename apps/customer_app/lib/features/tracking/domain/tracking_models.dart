@@ -1,0 +1,257 @@
+enum OrderStage {
+  placed,
+  riderAssigned,
+  preparing,
+  readyForPickup,
+  dispatched,
+  delivered,
+  cancelled,
+}
+
+extension OrderStageExtension on OrderStage {
+  static OrderStage fromString(String status) {
+    switch (status.toUpperCase()) {
+      case 'PLACED':
+        return OrderStage.placed;
+      case 'RIDER_ASSIGNED':
+        return OrderStage.riderAssigned;
+      case 'PREPARING':
+      case 'ACCEPTED':
+        return OrderStage.preparing;
+      case 'READY_FOR_PICKUP':
+        return OrderStage.readyForPickup;
+      case 'DISPATCHED':
+        return OrderStage.dispatched;
+      case 'DELIVERED':
+        return OrderStage.delivered;
+      case 'CANCELLED':
+        return OrderStage.cancelled;
+      default:
+        return OrderStage.placed;
+    }
+  }
+
+  String get title {
+    switch (this) {
+      case OrderStage.placed:
+        return 'Order Placed';
+      case OrderStage.riderAssigned:
+        return 'Courier Assigned';
+      case OrderStage.preparing:
+        return 'Kitchen Preparing';
+      case OrderStage.readyForPickup:
+        return 'Ready for Pickup';
+      case OrderStage.dispatched:
+        return 'Courier on the Way';
+      case OrderStage.delivered:
+        return 'Order Delivered';
+      case OrderStage.cancelled:
+        return 'Order Cancelled';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case OrderStage.placed:
+        return 'We received your order and are securing a courier';
+      case OrderStage.riderAssigned:
+        return 'Courier is traveling to the store';
+      case OrderStage.preparing:
+        return 'Chef is preparing your fresh meal';
+      case OrderStage.readyForPickup:
+        return 'Order packed and waiting for courier pickup';
+      case OrderStage.dispatched:
+        return 'Your courier is riding to your delivery address';
+      case OrderStage.delivered:
+        return 'Enjoy your meal! Thank you for choosing DeliveryOS';
+      case OrderStage.cancelled:
+        return 'This order has been cancelled';
+    }
+  }
+
+  int get stepperIndex {
+    switch (this) {
+      case OrderStage.placed:
+        return 0;
+      case OrderStage.riderAssigned:
+        return 1;
+      case OrderStage.preparing:
+        return 2;
+      case OrderStage.readyForPickup:
+        return 3;
+      case OrderStage.dispatched:
+        return 4;
+      case OrderStage.delivered:
+        return 5;
+      case OrderStage.cancelled:
+        return -1;
+    }
+  }
+}
+
+class StoreMeta {
+  final String id;
+  final String name;
+  final String address;
+  final String phone;
+  final double latitude;
+  final double longitude;
+
+  StoreMeta({
+    required this.id,
+    required this.name,
+    required this.address,
+    required this.phone,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  factory StoreMeta.defaultSultansDine() {
+    return StoreMeta(
+      id: 'b8b33bf6-6b22-4bb3-9d41-e9fb94c25601',
+      name: "Sultan's Dine - Banani",
+      address: 'House 42, Road 11, Banani, Dhaka',
+      phone: '+8801711223344',
+      latitude: 23.7925,
+      longitude: 90.4078,
+    );
+  }
+}
+
+class RiderMeta {
+  final String id;
+  final String name;
+  final String phone;
+  final String vehicleType;
+  final double rating;
+  final double latitude;
+  final double longitude;
+  final double bearing;
+  final double speed;
+
+  RiderMeta({
+    required this.id,
+    required this.name,
+    required this.phone,
+    this.vehicleType = 'Motorcycle',
+    this.rating = 4.9,
+    required this.latitude,
+    required this.longitude,
+    this.bearing = 45.0,
+    this.speed = 28.0,
+  });
+
+  factory RiderMeta.pilotRider({double? lat, double? lng}) {
+    return RiderMeta(
+      id: 'rider-tanvir-01',
+      name: 'Tanvir Hossain',
+      phone: '+8801700112233',
+      vehicleType: 'Honda CB Shine 125',
+      rating: 4.92,
+      latitude: lat ?? 23.7900,
+      longitude: lng ?? 90.4090,
+      bearing: 55.0,
+      speed: 32.0,
+    );
+  }
+
+  RiderMeta copyWith({
+    double? latitude,
+    double? longitude,
+    double? bearing,
+    double? speed,
+  }) {
+    return RiderMeta(
+      id: id,
+      name: name,
+      phone: phone,
+      vehicleType: vehicleType,
+      rating: rating,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      bearing: bearing ?? this.bearing,
+      speed: speed ?? this.speed,
+    );
+  }
+}
+
+class CustomerMeta {
+  final String address;
+  final String phone;
+  final double latitude;
+  final double longitude;
+
+  CustomerMeta({
+    required this.address,
+    required this.phone,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  factory CustomerMeta.defaultCustomer() {
+    return CustomerMeta(
+      address: 'House 14, Road 7, Banani, Dhaka',
+      phone: '+8801700000005',
+      latitude: 23.7940,
+      longitude: 90.4030,
+    );
+  }
+}
+
+class OrderTrackingState {
+  final String orderId;
+  final String orderNumber;
+  final OrderStage stage;
+  final StoreMeta store;
+  final RiderMeta? rider;
+  final CustomerMeta customer;
+  final int estimatedMinutesRemaining;
+  final int itemsCount;
+  final double totalAmount;
+  final bool isLoading;
+  final String? error;
+
+  OrderTrackingState({
+    required this.orderId,
+    required this.orderNumber,
+    required this.stage,
+    required this.store,
+    this.rider,
+    required this.customer,
+    this.estimatedMinutesRemaining = 18,
+    this.itemsCount = 2,
+    this.totalAmount = 480.0,
+    this.isLoading = false,
+    this.error,
+  });
+
+  bool get isCompleted => stage == OrderStage.delivered;
+  bool isStageCompleted(OrderStage s) => stage.stepperIndex > s.stepperIndex;
+  bool isStageActive(OrderStage s) => stage == s;
+
+  OrderTrackingState copyWith({
+    OrderStage? stage,
+    StoreMeta? store,
+    RiderMeta? rider,
+    CustomerMeta? customer,
+    int? estimatedMinutesRemaining,
+    int? itemsCount,
+    double? totalAmount,
+    bool? isLoading,
+    String? error,
+  }) {
+    return OrderTrackingState(
+      orderId: orderId,
+      orderNumber: orderNumber,
+      stage: stage ?? this.stage,
+      store: store ?? this.store,
+      rider: rider ?? this.rider,
+      customer: customer ?? this.customer,
+      estimatedMinutesRemaining: estimatedMinutesRemaining ?? this.estimatedMinutesRemaining,
+      itemsCount: itemsCount ?? this.itemsCount,
+      totalAmount: totalAmount ?? this.totalAmount,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
+}

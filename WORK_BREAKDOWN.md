@@ -329,8 +329,8 @@ graph TD
 - **Context Docs**:
   - [`BRD-04: Screens 8 & 9`](./context_docs/business-requirements-documents/04-customer-experience-and-journey.md)
 - **Validation Checklist**:
-  - [ ] Order status updates smoothly in real time as store and rider advance states.
-  - [ ] Re-order alerts user if an item from past order is currently sold out.
+  - [x] Order status updates smoothly in real time as store and rider advance states.
+  - [x] Re-order alerts user if an item from past order is currently sold out.
 
 ---
 
