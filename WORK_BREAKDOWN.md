@@ -216,8 +216,8 @@ graph TD
 - **Context Docs**:
   - [`TID-06: Frontend & Mobile Architecture (Section 2)`](./context_docs/technical-implementation-documents/06-frontend-and-mobile-architecture.md)
 - **Validation Checklist**:
-  - [ ] App compiles and runs with Vite dev server.
-  - [ ] Non-authenticated visits to `/admin` redirect to login.
+  - [x] App compiles and runs with Vite dev server.
+  - [x] Non-authenticated visits to `/admin` redirect to login.
 
 ---
 
