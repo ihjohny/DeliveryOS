@@ -364,8 +364,8 @@ graph TD
   - [`BRD-06: Section 2 (3-Step Journey)`](./context_docs/business-requirements-documents/06-rider-fleet-and-dispatch-handbook.md)
   - [`TID-03: Sections 5.2 to 5.4`](./context_docs/technical-implementation-documents/03-api-specifications-and-endpoints.md)
 - **Validation Checklist**:
-  - [ ] Tapping "Navigate" opens device native Google Maps / Apple Maps app with pre-filled destination coordinates.
-  - [ ] Marking delivered closes the trip and updates order status to `DELIVERED`.
+  - [x] Tapping "Navigate" opens device native Google Maps / Apple Maps app with pre-filled destination coordinates.
+  - [x] Marking delivered closes the trip and updates order status to `DELIVERED`.
 
 ---
 

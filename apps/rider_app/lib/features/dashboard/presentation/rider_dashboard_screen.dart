@@ -5,6 +5,10 @@ import '../../auth/domain/auth_models.dart';
 import '../../auth/presentation/pending_approval_screen.dart';
 import '../../auth/presentation/phone_login_screen.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../trips/domain/trip_models.dart';
+import '../../trips/presentation/active_trip_screen.dart';
+import '../../trips/presentation/widgets/incoming_trip_modal.dart';
+import '../../trips/providers/trip_provider.dart';
 import '../domain/duty_models.dart';
 import '../providers/duty_provider.dart';
 
@@ -15,7 +19,18 @@ class RiderDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(riderAuthProvider);
     final dutyState = ref.watch(riderDutyProvider);
+    final tripState = ref.watch(riderTripProvider);
     final profile = authState.profile;
+
+    ref.listen(riderTripProvider, (previous, next) {
+      if (next.hasIncomingAlert && previous?.incomingTrip?.id != next.incomingTrip?.id) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => IncomingTripModal(trip: next.incomingTrip!),
+        );
+      }
+    });
 
     // Safety Invariant: unapproved accounts cannot access active dashboard
     if (authState.isPendingApproval || profile?.status == AccountStatus.pendingApproval) {
@@ -47,6 +62,12 @@ class RiderDashboardScreen extends ConsumerWidget {
               _buildDutySwitchCard(context, ref, dutyState, isOnline),
               const SizedBox(height: 16),
 
+              // Active Delivery In-Progress Banner (if active)
+              if (tripState.hasActiveTrip) ...[
+                _buildActiveTripBanner(context, tripState.activeTrip!),
+                const SizedBox(height: 16),
+              ],
+
               // Live GPS Radar Telemetry Card
               _buildGpsTelemetryCard(dutyState),
               const SizedBox(height: 16),
@@ -56,7 +77,7 @@ class RiderDashboardScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // Dispatch Radar Status
-              _buildDispatchRadarStatus(isOnline),
+              _buildDispatchRadarStatus(context, ref, isOnline, tripState),
             ],
           ),
         ),
@@ -459,7 +480,76 @@ class RiderDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDispatchRadarStatus(bool isOnline) {
+  Widget _buildActiveTripBanner(BuildContext context, TripOrder trip) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.navigation_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'ACTIVE TRIP: ${trip.orderNumber}',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  trip.currentStep.stepTitle,
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${trip.store.name} ➔ ${trip.customer.address}',
+            style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 14),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ActiveTripScreen()),
+              );
+            },
+            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+            label: const Text('RESUME FULFILLMENT', style: TextStyle(fontWeight: FontWeight.w900)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDispatchRadarStatus(BuildContext context, WidgetRef ref, bool isOnline, RiderTripState tripState) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -493,6 +583,24 @@ class RiderDashboardScreen extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
           ),
+          if (isOnline && !tripState.hasActiveTrip) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () {
+                ref.read(riderTripProvider.notifier).simulateIncomingBroadcast();
+              },
+              icon: const Icon(Icons.bolt_rounded, size: 18, color: AppColors.dutyOnline),
+              label: const Text(
+                'Simulate Order Broadcast (Pilot Demo)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.dutyOnline),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+            ),
+          ],
         ],
       ),
     );
