@@ -29,13 +29,13 @@ graph TD
 - **Objective**: Establish the workspace structure for backend, web portal, and shared configurations.
 - **Deliverables**:
   - Root directory organization (`/services`, `/apps`, shared configurations, and modular monorepo structure).
-  - Docker Compose setup (`docker-compose.yml`) spinning up PostgreSQL 16 (with PostGIS extension) and Redis 7.
+  - Docker Compose setup (`deploy/docker-compose.yml`) spinning up PostgreSQL 16 (with PostGIS extension) and Redis 7.
   - Environment variables blueprint (`.env.example`) with multi-region presets (`BD` / `KSA`).
 - **Context Docs**:
   - [`TID-07: Deployment & Environment Setup`](./context_docs/technical-implementation-documents/07-deployment-devops-and-environment-setup.md)
   - [`TID-01: System Architecture & Tech Stack`](./context_docs/technical-implementation-documents/01-system-architecture-and-tech-stack.md)
 - **Validation Checklist**:
-  - [x] `docker compose up -d` boots Postgres with PostGIS and Redis without errors.
+  - [x] `docker compose -f deploy/docker-compose.yml up -d` boots Postgres with PostGIS and Redis without errors.
   - [x] Database connection test script confirms PostGIS extensions (`uuid-ossp`, `postgis`) are active.
   - [x] Redis responds to `PING` with `PONG`.
 
@@ -403,15 +403,17 @@ graph TD
 ### Task 7.2: Production Docker & Cloud Server Provisioning
 - **Objective**: Deploy backend services, database, cache, and web portal to cloud infrastructure.
 - **Deliverables**:
-  - Production `docker-compose.prod.yml` with Nginx reverse proxy and Let's Encrypt SSL.
+  - Production `deploy/docker-compose.prod.yml` with Nginx reverse proxy and Let's Encrypt SSL.
   - Automated daily PostgreSQL backup cron script.
   - Web portal build deployed to Nginx / Cloudflare Pages.
   - Environment variables configured for production domains and payment/SMS gateways.
 - **Context Docs**:
   - [`TID-07: Deployment, DevOps & Setup`](./context_docs/technical-implementation-documents/07-deployment-devops-and-environment-setup.md)
 - **Validation Checklist**:
-  - [ ] SSL rating A on production domain.
-  - [ ] Health check endpoint `GET /api/v1/health` returns `200 OK` with database and Redis status healthy.
+  - [x] Health check endpoint `GET /api/v1/health` returns `200 OK` with database and Redis status healthy.
+  - [x] Automated daily PostgreSQL backup script with 7-day retention (`scripts/backup-db.sh`).
+  - [x] Local multi-container Docker orchestration (`deploy/docker-compose.yml`) with Nginx reverse proxy.
+  - [ ] SSL rating A on production domain (deferred to Cloud VPS deployment).
 
 ---
 

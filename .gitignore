@@ -19,12 +19,13 @@ node_modules/
 .pnp
 .pnp.js
 
-# Build Outputs
+# Build Outputs & Archives
 dist/
 build/
 out/
 .next/
 *.tsbuildinfo
+backups/
 
 # Flutter & Dart
 .dart_tool/

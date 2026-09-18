@@ -11,6 +11,7 @@ import { RiderModule } from './modules/riders/rider.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { OrderFlowModule } from './modules/order-flow/order-flow.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AdminModule } from './modules/admin/admin.module';
     }),
     PrismaModule,
     RedisModule,
+    HealthModule,
     AuthModule,
     VendorModule,
     PromotionsModule,

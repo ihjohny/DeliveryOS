@@ -123,10 +123,11 @@ DeliveryOS/
 │       │   └── main.ts
 │       └── package.json
 │
-├── deploy/                     # Dockerfiles, Docker Compose, Nginx conf, scripts
-│   ├── docker-compose.yml
-│   ├── nginx.conf
-│   └── init-postgis.sql
+├── deploy/                     # Docker Compose, Nginx ingress conf, SQL scripts
+│   ├── docker-compose.yml      # Local development multi-container stack
+│   ├── docker-compose.prod.yml # Production Cloud VPS stack (SSL & certbot)
+│   ├── nginx.local.conf        # Edge ingress proxy configuration
+│   └── init-postgis.sql        # PostGIS extension initialization
 │
 └── README.md
 ```
