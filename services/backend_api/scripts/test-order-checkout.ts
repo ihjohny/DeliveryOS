@@ -45,7 +45,7 @@ async function runOrderCheckoutTest() {
 
     // Fetch Outlets & Products
     const gulshanOutlet = await prisma.vendor.findFirst({
-      where: { name: { contains: 'Gulshan' } },
+      where: { name: { contains: 'Gulshan Branch' } },
       include: {
         products: {
           include: { variants: true, addonGroups: { include: { addons: true } } },
@@ -64,7 +64,7 @@ async function runOrderCheckoutTest() {
       throw new Error('Gulshan or FreshMart outlet not found in database');
     }
 
-    const gulshanProduct = gulshanOutlet.products[0];
+    const gulshanProduct = gulshanOutlet.products.find((p) => Number(p.basePrice) >= 250) || gulshanOutlet.products[0];
     const freshmartProduct = freshmartOutlet.products[0];
 
     // Customer In-Coverage Address

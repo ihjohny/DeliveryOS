@@ -19,7 +19,8 @@
     "vendor-rider:test": "ts-node scripts/test-vendor-rider.ts",
     "ws:test": "ts-node scripts/test-websocket-tracking.ts",
     "dispatch:test": "ts-node scripts/test-order-dispatch-fsm.ts",
-    "tracking:test": "ts-node scripts/test-live-tracking.ts"
+    "tracking:test": "ts-node scripts/test-live-tracking.ts",
+    "e2e:test": "ts-node scripts/test-e2e-lifecycle.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

@@ -395,8 +395,8 @@ graph TD
 - **Context Docs**:
   - [`BRD-00: Section 4 & 5`](./context_docs/business-requirements-documents/00-master-product-overview.md)
 - **Validation Checklist**:
-  - [ ] Complete order journey executes with 0 state machine errors or orphaned records.
-  - [ ] Financial double-entry ledgers balance to the penny.
+  - [x] Complete order journey executes with 0 state machine errors or orphaned records.
+  - [x] Financial double-entry ledgers balance to the penny.
 
 ---
 
