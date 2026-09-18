@@ -43,8 +43,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await apiClient.post('/api/v1/auth/otp/verify', {
         phone,
-        otp: password || '123456',
+        otp: password,
       });
+
       const payload = response.data?.data || response.data;
       const accessToken = payload.accessToken || payload.token;
       const userData = payload.user;

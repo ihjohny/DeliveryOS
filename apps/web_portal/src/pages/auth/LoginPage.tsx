@@ -52,7 +52,7 @@ export const LoginPage: React.FC = () => {
 
   const handleQuickFill = (demoPhone: string) => {
     setPhone(demoPhone);
-    setPassword('password123');
+    setPassword('123456');
     setErrorMsg(null);
   };
 
