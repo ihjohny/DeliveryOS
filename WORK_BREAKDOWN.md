@@ -378,8 +378,8 @@ graph TD
 - **Context Docs**:
   - [`BRD-03: Section 5 (COD & Settlement)`](./context_docs/business-requirements-documents/03-core-business-rules-and-workflows.md)
 - **Validation Checklist**:
-  - [ ] Rider cash balance increments by exact collected amount upon COD completion.
-  - [ ] Reaching cash limit alerts rider to deposit funds before taking more cash orders.
+  - [x] Rider cash balance increments by exact collected amount upon COD completion.
+  - [x] Reaching cash limit alerts rider to deposit funds before taking more cash orders.
 
 ---
 

@@ -5,6 +5,7 @@ import '../../auth/domain/auth_models.dart';
 import '../../auth/presentation/pending_approval_screen.dart';
 import '../../auth/presentation/phone_login_screen.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../earnings/presentation/rider_earnings_screen.dart';
 import '../../trips/domain/trip_models.dart';
 import '../../trips/presentation/active_trip_screen.dart';
 import '../../trips/presentation/widgets/incoming_trip_modal.dart';
@@ -58,6 +59,12 @@ class RiderDashboardScreen extends ConsumerWidget {
               _buildTopBar(context, ref, profile),
               const SizedBox(height: 16),
 
+              // Urgent COD Safety Limit Alert Banner (if reached)
+              if (dutyState.isCashLimitReached) ...[
+                _buildCashLimitAlertBanner(context, dutyState),
+                const SizedBox(height: 16),
+              ],
+
               // Prominent Sunlight-Readable Duty Switch Card
               _buildDutySwitchCard(context, ref, dutyState, isOnline),
               const SizedBox(height: 16),
@@ -73,7 +80,7 @@ class RiderDashboardScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // Daily Performance & Cash Safety Overview
-              _buildPerformanceMetrics(dutyState),
+              _buildPerformanceMetrics(context, dutyState),
               const SizedBox(height: 16),
 
               // Dispatch Radar Status
@@ -160,6 +167,15 @@ class RiderDashboardScreen extends ConsumerWidget {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 22),
+            tooltip: 'Earnings & COD Wallet',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const RiderEarningsScreen()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppColors.textSecondary, size: 20),
             tooltip: 'Log Out',
             onPressed: () async {
@@ -171,6 +187,54 @@ class RiderDashboardScreen extends ConsumerWidget {
                 );
               }
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCashLimitAlertBanner(BuildContext context, RiderDutyState state) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.errorBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.error, width: 1.5),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'COD SAFETY LIMIT REACHED',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.error, letterSpacing: 0.5),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Collected: ৳${state.codCashInHand.toStringAsFixed(0)} / Limit: ৳${state.cashSafetyLimit.toStringAsFixed(0)}. Deposit cash to unblock COD trips.',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const RiderEarningsScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            child: const Text('DEPOSIT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
           ),
         ],
       ),
@@ -356,13 +420,29 @@ class RiderDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPerformanceMetrics(RiderDutyState state) {
+  Widget _buildPerformanceMetrics(BuildContext context, RiderDutyState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'TODAY\'S PERFORMANCE',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.5),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'TODAY\'S PERFORMANCE',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.5),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const RiderEarningsScreen()),
+                );
+              },
+              child: const Text(
+                'View All ➔',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.primary),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
         Row(
@@ -389,59 +469,81 @@ class RiderDashboardScreen extends ConsumerWidget {
         const SizedBox(height: 12),
 
         // Cash-in-Hand vs Safety Limit Card
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.payments_rounded, color: AppColors.warning, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'COD Cash in Hand',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const RiderEarningsScreen()),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: state.isCashLimitReached ? AppColors.error : AppColors.border,
+                width: state.isCashLimitReached ? 1.5 : 1.0,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.payments_rounded, color: AppColors.warning, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'COD Cash in Hand',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '৳${state.codCashInHand.toStringAsFixed(0)} / ৳${state.cashSafetyLimit.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: state.isCashLimitReached ? AppColors.error : AppColors.textPrimary,
                       ),
-                    ],
-                  ),
-                  Text(
-                    '৳${state.codCashInHand.toStringAsFixed(0)} / ৳${state.cashSafetyLimit.toStringAsFixed(0)}',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: (state.codCashInHand / state.cashSafetyLimit).clamp(0.0, 1.0),
-                  minHeight: 8,
-                  backgroundColor: AppColors.background,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    state.isCashLimitReached ? AppColors.error : AppColors.warning,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: (state.codCashInHand / state.cashSafetyLimit).clamp(0.0, 1.0),
+                    minHeight: 8,
+                    backgroundColor: AppColors.background,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      state.isCashLimitReached ? AppColors.error : AppColors.warning,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                state.isCashLimitReached
-                    ? '⚠️ Cash safety limit reached! Deposit cash to accept more COD orders.'
-                    : 'Safe limit remaining: ৳${(state.cashSafetyLimit - state.codCashInHand).toStringAsFixed(0)}',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: state.isCashLimitReached ? AppColors.error : AppColors.textSecondary,
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        state.isCashLimitReached
+                            ? '⚠️ Cash safety limit reached! Deposit cash to accept more COD orders.'
+                            : 'Safe limit remaining: ৳${(state.cashSafetyLimit - state.codCashInHand).toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: state.isCashLimitReached ? AppColors.error : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textSecondary),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/dio_client.dart';
+import '../../dashboard/domain/duty_models.dart';
 import '../../dashboard/providers/duty_provider.dart';
 import '../domain/trip_models.dart';
 
@@ -87,6 +88,16 @@ class RiderTripNotifier extends Notifier<RiderTripState> {
   }
 
   Future<bool> claimTrip(TripOrder trip) async {
+    final dutyState = ref.read(riderDutyProvider);
+
+    // INVARIANT GUARD: Block accepting new COD trips if cash_in_hand >= max_cash_limit
+    if (trip.isCod && dutyState.isCashLimitReached) {
+      state = state.copyWith(
+        error: 'COD Safety Limit Reached (৳${dutyState.cashSafetyLimit.toStringAsFixed(0)}). Deposit cash at the central hub before accepting COD trips.',
+      );
+      return false;
+    }
+
     _countdownTimer?.cancel();
     _countdownTimer = null;
 
@@ -181,10 +192,23 @@ class RiderTripNotifier extends Notifier<RiderTripState> {
       // Dev mode fallback
     }
 
-    // Credit rider wallet metrics
+    final completedRecord = RiderCompletedTrip(
+      orderId: trip.id,
+      orderNumber: trip.orderNumber,
+      storeName: trip.store.name,
+      customerAddress: trip.customer.address,
+      completedAt: DateTime.now(),
+      payout: trip.payout,
+      codCollected: trip.isCod ? amountCollected : 0.0,
+      isCod: trip.isCod,
+      distanceKm: trip.distanceKm,
+    );
+
+    // Credit rider wallet metrics & completed trip history
     ref.read(riderDutyProvider.notifier).simulateTripCompleted(
           payout: trip.payout,
           codCollected: trip.isCod ? amountCollected : 0.0,
+          tripRecord: completedRecord,
         );
 
     state = state.copyWith(

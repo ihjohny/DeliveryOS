@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../dashboard/providers/duty_provider.dart';
 import '../../domain/trip_models.dart';
 import '../../providers/trip_provider.dart';
 import '../active_trip_screen.dart';
@@ -16,8 +17,10 @@ class IncomingTripModal extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tripState = ref.watch(riderTripProvider);
+    final dutyState = ref.watch(riderDutyProvider);
     final remainingSecs = tripState.countdownSeconds;
     final progress = (remainingSecs / 45.0).clamp(0.0, 1.0);
+    final isBlockedByCashLimit = trip.isCod && dutyState.isCashLimitReached;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -222,13 +225,59 @@ class IncomingTripModal extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Safety limit blocking alert
+            if (isBlockedByCashLimit) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.errorBackground,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'COD Safety Limit Reached (৳${dutyState.codCashInHand.toStringAsFixed(0)} / ৳${dutyState.cashSafetyLimit.toStringAsFixed(0)}). Deposit cash at the hub before taking new COD orders.',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.error,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            if (tripState.error != null) ...[
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.errorBackground,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.error),
+                ),
+                child: Text(
+                  tripState.error!,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.error),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
 
             // Big Accept Button (height >= 56px)
             SizedBox(
               height: 56,
               child: ElevatedButton(
-                onPressed: tripState.isClaiming
+                onPressed: (tripState.isClaiming || isBlockedByCashLimit)
                     ? null
                     : () async {
                         final success = await ref.read(riderTripProvider.notifier).claimTrip(trip);
@@ -240,8 +289,10 @@ class IncomingTripModal extends ConsumerWidget {
                         }
                       },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.dutyOnline,
+                  backgroundColor: isBlockedByCashLimit ? AppColors.borderStrong : AppColors.dutyOnline,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.borderStrong.withValues(alpha: 0.5),
+                  disabledForegroundColor: Colors.white70,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
                 ),
@@ -251,14 +302,14 @@ class IncomingTripModal extends ConsumerWidget {
                         width: 22,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                       )
-                    : const Row(
+                    : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.check_circle_rounded, size: 22),
-                          SizedBox(width: 8),
+                          Icon(isBlockedByCashLimit ? Icons.lock_rounded : Icons.check_circle_rounded, size: 22),
+                          const SizedBox(width: 8),
                           Text(
-                            'ACCEPT ORDER',
-                            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                            isBlockedByCashLimit ? 'COD LIMIT REACHED' : 'ACCEPT ORDER',
+                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                           ),
                         ],
                       ),

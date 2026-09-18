@@ -1,9 +1,12 @@
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:rider_app/core/network/dio_client.dart';
 import 'package:rider_app/core/storage/local_storage.dart';
 import 'package:rider_app/core/utils/native_launcher.dart';
 import 'package:rider_app/features/dashboard/providers/duty_provider.dart';
@@ -12,25 +15,44 @@ import 'package:rider_app/features/trips/presentation/active_trip_screen.dart';
 import 'package:rider_app/features/trips/presentation/widgets/incoming_trip_modal.dart';
 import 'package:rider_app/features/trips/providers/trip_provider.dart';
 
+class MockSuccessAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
+    return ResponseBody.fromString('{"success": true}', 200, headers: {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    });
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late LocalStorage storage;
+  late Dio testDio;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     storage = LocalStorage(prefs);
+    testDio = Dio();
+    testDio.httpClientAdapter = MockSuccessAdapter();
   });
+
+  ProviderContainer createContainer() {
+    return ProviderContainer(
+      overrides: [
+        localStorageProvider.overrideWithValue(storage),
+        dioClientProvider.overrideWithValue(testDio),
+      ],
+    );
+  }
 
   Widget createTestWidget({required Widget child, ProviderContainer? container}) {
     return UncontrolledProviderScope(
-      container: container ??
-          ProviderContainer(
-            overrides: [
-              localStorageProvider.overrideWithValue(storage),
-            ],
-          ),
+      container: container ?? createContainer(),
       child: MaterialApp(
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
@@ -61,9 +83,7 @@ void main() {
     });
 
     test('Triggering broadcast alert starts 45-second countdown timer', () {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createContainer();
 
       final notifier = container.read(riderTripProvider.notifier);
       final testTrip = TripOrder.pilotKacchiOrder();
@@ -79,9 +99,7 @@ void main() {
     });
 
     test('Claiming order transitions to Step 1 (Pick Up)', () async {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createContainer();
 
       final notifier = container.read(riderTripProvider.notifier);
       final testTrip = TripOrder.pilotKacchiOrder();
@@ -99,9 +117,7 @@ void main() {
     });
 
     test('Confirming pickup transitions order to DISPATCHED (Step 2: Delivering)', () async {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createContainer();
 
       final notifier = container.read(riderTripProvider.notifier);
       final testTrip = TripOrder.pilotKacchiOrder();
@@ -118,9 +134,7 @@ void main() {
     });
 
     test('COD delivery enforces cash collection verification checkbox', () async {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createContainer();
 
       final notifier = container.read(riderTripProvider.notifier);
       final testTrip = TripOrder.pilotKacchiOrder(isCod: true, totalAmount: 480.0, payout: 60.0);
@@ -158,9 +172,7 @@ void main() {
 
   group('Task 6.2 - UI & Widget Tests', () {
     testWidgets('IncomingTripModal displays payout, store, drop-off, and accept button', (tester) async {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createContainer();
       final testTrip = TripOrder.pilotKacchiOrder();
 
       await tester.pumpWidget(
@@ -183,11 +195,9 @@ void main() {
     });
 
     testWidgets('ActiveTripScreen renders Step 1 (Pick Up) with Directions and Call Store', (tester) async {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createContainer();
       final testTrip = TripOrder.pilotKacchiOrder();
-      await container.read(riderTripProvider.notifier).claimTrip(testTrip);
+      await tester.runAsync(() => container.read(riderTripProvider.notifier).claimTrip(testTrip));
 
       await tester.pumpWidget(
         createTestWidget(
@@ -207,12 +217,12 @@ void main() {
     });
 
     testWidgets('ActiveTripScreen renders Step 2 (Deliver) with Directions and Call Customer', (tester) async {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createContainer();
       final testTrip = TripOrder.pilotKacchiOrder();
-      await container.read(riderTripProvider.notifier).claimTrip(testTrip);
-      await container.read(riderTripProvider.notifier).confirmPickup();
+      await tester.runAsync(() async {
+        await container.read(riderTripProvider.notifier).claimTrip(testTrip);
+        await container.read(riderTripProvider.notifier).confirmPickup();
+      });
 
       await tester.pumpWidget(
         createTestWidget(
@@ -232,12 +242,12 @@ void main() {
     });
 
     testWidgets('ActiveTripScreen renders Step 3 (Handover) with COD verification checkbox', (tester) async {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createContainer();
       final testTrip = TripOrder.pilotKacchiOrder(isCod: true, totalAmount: 480.0);
-      await container.read(riderTripProvider.notifier).claimTrip(testTrip);
-      await container.read(riderTripProvider.notifier).confirmPickup();
+      await tester.runAsync(() async {
+        await container.read(riderTripProvider.notifier).claimTrip(testTrip);
+        await container.read(riderTripProvider.notifier).confirmPickup();
+      });
       container.read(riderTripProvider.notifier).proceedToHandover();
 
       await tester.pumpWidget(
