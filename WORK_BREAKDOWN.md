@@ -347,8 +347,8 @@ graph TD
   - [`BRD-06: Rider Fleet Handbook`](./context_docs/business-requirements-documents/06-rider-fleet-and-dispatch-handbook.md)
   - [`TID-03: Section 5.1`](./context_docs/technical-implementation-documents/03-api-specifications-and-endpoints.md)
 - **Validation Checklist**:
-  - [ ] Unapproved rider account is prevented from toggling online.
-  - [ ] Toggling online registers rider coordinates in Redis geo-index.
+  - [x] Unapproved rider account is prevented from toggling online.
+  - [x] Toggling online registers rider coordinates in Redis geo-index.
 
 ---
 
