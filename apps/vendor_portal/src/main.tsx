@@ -17,10 +17,13 @@ const queryClient = new QueryClient({
   },
 });
 
+// Automatically adapt basename whether running behind Nginx /vendor/ reverse proxy or on direct port 3001
+const basename = window.location.pathname.startsWith('/vendor') ? '/vendor' : '/';
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename={basename}>
         <AuthProvider>
           <App />
         </AuthProvider>

@@ -25,7 +25,8 @@ apiClient.interceptors.response.use(
       if (!window.location.pathname.includes('/login')) {
         localStorage.removeItem('deliveryos_token');
         localStorage.removeItem('deliveryos_user');
-        window.location.href = '/login';
+        const loginPath = window.location.pathname.startsWith('/vendor') ? '/vendor/login' : '/login';
+        window.location.href = loginPath;
       }
     }
     return Promise.reject(error);

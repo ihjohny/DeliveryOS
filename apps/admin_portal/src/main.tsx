@@ -17,10 +17,13 @@ const queryClient = new QueryClient({
   },
 });
 
+// Support both root / and /admin subpath if navigated
+const basename = window.location.pathname.startsWith('/admin') ? '/admin' : '/';
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename={basename}>
         <AuthProvider>
           <App />
         </AuthProvider>
