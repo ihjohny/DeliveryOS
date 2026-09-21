@@ -86,7 +86,7 @@ async function runVerification() {
       return userRole === 'SUPER_ADMIN';
     }
     if (route.startsWith('/vendor')) {
-      return userRole === 'VENDOR_ADMIN' || userRole === 'SUPER_ADMIN';
+      return userRole === 'VENDOR_ADMIN';
     }
     return true;
   }
@@ -94,7 +94,7 @@ async function runVerification() {
   assert(!canAccessRoute('/admin', null), 'Unauthenticated visit to /admin blocked (redirects to /login)');
   assert(!canAccessRoute('/vendor', null), 'Unauthenticated visit to /vendor blocked (redirects to /login)');
   assert(canAccessRoute('/admin', 'SUPER_ADMIN'), 'Super Admin permitted on /admin');
-  assert(canAccessRoute('/vendor', 'SUPER_ADMIN'), 'Super Admin permitted on /vendor');
+  assert(!canAccessRoute('/vendor', 'SUPER_ADMIN'), 'Super Admin strictly blocked from /vendor (must use Admin Portal)');
   assert(!canAccessRoute('/admin', 'VENDOR_ADMIN'), 'Vendor Admin blocked from /admin (redirects to /unauthorized)');
   assert(canAccessRoute('/vendor', 'VENDOR_ADMIN'), 'Vendor Admin permitted on /vendor');
   assert(!canAccessRoute('/admin', 'CUSTOMER'), 'Customer blocked from /admin');

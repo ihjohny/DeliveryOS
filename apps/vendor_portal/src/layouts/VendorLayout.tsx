@@ -37,8 +37,8 @@ const VendorLayoutInner: React.FC = () => {
   ];
 
   const isActive = (href: string) => {
-    if (href === '/') return location.pathname === '/' || location.pathname === '/vendor' || location.pathname === '/kds';
-    return location.pathname === href || location.pathname.startsWith(`${href}/`) || location.pathname.startsWith(`/vendor${href}`);
+    if (href === '/') return location.pathname === '/' || location.pathname === '/kds';
+    return location.pathname === href || location.pathname.startsWith(`${href}/`);
   };
 
   const toggleSound = () => {
@@ -175,7 +175,7 @@ const VendorLayoutInner: React.FC = () => {
               </span>
             </div>
             <Link
-              to="/vendor/settings"
+              to="/settings"
               className="rounded bg-slate-950/20 px-2 py-0.5 text-slate-950 hover:bg-slate-950/30 transition-colors"
             >
               Manage

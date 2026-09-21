@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import kdsApi from '../services/kdsApi';
+import kdsApi, { normalizeKDSOrder } from '../services/kdsApi';
 import { getSocket } from '../services/socket';
 import { KDSOrder } from '../types/kds';
 import { soundEngine } from '../utils/sound';
@@ -20,29 +20,42 @@ export const useKDSOrders = (vendorId?: string) => {
   useEffect(() => {
     const socket = getSocket();
 
-    const handleNewOrder = (newOrder: KDSOrder) => {
+    const handleNewOrder = (incoming: any) => {
       // Start persistent looped audio alarm
       soundEngine.startOrderAlarm();
 
+      const raw = incoming?.data || incoming;
+      const newOrder = normalizeKDSOrder(raw);
+      if (!newOrder || !newOrder.id) return;
+
       // Update query cache
       queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) => {
-        const exists = old.some((o) => o.id === newOrder.id);
+        const safeOld = Array.isArray(old) ? old : [];
+        const exists = safeOld.some((o) => o.id === newOrder.id);
         if (exists) {
-          return old.map((o) => (o.id === newOrder.id ? { ...o, ...newOrder } : o));
+          return safeOld.map((o) => (o.id === newOrder.id ? { ...o, ...newOrder } : o));
         }
-        return [newOrder, ...old];
+        return [newOrder, ...safeOld];
       });
     };
 
-    const handleStatusChanged = (payload: { orderId: string; newStatus: string; prepTime?: number }) => {
+    const handleStatusChanged = (payload: any) => {
+      const data = payload?.data || payload;
+      const orderId = data?.orderId || data?.id;
+      const newStatus = data?.newStatus || data?.status;
+      const prepTime = data?.prepTime ?? data?.prepTimeMinutes;
+
+      if (!orderId) return;
+
       queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) => {
-        return old.map((o) => {
-          if (o.id === payload.orderId) {
+        const safeOld = Array.isArray(old) ? old : [];
+        return safeOld.map((o) => {
+          if (o.id === orderId) {
             return {
               ...o,
-              status: payload.newStatus as KDSOrder['status'],
-              prepTimeMinutes: payload.prepTime ?? o.prepTimeMinutes,
-              acceptedAt: payload.newStatus === 'PREPARING' ? new Date().toISOString() : o.acceptedAt,
+              status: (newStatus || o.status) as KDSOrder['status'],
+              prepTimeMinutes: prepTime ?? o.prepTimeMinutes,
+              acceptedAt: newStatus === 'PREPARING' ? new Date().toISOString() : o.acceptedAt,
             };
           }
           return o;
@@ -51,8 +64,8 @@ export const useKDSOrders = (vendorId?: string) => {
 
       // Check if any unaccepted new orders remain; if none, silence alarm
       const currentOrders = queryClient.getQueryData<KDSOrder[]>(queryKey) || [];
-      const hasUnaccepted = currentOrders.some(
-        (o) => (o.status === 'PLACED' || o.status === 'RIDER_ASSIGNED') && o.id !== payload.orderId
+      const hasUnaccepted = Array.isArray(currentOrders) && currentOrders.some(
+        (o) => (o.status === 'PLACED' || o.status === 'RIDER_ASSIGNED') && o.id !== orderId
       );
       if (!hasUnaccepted) {
         soundEngine.stopOrderAlarm();
@@ -99,23 +112,25 @@ export const useKDSOrders = (vendorId?: string) => {
   });
 
   // 4. Categorize Orders into 3 Kanban Lanes
+  const safeOrders = useMemo(() => (Array.isArray(orders) ? orders : []), [orders]);
+
   const newOrders = useMemo(
-    () => orders.filter((o) => o.status === 'PLACED' || o.status === 'RIDER_ASSIGNED'),
-    [orders]
+    () => safeOrders.filter((o) => o && (o.status === 'PLACED' || o.status === 'RIDER_ASSIGNED')),
+    [safeOrders]
   );
 
   const inPreparationOrders = useMemo(
-    () => orders.filter((o) => o.status === 'ACCEPTED' || o.status === 'PREPARING'),
-    [orders]
+    () => safeOrders.filter((o) => o && (o.status === 'ACCEPTED' || o.status === 'PREPARING')),
+    [safeOrders]
   );
 
   const readyOrders = useMemo(
-    () => orders.filter((o) => o.status === 'READY_FOR_PICKUP'),
-    [orders]
+    () => safeOrders.filter((o) => o && o.status === 'READY_FOR_PICKUP'),
+    [safeOrders]
   );
 
   return {
-    orders,
+    orders: safeOrders,
     isLoading,
     refetch,
     newOrders,

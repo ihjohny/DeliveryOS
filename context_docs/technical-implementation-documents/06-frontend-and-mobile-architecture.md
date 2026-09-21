@@ -70,7 +70,7 @@ The web tier is split into two single-responsibility Single Page Applications (S
 2. **Vendor Store & Kitchen Order Console (`apps/vendor_portal`)** — Port `3001`:
    - **Theme**: Warm Amber & Flame Orange culinary palette (`primary-500: #f59e0b`, `culinary-600: #ea580c`) optimized for high-contrast kitchen tablets.
    - **Scope**: 3-lane KDS order Kanban (`New`, `Preparing`, `Ready`), persistent looped chime, custom prep timers (`15m`, `25m`, `35m`), catalog stock toggle, rush pause, and outlet sales ledger.
-   - **Role Guard**: Restricted to `VENDOR_ADMIN` (with `SUPER_ADMIN` store inspection capability).
+   - **Role Guard**: Exclusively restricted to `VENDOR_ADMIN`. Platform Super Admins access and govern vendor data strictly through the Admin Portal (`apps/admin_portal`).
 
 ```
 apps/
@@ -78,7 +78,7 @@ apps/
 │   ├── components/ui/       # Enterprise UI components (Button, Modal, Table, Input)
 │   ├── contexts/            # AuthContext
 │   ├── pages/admin/         # Dashboard, Vendors, Dispatch, Orders, Promotions, Settings
-│   ├── routes/              # Super Admin RoleGuard & routes
+│   ├── routes/              # Super Admin RoleGuard & routes (Direct paths, no backward-compatibility redirects)
 │   ├── layouts/             # AdminLayout & AuthLayout
 │   └── main.tsx
 │
@@ -88,7 +88,7 @@ apps/
     ├── contexts/            # AuthContext, VendorOutletContext
     ├── hooks/               # useKDSOrders with Socket.IO chime triggers
     ├── pages/vendor/        # KDS Kitchen Console, Catalog Stock, Settings, Orders Ledger
-    ├── routes/              # Vendor RoleGuard & routes
+    ├── routes/              # Vendor RoleGuard & routes (Direct paths, strictly VENDOR_ADMIN)
     ├── layouts/             # VendorLayout & AuthLayout
     └── main.tsx
 ```
@@ -115,12 +115,13 @@ apps/
 // In vendor_portal/src/routes/AppRoutes.tsx:
 <Route
   element={
-    <RoleGuard allowedRoles={[UserRole.VENDOR_ADMIN, UserRole.SUPER_ADMIN]}>
+    <RoleGuard allowedRoles={[UserRole.VENDOR_ADMIN]}>
       <VendorLayout />
     </RoleGuard>
   }
 >
   <Route path="/" element={<VendorDashboardPage />} />
+  <Route path="/kds" element={<VendorDashboardPage />} />
   <Route path="/catalog" element={<VendorCatalogPage />} />
   <Route path="/orders" element={<VendorOrdersPage />} />
   <Route path="/settings" element={<VendorSettingsPage />} />

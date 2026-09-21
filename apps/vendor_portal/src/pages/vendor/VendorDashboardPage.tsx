@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useVendorOutlet } from '../../contexts/VendorOutletContext';
 import { useKDSOrders } from '../../hooks/useKDSOrders';
 import { KDSOrderCard } from '../../components/kds/KDSOrderCard';
 import { Button } from '../../components/ui/Button';
@@ -21,6 +22,13 @@ import { soundEngine } from '../../utils/sound';
 export const VendorDashboardPage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { activeOutletId, activeOutlet } = useVendorOutlet();
+
+  const targetVendorId =
+    activeOutletId && activeOutletId !== 'ALL'
+      ? activeOutletId
+      : user?.vendorId || undefined;
+
   const {
     isLoading,
     refetch,
@@ -33,10 +41,11 @@ export const VendorDashboardPage: React.FC = () => {
     isAccepting,
     isMarkingReady,
     isHandingOver,
-  } = useKDSOrders(user?.vendorId || undefined);
+  } = useKDSOrders(targetVendorId);
 
   const totalActive = newOrders.length + inPreparationOrders.length + readyOrders.length;
   const isMuted = soundEngine.getIsMuted();
+  const outletDisplayName = activeOutlet?.name || user?.vendorName || 'Consolidated Kitchen Operations';
 
   return (
     <div className="space-y-6">
@@ -52,7 +61,7 @@ export const VendorDashboardPage: React.FC = () => {
             </Badge>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            {user?.vendorName || 'Store Outlet'} &bull; Real-time kitchen order board & preparation dispatcher
+            {outletDisplayName} &bull; Real-time kitchen order board & preparation dispatcher
           </p>
         </div>
 

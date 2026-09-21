@@ -9,6 +9,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useVendorOutlet } from '../../contexts/VendorOutletContext';
 import kdsApi from '../../services/kdsApi';
 import { OutletCatalog } from '../../types/kds';
 import { Input } from '../../components/ui/Input';
@@ -18,11 +19,15 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 export const VendorCatalogPage: React.FC = () => {
   const { user } = useAuth();
+  const { activeOutletId, outlets } = useVendorOutlet();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
-  const vendorId = user?.vendorId || '';
+  const vendorId =
+    activeOutletId && activeOutletId !== 'ALL'
+      ? activeOutletId
+      : outlets[0]?.id || user?.vendorId || '';
 
   const { data: catalog, isLoading, refetch } = useQuery<OutletCatalog>({
     queryKey: ['vendor-catalog', vendorId],

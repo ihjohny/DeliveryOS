@@ -1,5 +1,73 @@
 import apiClient from './apiClient';
-import { KDSOrder, OutletCatalog } from '../types/kds';
+import { KDSOrder, OutletCatalog, KDSOrderItem } from '../types/kds';
+
+/**
+ * Normalizes backend Prisma order entity into typed KDSOrder format.
+ * Bridges differences between Prisma relational fields (orderItems, placedAt, rider.user)
+ * and the frontend UI model.
+ */
+export function normalizeKDSOrder(raw: any): KDSOrder {
+  if (!raw) return raw;
+
+  const rawItems = raw.items || raw.orderItems || [];
+  const items: KDSOrderItem[] = rawItems.map((item: any) => ({
+    id: item.id || '',
+    productId: item.productId || '',
+    productName: item.productName || item.productNameSnapshot || 'Item',
+    quantity: Number(item.quantity) || 1,
+    unitPrice: Number(item.unitPrice) || 0,
+    subtotal: Number(item.subtotal ?? item.totalPrice) || 0,
+    instructions: item.instructions || item.specialInstructions || null,
+    variant: item.variant || item.variantSnapshot || null,
+    toppings: item.toppings || item.addonsSnapshot || [],
+  }));
+
+  const rider = raw.rider
+    ? {
+        id: raw.rider.id,
+        fullName: raw.rider.fullName || raw.rider.user?.fullName || 'Assigned Rider',
+        phone: raw.rider.phone || raw.rider.user?.phone || '',
+        latitude: raw.rider.latitude,
+        longitude: raw.rider.longitude,
+      }
+    : null;
+
+  const customer = raw.customer
+    ? {
+        id: raw.customer.id || '',
+        fullName: raw.customer.fullName || raw.customerPhoneSnapshot || 'Customer',
+        phone: raw.customer.phone || raw.customerPhoneSnapshot || '',
+      }
+    : {
+        id: '',
+        fullName: raw.customerPhoneSnapshot || 'Customer',
+        phone: raw.customerPhoneSnapshot || '',
+      };
+
+  return {
+    id: raw.id,
+    orderNumber: raw.orderNumber || '',
+    vendorId: raw.vendorId || '',
+    status: raw.status,
+    subtotal: Number(raw.subtotal) || 0,
+    taxAmount: Number(raw.taxAmount) || 0,
+    deliveryFee: Number(raw.deliveryFee) || 0,
+    discountAmount: Number(raw.couponDiscount ?? raw.discountAmount) || 0,
+    totalAmount: Number(raw.totalAmount) || 0,
+    paymentMethod: raw.paymentMethod || 'CASH_ON_DELIVERY',
+    paymentStatus: raw.paymentStatus || 'PENDING',
+    deliveryAddress: raw.deliveryAddress || raw.deliveryAddressSnapshot || null,
+    customerNotes: raw.customerNotes || null,
+    prepTimeMinutes: raw.prepTimeMinutes ?? raw.vendor?.defaultPrepTimeMinutes ?? null,
+    createdAt: raw.createdAt || raw.placedAt || new Date().toISOString(),
+    updatedAt: raw.updatedAt || raw.placedAt || new Date().toISOString(),
+    acceptedAt: raw.acceptedAt || null,
+    readyAt: raw.readyAt || null,
+    customer,
+    rider,
+    items,
+  };
+}
 
 export const kdsApi = {
   /**
@@ -9,7 +77,8 @@ export const kdsApi = {
     const params = vendorId ? { vendorId } : undefined;
     const response = await apiClient.get('/api/v1/vendor/orders/live', { params });
     const payload = response.data?.data || response.data;
-    return payload || [];
+    const rawList = Array.isArray(payload) ? payload : [];
+    return rawList.map(normalizeKDSOrder);
   },
 
   /**
@@ -19,7 +88,8 @@ export const kdsApi = {
     const response = await apiClient.patch(`/api/v1/vendor/orders/${orderId}/accept`, {
       prepTimeMinutes,
     });
-    return response.data?.data || response.data;
+    const payload = response.data?.data || response.data;
+    return normalizeKDSOrder(payload);
   },
 
   /**
@@ -27,7 +97,8 @@ export const kdsApi = {
    */
   async markOrderReady(orderId: string): Promise<KDSOrder> {
     const response = await apiClient.patch(`/api/v1/vendor/orders/${orderId}/ready`);
-    return response.data?.data || response.data;
+    const payload = response.data?.data || response.data;
+    return normalizeKDSOrder(payload);
   },
 
   /**
@@ -35,7 +106,8 @@ export const kdsApi = {
    */
   async handoverOrder(orderId: string): Promise<KDSOrder> {
     const response = await apiClient.patch(`/api/v1/vendor/orders/${orderId}/handover`);
-    return response.data?.data || response.data;
+    const payload = response.data?.data || response.data;
+    return normalizeKDSOrder(payload);
   },
 
   /**
@@ -43,7 +115,22 @@ export const kdsApi = {
    */
   async getOutletCatalog(vendorId: string): Promise<OutletCatalog> {
     const response = await apiClient.get(`/api/v1/vendors/${vendorId}/catalog`);
-    return response.data?.data || response.data;
+    const payload = response.data?.data || response.data;
+    if (!payload || !payload.categories) {
+      return payload || { vendorId, vendorName: '', defaultPrepTimeMinutes: 20, categories: [] };
+    }
+    // Normalize variant price modifiers to priceDelta
+    const categories = payload.categories.map((cat: any) => ({
+      ...cat,
+      products: (cat.products || []).map((prod: any) => ({
+        ...prod,
+        variants: (prod.variants || []).map((v: any) => ({
+          ...v,
+          priceDelta: Number(v.priceDelta ?? v.priceModifier) || 0,
+        })),
+      })),
+    }));
+    return { ...payload, categories };
   },
 
   /**

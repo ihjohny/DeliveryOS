@@ -1,6 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { Routes, Route } from 'react-router-dom';
 import { UserRole } from '../types/auth';
 import { RoleGuard } from './RoleGuard';
 
@@ -20,8 +19,6 @@ import { AdminVendorsPage } from '../pages/admin/AdminVendorsPage';
 import { AdminSettingsPage } from '../pages/admin/AdminSettingsPage';
 
 export const AppRoutes: React.FC = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
-
   return (
     <Routes>
       {/* Auth Public Pages */}
@@ -47,14 +44,6 @@ export const AppRoutes: React.FC = () => {
         <Route path="/orders" element={<AdminOrdersPage />} />
         <Route path="/promotions" element={<AdminPromotionsPage />} />
         <Route path="/settings" element={<AdminSettingsPage />} />
-
-        {/* Backward compatibility redirects for /admin prefixes */}
-        <Route path="/admin" element={<Navigate to="/" replace />} />
-        <Route path="/admin/vendors" element={<Navigate to="/vendors" replace />} />
-        <Route path="/admin/dispatch" element={<Navigate to="/dispatch" replace />} />
-        <Route path="/admin/orders" element={<Navigate to="/orders" replace />} />
-        <Route path="/admin/promotions" element={<Navigate to="/promotions" replace />} />
-        <Route path="/admin/settings" element={<Navigate to="/settings" replace />} />
       </Route>
 
       {/* 404 Fallback */}

@@ -32,7 +32,6 @@ export const VendorOutletProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const isMultiBranch =
-    user?.role === UserRole.SUPER_ADMIN ||
     user?.outletScope === PermissionScope.ALL_OUTLETS_MASTER;
 
   const fetchOutlets = async () => {

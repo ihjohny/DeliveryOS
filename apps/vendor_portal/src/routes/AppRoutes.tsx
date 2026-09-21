@@ -1,6 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { Routes, Route } from 'react-router-dom';
 import { UserRole } from '../types/auth';
 import { RoleGuard } from './RoleGuard';
 
@@ -18,17 +17,6 @@ import { VendorSettingsPage } from '../pages/vendor/VendorSettingsPage';
 import { VendorOrdersPage } from '../pages/vendor/VendorOrdersPage';
 
 export const AppRoutes: React.FC = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
-
-  const getRootRedirect = () => {
-    if (isLoading) return null;
-    if (!isAuthenticated || !user) return <Navigate to="/login" replace />;
-    if (user.role === UserRole.VENDOR_ADMIN || user.role === UserRole.SUPER_ADMIN) {
-      return <VendorLayout />;
-    }
-    return <Navigate to="/unauthorized" replace />;
-  };
-
   return (
     <Routes>
       {/* Auth Public Pages */}
@@ -39,10 +27,10 @@ export const AppRoutes: React.FC = () => {
       {/* Access Denied */}
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Vendor Staff & Merchant Protected Routes */}
+      {/* Vendor Staff & Merchant Protected Routes (Strictly VENDOR_ADMIN) */}
       <Route
         element={
-          <RoleGuard allowedRoles={[UserRole.VENDOR_ADMIN, UserRole.SUPER_ADMIN]}>
+          <RoleGuard allowedRoles={[UserRole.VENDOR_ADMIN]}>
             <VendorLayout />
           </RoleGuard>
         }
@@ -52,12 +40,6 @@ export const AppRoutes: React.FC = () => {
         <Route path="/catalog" element={<VendorCatalogPage />} />
         <Route path="/orders" element={<VendorOrdersPage />} />
         <Route path="/settings" element={<VendorSettingsPage />} />
-
-        {/* Backward-compatibility redirects for /vendor prefixes */}
-        <Route path="/vendor" element={<Navigate to="/" replace />} />
-        <Route path="/vendor/catalog" element={<Navigate to="/catalog" replace />} />
-        <Route path="/vendor/orders" element={<Navigate to="/orders" replace />} />
-        <Route path="/vendor/settings" element={<Navigate to="/settings" replace />} />
       </Route>
 
       {/* 404 Fallback */}

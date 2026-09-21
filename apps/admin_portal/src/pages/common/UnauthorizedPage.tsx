@@ -12,9 +12,9 @@ export const UnauthorizedPage: React.FC = () => {
 
   const handleReturn = () => {
     if (user?.role === 'SUPER_ADMIN') {
-      navigate('/admin');
+      navigate('/');
     } else if (user?.role === 'VENDOR_ADMIN') {
-      navigate('/vendor');
+      window.location.href = window.location.origin + '/vendor/';
     } else {
       logout();
       navigate('/login');

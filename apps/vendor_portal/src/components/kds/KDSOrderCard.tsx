@@ -37,7 +37,8 @@ export const KDSOrderCard: React.FC<KDSOrderCardProps> = ({
 
   // Time elapsed since creation
   const getElapsedMins = () => {
-    const created = new Date(order.createdAt).getTime();
+    const timeVal = order.createdAt || (order as any).placedAt;
+    const created = timeVal ? new Date(timeVal).getTime() : Date.now();
     const diffMins = Math.max(0, Math.floor((Date.now() - created) / (1000 * 60)));
     return diffMins === 0 ? 'Just now' : `${diffMins}m ago`;
   };
@@ -45,6 +46,14 @@ export const KDSOrderCard: React.FC<KDSOrderCardProps> = ({
   const isNew = order.status === 'PLACED' || order.status === 'RIDER_ASSIGNED';
   const isPreparing = order.status === 'ACCEPTED' || order.status === 'PREPARING';
   const isReady = order.status === 'READY_FOR_PICKUP';
+
+  const customerName =
+    order.customer?.fullName || (order as any).customerPhoneSnapshot || 'Customer';
+  const riderName =
+    order.rider?.fullName || (order.rider as any)?.user?.fullName;
+  const riderPhone =
+    order.rider?.phone || (order.rider as any)?.user?.phone;
+  const items = order.items || (order as any).orderItems || [];
 
   return (
     <div
@@ -68,7 +77,7 @@ export const KDSOrderCard: React.FC<KDSOrderCardProps> = ({
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Customer: <strong className="font-medium text-slate-700 dark:text-slate-200">{order.customer.fullName}</strong>
+            Customer: <strong className="font-medium text-slate-700 dark:text-slate-200">{customerName}</strong>
           </p>
         </div>
 
@@ -95,7 +104,7 @@ export const KDSOrderCard: React.FC<KDSOrderCardProps> = ({
         {order.rider ? (
           <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-medium">
             <UserCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Rider: <strong>{order.rider.fullName}</strong></span>
+            <span>Rider: <strong>{riderName || 'Assigned'}</strong></span>
           </div>
         ) : (
           <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
@@ -103,47 +112,54 @@ export const KDSOrderCard: React.FC<KDSOrderCardProps> = ({
             <span>Awaiting Rider Assignment</span>
           </div>
         )}
-        {order.rider?.phone && (
-          <span className="text-[11px] text-slate-500">{order.rider.phone}</span>
+        {riderPhone && (
+          <span className="text-[11px] text-slate-500">{riderPhone}</span>
         )}
       </div>
 
       {/* Dishes / Items List */}
       <div className="my-3 flex-1 space-y-2.5">
-        {order.items.map((item) => (
-          <div key={item.id} className="text-xs">
-            <div className="flex items-start justify-between font-semibold text-slate-800 dark:text-slate-200">
-              <span>
-                <span className="inline-block w-5 font-bold text-primary-600 dark:text-primary-400">
-                  {item.quantity}&times;
+        {items.map((item: any) => {
+          const productName = item.productName || item.productNameSnapshot || 'Item';
+          const subtotal = item.subtotal ?? item.totalPrice ?? 0;
+          const variantName = item.variant?.name || item.variantSnapshot?.name;
+          const toppings = item.toppings || item.addonsSnapshot || [];
+
+          return (
+            <div key={item.id} className="text-xs">
+              <div className="flex items-start justify-between font-semibold text-slate-800 dark:text-slate-200">
+                <span>
+                  <span className="inline-block w-5 font-bold text-primary-600 dark:text-primary-400">
+                    {item.quantity}&times;
+                  </span>
+                  {productName}
                 </span>
-                {item.productName}
-              </span>
-              <span className="text-slate-500">৳ {item.subtotal}</span>
+                <span className="text-slate-500">৳ {subtotal}</span>
+              </div>
+
+              {/* Variant */}
+              {variantName && (
+                <div className="ml-5 text-[11px] text-slate-500 dark:text-slate-400">
+                  Option: {variantName}
+                </div>
+              )}
+
+              {/* Toppings */}
+              {toppings.length > 0 && (
+                <div className="ml-5 text-[11px] text-slate-500 dark:text-slate-400">
+                  Extras: {toppings.map((t: any) => t.name).join(', ')}
+                </div>
+              )}
+
+              {/* Cooking Notes */}
+              {item.instructions && (
+                <div className="ml-5 mt-0.5 rounded bg-amber-50 px-2 py-0.5 text-[11px] text-amber-800 italic dark:bg-amber-950/40 dark:text-amber-300">
+                  &ldquo;{item.instructions}&rdquo;
+                </div>
+              )}
             </div>
-
-            {/* Variant */}
-            {item.variant && (
-              <div className="ml-5 text-[11px] text-slate-500 dark:text-slate-400">
-                Option: {item.variant.name}
-              </div>
-            )}
-
-            {/* Toppings */}
-            {item.toppings && item.toppings.length > 0 && (
-              <div className="ml-5 text-[11px] text-slate-500 dark:text-slate-400">
-                Extras: {item.toppings.map((t) => t.name).join(', ')}
-              </div>
-            )}
-
-            {/* Cooking Notes */}
-            {item.instructions && (
-              <div className="ml-5 mt-0.5 rounded bg-amber-50 px-2 py-0.5 text-[11px] text-amber-800 italic dark:bg-amber-950/40 dark:text-amber-300">
-                &ldquo;{item.instructions}&rdquo;
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
 
         {order.customerNotes && (
           <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-300">
@@ -213,7 +229,7 @@ export const KDSOrderCard: React.FC<KDSOrderCardProps> = ({
         {isPreparing && (
           <div className="flex items-center justify-between gap-2">
             <CountdownTimer
-              acceptedAt={order.acceptedAt || order.updatedAt}
+              acceptedAt={order.acceptedAt || order.updatedAt || (order as any).placedAt}
               prepTimeMinutes={order.prepTimeMinutes || defaultPrepTimeMinutes}
             />
             <Button

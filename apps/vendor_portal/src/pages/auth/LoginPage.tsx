@@ -32,12 +32,14 @@ export const LoginPage: React.FC = () => {
       // Determine redirect path
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname;
 
-      if (result.role === UserRole.VENDOR_ADMIN || result.role === UserRole.SUPER_ADMIN) {
+      if (result.role === UserRole.VENDOR_ADMIN) {
         if (from && from !== '/login') {
           navigate(from, { replace: true });
         } else {
           navigate('/', { replace: true });
         }
+      } else if (result.role === UserRole.SUPER_ADMIN) {
+        setErrorMsg('Access denied: Platform Super Admins must use the Admin Portal. This portal is strictly for merchant and store staff.');
       } else {
         setErrorMsg('Access denied: This portal is exclusively for Merchant & Kitchen Staff.');
       }
