@@ -13,12 +13,12 @@
 | **Customer App UI, Cart, Banners, Coupons** | `BRD-04` (Customer Journey) + `TID-03` (API Specs: Section 3) |
 | **Cart Address Geofence Guard & Radius Check**| `BRD-03` (Sec 1.3) + `BRD-04` (Screen 6) + `TID-02` (Sec 3.2) + `TID-03` (Sec 3.4) |
 | **Re-Order Validation Logic** | `BRD-04` (Screen 9) + `TID-03` (Endpoint 3.7) + `BRD-03` |
-| **Vendor Kitchen Console, Audio Alert & Prep Time**| `BRD-05` (Vendor Ops) + `TID-04` (Events: 3.1) + `TID-06` (Audio) |
+| **Vendor Kitchen Console, Audio Alert & Prep Time**| `apps/vendor_portal` + `BRD-05` + `TID-04` + `TID-06` |
 | **Vendor 2-Tier Permissions (Outlet vs Master)**| `BRD-03` (Sec 3) + `BRD-05` (Sec 2) + `TID-02` (Sec 7) + `TID-03` (Sec 6.4) |
 | **Vendor Catalog, Menu, Variants & Stock Toggle**| `BRD-05` + `TID-02` (Products/Variants tables) + `TID-03` (Sec 4.5) |
 | **Rider App UI & 3-Step Delivery Fulfillment** | `BRD-06` (Rider Ops) + `TID-03` (API Specs: Section 5) |
 | **Rider Dispatch, Radius Search, Redis Mutex** | `TID-05` (State Machine & Dispatch) + `TID-04` (Events: 3.2) |
-| **Super Admin Console, Banners, Coupons, Orders**| `BRD-07` (Admin Guide) + `TID-03` (API Specs: Section 6) |
+| **Super Admin Console, Banners, Coupons, Orders**| `apps/admin_portal` + `BRD-07` (Admin Guide) + `TID-03` (Sec 6) + `TID-06` |
 | **Delivery Fees (Flat vs Distance) & Ledgers** | `BRD-03` (Business Rules: Sec 4 & 5) + `TID-02` (Ledger tables) |
 | **Database Schema, PostGIS Queries, Migrations** | `TID-02` (Database Schema & DDL) |
 | **WebSockets, Realtime Rooms & Payloads** | `TID-04` (WebSocket Protocol) |

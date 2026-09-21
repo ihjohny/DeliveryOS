@@ -62,7 +62,8 @@ graph TD
 | Tier | Technology | Version | Purpose & Rationale |
 | :--- | :--- | :--- | :--- |
 | **Mobile Apps** | **Flutter / Dart** | Flutter 3.19+ / Dart 3.3+ | Single codebase targeting iOS and Android with 60fps rendering, Google Maps SDK, native background geolocation, and RTL Arabic auto-mirroring. |
-| **Web Portal** | **React.js + Vite** | React 18.2+ / Vite 5+ | High-speed Single Page Application (SPA) with zero SSR overhead. Responsive TailwindCSS UI, client-side routing, and low-cost static asset hosting. |
+| **Admin Portal** | **React.js + Vite** | React 18.2+ / Vite 5+ | Super Admin Master Console with authoritative Enterprise Indigo/Slate theme, fleet radar, dispatch override, and settings. |
+| **Vendor Portal** | **React.js + Vite** | React 18.2+ / Vite 5+ | Dedicated Merchant & Kitchen Console (KDS) with warm Amber/Orange culinary theme, audio alarm, and catalog stock toggles. |
 | **Backend API** | **NestJS** | NestJS 10.x / Node.js 20 LTS | Enterprise TypeScript framework with modular architecture, strict dependency injection, and auto-generated Swagger/OpenAPI specifications. |
 | **Primary Database** | **PostgreSQL** | PostgreSQL 16.x | Relational ACID database ensuring financial integrity, foreign key cascades, and complex order transaction isolation. |
 | **Spatial Engine** | **PostGIS** | PostGIS 3.4+ | Spatial indexing (`ST_DWithin`, `ST_MakePoint`) for millisecond-speed geofence restaurant discovery and boundary checks. |
@@ -93,14 +94,21 @@ DeliveryOS/
 │   │   │   └── main.dart
 │   │   └── pubspec.yaml
 │   │
-│   └── web_portal/             # React.js SPA (Vite + TailwindCSS)
+│   ├── admin_portal/           # React.js SPA (Vite + TailwindCSS - Enterprise Indigo)
+│   │   ├── src/
+│   │   │   ├── components/     # UI components (Button, Modal, Table, LanguageSelector)
+│   │   │   ├── pages/admin/    # Dashboard, Vendors, Dispatch, Orders, Promotions, Settings
+│   │   │   ├── routes/         # RoleGuard & Super Admin routing
+│   │   │   ├── layouts/        # AdminLayout & AuthLayout
+│   │   │   └── main.tsx
+│   │   └── package.json
+│   │
+│   └── vendor_portal/          # React.js SPA (Vite + TailwindCSS - Warm Amber/Orange)
 │       ├── src/
-│       │   ├── api/            # TanStack Query hooks & Axios client
-│       │   ├── components/     # UI components (Button, Modal, Table, AudioAlert)
-│       │   ├── modules/
-│       │   │   ├── admin/      # /admin routes (Dashboard, Vendors, Riders, Ledger)
-│       │   │   └── vendor/     # /vendor routes (Live KDS, Catalog, Timings)
-│       │   ├── App.tsx
+│       │   ├── components/     # KDSOrderCard, CountdownTimer, OutletSwitcher, UI
+│       │   ├── pages/vendor/   # KDS Kitchen Console, Catalog & Stock, Settings, Orders Ledger
+│       │   ├── routes/         # RoleGuard & Vendor Admin routing
+│       │   ├── layouts/        # VendorLayout & AuthLayout
 │       │   └── main.tsx
 │       └── package.json
 │

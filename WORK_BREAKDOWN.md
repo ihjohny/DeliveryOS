@@ -204,20 +204,21 @@ graph TD
 
 ---
 
-## 📌 Phase 4: Unified Web Portal (React.js SPA - Admin & Vendor)
+## 📌 Phase 4: Dedicated Web Portals (React.js SPAs - Super Admin & Vendor Kitchen)
 
-### Task 4.1: Web Portal Scaffolding & Responsive Layout
-- **Objective**: Set up the React.js Single Page Application with TailwindCSS and role-based routing.
+### Task 4.1: Dedicated Portal Scaffolding & Visual Themes
+- **Objective**: Set up two independent, single-responsibility React.js Single Page Applications with synchronized tech stacks and distinct visual themes.
 - **Deliverables**:
-  - Vite + React + TypeScript setup in `apps/web_portal`.
-  - Role-based route protection (`/admin/*` vs `/vendor/*`).
-  - Shared design system: alerts, modals, tables, badges, and sound trigger utility.
-  - i18n support with RTL mirroring for Arabic (`en.json`, `ar.json`, `bn.json`).
+  - **`apps/admin_portal`** (Port 3000): Super Admin Master Governance Console with authoritative Enterprise Indigo/Slate theme (`#6366f1` / `#4f46e5`).
+  - **`apps/vendor_portal`** (Port 3001): Vendor Store & Kitchen Order Console (KDS) with warm Amber/Flame Orange theme (`#f59e0b` / `#ea580c`) optimized for kitchen tablets.
+  - Role-based strict isolation (`SUPER_ADMIN` on port 3000 vs `VENDOR_ADMIN` on port 3001).
+  - Shared design system: alerts, modals, tables, badges, sound trigger utility, and i18n support with RTL mirroring for Arabic (`en.json`, `ar.json`, `bn.json`).
 - **Context Docs**:
   - [`TID-06: Frontend & Mobile Architecture (Section 2)`](./context_docs/technical-implementation-documents/06-frontend-and-mobile-architecture.md)
 - **Validation Checklist**:
-  - [x] App compiles and runs with Vite dev server.
-  - [x] Non-authenticated visits to `/admin` redirect to login.
+  - [x] Both apps compile and run with Vite dev servers (`npm run build` exits 0).
+  - [x] Non-authenticated visits to either portal redirect cleanly to `/login`.
+  - [x] Super Admin and Vendor portals enforce distinct role boundaries.
 
 ---
 

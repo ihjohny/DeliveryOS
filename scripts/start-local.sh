@@ -23,7 +23,7 @@ if [ "$MODE" == "--stop" ]; then
 fi
 
 if [ "$MODE" == "--docker" ]; then
-  echo "🚀 Launching complete 5-container Docker stack (DB, Redis, Backend, Portal, Nginx)..."
+  echo "🚀 Launching complete 6-container Docker stack (DB, Redis, Backend, Admin Portal, Vendor Portal, Nginx)..."
   docker compose -f "$PROJECT_ROOT/deploy/docker-compose.yml" up -d --build
   echo ""
   echo "Waiting 5 seconds for services to initialize..."
@@ -46,15 +46,19 @@ echo ""
 echo "=================================================================="
 echo " 🌟 Next Steps to run locally on your host machine:"
 echo "=================================================================="
-echo " 1. Start Backend API (Port 4000):"
-echo "    cd services/backend_api && npm run start:dev"
-echo "    • Health Check: http://localhost:4000/api/v1/health"
-echo "    • Swagger Docs: http://localhost:4000/docs"
-echo ""
-echo " 2. Start Web Portal (Port 3000):"
-echo "    cd apps/web_portal && npm run dev"
-echo "    • Open Portal:  http://localhost:3000"
-echo ""
-echo " 3. Or to run the entire stack inside Docker (with Nginx proxy on 8080):"
-echo "    ./scripts/start-local.sh --docker"
-echo "=================================================================="
+echo " 1. Start Backend API (Port 4000):
+    cd services/backend_api && npm run start:dev
+    • Health Check: http://localhost:4000/api/v1/health
+    • Swagger Docs: http://localhost:4000/docs
+
+ 2. Start Super Admin Portal (Port 3000):
+    cd apps/admin_portal && npm run dev
+    • Open Admin Portal: http://localhost:3000
+
+ 3. Start Vendor Store & Kitchen Portal (Port 3001):
+    cd apps/vendor_portal && npm run dev
+    • Open Vendor Portal: http://localhost:3001
+
+ 4. Or to run the complete 6-container stack inside Docker (with Nginx proxy on 8080):
+    ./scripts/start-local.sh --docker
+=================================================================="

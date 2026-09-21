@@ -98,9 +98,9 @@ Designed to be simple, sunlight-readable, and usable with gloves on:
 
 ---
 
-### 3.3 🏪 Store & Kitchen Web Portal (Tablet & Laptop Friendly)
+### 3.3 🏪 Store & Kitchen Web Portal (Dedicated React App — Port 3001)
 
-Runs on any kitchen tablet, cashier PC, or phone browser without needing app installations:
+Runs as an independent React application (`apps/vendor_portal`) with a warm Amber & Flame Orange culinary theme optimized for kitchen tablets, cashier PCs, and counter displays:
 
 | Feature Area | What It Does for Store Owners & Kitchen Staff |
 | :--- | :--- |
@@ -119,9 +119,9 @@ Runs on any kitchen tablet, cashier PC, or phone browser without needing app ins
 
 ---
 
-### 3.4 👑 Super Admin Master Console (Web Desktop)
+### 3.4 👑 Super Admin Master Console (Dedicated React App — Port 3000)
 
-The central command headquarters for the business owner:
+The central command headquarters running as an independent React application (`apps/admin_portal`) with an authoritative Enterprise Indigo & Slate theme:
 
 | Feature Area | What It Does for the Platform Owner |
 | :--- | :--- |

@@ -45,7 +45,7 @@ DeliveryOS/
 
 - **Multi-Vertical**: Supports restaurants/cafes, grocery stores, pharmacies, super shops, and retail merchants.
 - **Client Mobile Apps**: Native-performance cross-platform apps for **Customers** and **Riders** built on **Flutter** (iOS & Android).
-- **Unified Web Portal**: Responsive Single Page Application (SPA) built on **React.js (Vite + TailwindCSS)** housing both the **Super Admin Master Console** and the **Vendor Store Dashboard**.
+- **Dedicated Web Portals**: Independent Single Page Applications (SPAs) built on **React.js (Vite + TailwindCSS)** — the **Super Admin Master Console** (authoritative Enterprise Indigo palette, port 3000) and the **Vendor Store & Kitchen Console** (warm Amber/Orange culinary palette with live audio alerts, port 3001).
 - **Backend & Realtime**: Enterprise **NestJS** (Node.js/TypeScript), **PostgreSQL 16 with PostGIS** for spatial geospatial queries, and **Redis 7** for live tracking and pub/sub.
 - **Multi-Region & Localization**: Built from Day 1 to support **SAR & BDT** currencies, plus multilingual capabilities (**English, Arabic RTL, and Bengali**).
 - **Lean MVP Experience**: Simplified 3-step rider fulfillment, admin-configurable delivery fees (Flat vs Distance), smart re-order validation, and direct phone contact shortcuts.

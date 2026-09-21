@@ -85,12 +85,30 @@ services:
     networks:
       - deliveryos_prod_network
 
-  # 4. React SPA Web Portal
-  web_portal:
+  # 4. Super Admin Master Console (React SPA)
+  admin_portal:
     build:
-      context: ../apps/web_portal
+      context: ../apps/admin_portal
       dockerfile: Dockerfile
-    container_name: deliveryos_prod_portal
+    container_name: deliveryos_prod_admin_portal
+    restart: always
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - deliveryos_prod_network
+
+  # 5. Vendor Store & Kitchen Order Console KDS (React SPA)
+  vendor_portal:
+    build:
+      context: ../apps/vendor_portal
+      dockerfile: Dockerfile
+    container_name: deliveryos_prod_vendor_portal
     restart: always
     depends_on:
       - backend
@@ -107,7 +125,7 @@ services:
   # LAYER 3: PRODUCTION EDGE INGRESS & SSL REVERSE PROXY
   # ============================================================================
 
-  # 5. Production Nginx Reverse Proxy with Let's Encrypt SSL
+  # 6. Production Nginx Reverse Proxy with Let's Encrypt SSL
   nginx:
     image: nginx:1.25-alpine
     container_name: deliveryos_prod_nginx
@@ -122,7 +140,8 @@ services:
       - certbot_www:/var/www/certbot
     depends_on:
       - backend
-      - web_portal
+      - admin_portal
+      - vendor_portal
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/"]
       interval: 10s

@@ -58,19 +58,31 @@ services:
     networks:
       - deliveryos_network
 
-  # 4. React.js SPA Web Portal (Vite + Nginx)
-  web_portal:
+  # 4. Super Admin Master Console (Vite + Nginx)
+  admin_portal:
     build:
-      context: ../apps/web_portal
+      context: ../apps/admin_portal
       dockerfile: Dockerfile
-    container_name: deliveryos_portal
+    container_name: deliveryos_admin_portal
     restart: always
     ports:
       - "3000:80"
     networks:
       - deliveryos_network
 
-  # 5. Edge Nginx Reverse Proxy
+  # 5. Vendor Store & Kitchen Console KDS (Vite + Nginx)
+  vendor_portal:
+    build:
+      context: ../apps/vendor_portal
+      dockerfile: Dockerfile
+    container_name: deliveryos_vendor_portal
+    restart: always
+    ports:
+      - "3001:80"
+    networks:
+      - deliveryos_network
+
+  # 6. Edge Nginx Reverse Proxy
   nginx:
     image: nginx:1.25-alpine
     container_name: deliveryos_nginx
@@ -83,7 +95,8 @@ services:
       - ./certs:/etc/nginx/certs:ro
     depends_on:
       - backend
-      - web_portal
+      - admin_portal
+      - vendor_portal
     networks:
       - deliveryos_network
 

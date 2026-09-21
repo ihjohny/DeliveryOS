@@ -58,49 +58,73 @@ Future<void> openNativeTurnByTurnNavigation(double lat, double lng) async {
 
 ---
 
-## 2. React.js SPA Architecture (Web Portal)
+## 2. Dedicated React.js SPA Architecture (Admin & Vendor Portals)
 
-The unified Web Portal is a responsive Single Page Application (SPA) built with **Vite**, **React 18**, **Tailwind CSS**, and **TanStack Query**.
+The web tier is split into two single-responsibility Single Page Applications (SPAs) built with **Vite**, **React 18**, **Tailwind CSS**, and **TanStack Query**:
+
+1. **Super Admin Master Console (`apps/admin_portal`)** — Port `3000`:
+   - **Theme**: Enterprise Indigo & Slate palette (`primary-600: #4f46e5`) providing an authoritative, data-dense governance center.
+   - **Scope**: Platform KPIs, multi-outlet governance, Live Fleet Radar, unassigned order dispatch override, banners scheduler, coupon engine, and settlement CSV exports.
+   - **Role Guard**: Exclusively restricted to `SUPER_ADMIN`.
+
+2. **Vendor Store & Kitchen Order Console (`apps/vendor_portal`)** — Port `3001`:
+   - **Theme**: Warm Amber & Flame Orange culinary palette (`primary-500: #f59e0b`, `culinary-600: #ea580c`) optimized for high-contrast kitchen tablets.
+   - **Scope**: 3-lane KDS order Kanban (`New`, `Preparing`, `Ready`), persistent looped chime, custom prep timers (`15m`, `25m`, `35m`), catalog stock toggle, rush pause, and outlet sales ledger.
+   - **Role Guard**: Restricted to `VENDOR_ADMIN` (with `SUPER_ADMIN` store inspection capability).
 
 ```
-apps/web_portal/src/
-├── api/                     # Axios instance & TanStack Query hooks
-├── components/              # Shared UI components (Button, Modal, Table, Input)
-├── contexts/                # AuthContext, AudioAlertContext
-├── modules/
-│   ├── admin/               # /admin/* routes (Fleet map, Master catalog, Ledgers)
-│   └── vendor/              # /vendor/* routes (Live KDS, Stock toggle, Settings)
-├── routes/                  # ProtectedRoute, RoleGuard, Router config
-├── App.tsx
-└── main.tsx
+apps/
+├── admin_portal/src/
+│   ├── components/ui/       # Enterprise UI components (Button, Modal, Table, Input)
+│   ├── contexts/            # AuthContext
+│   ├── pages/admin/         # Dashboard, Vendors, Dispatch, Orders, Promotions, Settings
+│   ├── routes/              # Super Admin RoleGuard & routes
+│   ├── layouts/             # AdminLayout & AuthLayout
+│   └── main.tsx
+│
+└── vendor_portal/src/
+    ├── components/kds/      # KDSOrderCard, CountdownTimer
+    ├── components/vendor/   # OutletSwitcher (ALL_OUTLETS_MASTER vs PARTICULAR_OUTLET)
+    ├── contexts/            # AuthContext, VendorOutletContext
+    ├── hooks/               # useKDSOrders with Socket.IO chime triggers
+    ├── pages/vendor/        # KDS Kitchen Console, Catalog Stock, Settings, Orders Ledger
+    ├── routes/              # Vendor RoleGuard & routes
+    ├── layouts/             # VendorLayout & AuthLayout
+    └── main.tsx
 ```
 
 ### 2.1 Role-Based Access Control (RBAC) Route Guards
 
 ```tsx
-// routes/RoleGuard.tsx
-export const RoleGuard = ({ allowedRoles, children }: { allowedRoles: string[]; children: JSX.Element }) => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+// In admin_portal/src/routes/AppRoutes.tsx:
+<Route
+  element={
+    <RoleGuard allowedRoles={[UserRole.SUPER_ADMIN]}>
+      <AdminLayout />
+    </RoleGuard>
+  }
+>
+  <Route path="/" element={<AdminDashboardPage />} />
+  <Route path="/vendors" element={<AdminVendorsPage />} />
+  <Route path="/dispatch" element={<AdminDispatchPage />} />
+  <Route path="/orders" element={<AdminOrdersPage />} />
+  <Route path="/promotions" element={<AdminPromotionsPage />} />
+  <Route path="/settings" element={<AdminSettingsPage />} />
+</Route>
 
-  if (isLoading) return <LoadingSpinner />;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (!allowedRoles.includes(user.role)) return <Navigate to="/unauthorized" replace />;
-
-  return children;
-};
-
-// In AppRouter:
-<Route path="/admin/*" element={
-  <RoleGuard allowedRoles={['SUPER_ADMIN']}>
-    <AdminLayout />
-  </RoleGuard>
-} />
-
-<Route path="/vendor/*" element={
-  <RoleGuard allowedRoles={['VENDOR_ADMIN', 'SUPER_ADMIN']}>
-    <VendorLayout />
-  </RoleGuard>
-} />
+// In vendor_portal/src/routes/AppRoutes.tsx:
+<Route
+  element={
+    <RoleGuard allowedRoles={[UserRole.VENDOR_ADMIN, UserRole.SUPER_ADMIN]}>
+      <VendorLayout />
+    </RoleGuard>
+  }
+>
+  <Route path="/" element={<VendorDashboardPage />} />
+  <Route path="/catalog" element={<VendorCatalogPage />} />
+  <Route path="/orders" element={<VendorOrdersPage />} />
+  <Route path="/settings" element={<VendorSettingsPage />} />
+</Route>
 ```
 
 ### 2.2 Kitchen Audio Alert Engine (Persistent Chime)

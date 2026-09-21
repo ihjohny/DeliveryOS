@@ -51,17 +51,27 @@ else
   echo "   (Start backend with: npm --prefix services/backend_api run start:dev or via deploy/docker-compose.yml)"
 fi
 
-# 5. Check Web Portal (Port 3000)
-echo -n "💻 Checking Web Portal (http://localhost:3000)... "
-PORTAL_RESP=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || echo "DOWN")
-if [ "$PORTAL_RESP" == "200" ]; then
-  echo "✅ 200 OK (Web Portal active on port 3000)"
+# 5. Check Super Admin Portal (Port 3000)
+echo -n "🛡️ Checking Super Admin Portal (http://localhost:3000)... "
+ADMIN_PORTAL_RESP=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || echo "DOWN")
+if [ "$ADMIN_PORTAL_RESP" == "200" ]; then
+  echo "✅ 200 OK (Admin Portal active on port 3000)"
 else
-  echo "⚠️ Not reachable on port 3000 (status: $PORTAL_RESP)"
-  echo "   (Start portal with: npm --prefix apps/web_portal run dev or via deploy/docker-compose.yml)"
+  echo "⚠️ Not reachable on port 3000 (status: $ADMIN_PORTAL_RESP)"
+  echo "   (Start admin portal with: npm --prefix apps/admin_portal run dev or via deploy/docker-compose.yml)"
 fi
 
-# 6. Check Edge Nginx Reverse Proxy (Port 8080)
+# 6. Check Vendor Store & Kitchen Portal (Port 3001)
+echo -n "🏪 Checking Vendor Kitchen Portal (http://localhost:3001)... "
+VENDOR_PORTAL_RESP=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001 2>/dev/null || echo "DOWN")
+if [ "$VENDOR_PORTAL_RESP" == "200" ]; then
+  echo "✅ 200 OK (Vendor Portal active on port 3001)"
+else
+  echo "⚠️ Not reachable on port 3001 (status: $VENDOR_PORTAL_RESP)"
+  echo "   (Start vendor portal with: npm --prefix apps/vendor_portal run dev or via deploy/docker-compose.yml)"
+fi
+
+# 7. Check Edge Nginx Reverse Proxy (Port 8080)
 echo -n "🌐 Checking Edge Nginx Reverse Proxy (http://localhost:8080/api/v1/health)... "
 PROXY_RESP=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/health 2>/dev/null || echo "DOWN")
 if [ "$PROXY_RESP" == "200" ]; then

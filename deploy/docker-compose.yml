@@ -5,7 +5,7 @@ name: deliveryos
 # ==============================================================================
 # Architecture Overview:
 #   1. Ingress Layer:    Nginx Edge Reverse Proxy (Port 8080)
-#   2. App Layer:        Backend API (Port 4000) & React Web Portal (Port 3000)
+#   2. App Layer:        Backend API (Port 4000), Admin Portal (Port 3000) & Vendor Portal (Port 3001)
 #   3. Data Layer:       PostgreSQL 16 + PostGIS 3.4 (Port 5433) & Redis 7.2 (Port 6380)
 # ==============================================================================
 
@@ -91,12 +91,12 @@ services:
     networks:
       - deliveryos_network
 
-  # 4. React Vite Web Portal (Store Manager / Kitchen KDS / Super Admin)
-  web_portal:
+  # 4. Super Admin Master Console (React Vite SPA)
+  admin_portal:
     build:
-      context: ../apps/web_portal
+      context: ../apps/admin_portal
       dockerfile: Dockerfile
-    container_name: deliveryos_portal
+    container_name: deliveryos_admin_portal
     restart: unless-stopped
     depends_on:
       - backend
@@ -111,11 +111,31 @@ services:
     networks:
       - deliveryos_network
 
+  # 5. Vendor Store & Kitchen Order Console KDS (React Vite SPA)
+  vendor_portal:
+    build:
+      context: ../apps/vendor_portal
+      dockerfile: Dockerfile
+    container_name: deliveryos_vendor_portal
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3001:80"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - deliveryos_network
+
   # ============================================================================
   # LAYER 3: EDGE INGRESS & REVERSE PROXY
   # ============================================================================
 
-  # 5. Local Nginx Edge Ingress Gateway (Unified Single-Origin Port 8080)
+  # 6. Local Nginx Edge Ingress Gateway (Unified Single-Origin Port 8080)
   nginx:
     image: nginx:1.25-alpine
     container_name: deliveryos_nginx
@@ -126,7 +146,8 @@ services:
       - ./nginx.local.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - backend
-      - web_portal
+      - admin_portal
+      - vendor_portal
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/"]
       interval: 10s
