@@ -10,7 +10,7 @@ import { Alert } from '../../components/ui/Alert';
 
 export const LoginPage: React.FC = () => {
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -38,10 +38,13 @@ export const LoginPage: React.FC = () => {
         } else {
           navigate('/', { replace: true });
         }
-      } else if (result.role === UserRole.SUPER_ADMIN) {
-        setErrorMsg('Access denied: Platform Super Admins must use the Admin Portal. This portal is strictly for merchant and store staff.');
       } else {
-        setErrorMsg('Access denied: This portal is exclusively for Merchant & Kitchen Staff.');
+        logout();
+        if (result.role === UserRole.SUPER_ADMIN) {
+          setErrorMsg('Access denied: Platform Super Admins must use the Admin Portal (http://localhost:8080/). This portal is strictly for merchant and kitchen staff.');
+        } else {
+          setErrorMsg('Access denied: This portal is exclusively for Merchant & Kitchen Staff.');
+        }
       }
     } catch (err: unknown) {
       console.error('Login error:', err);

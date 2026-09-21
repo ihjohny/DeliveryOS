@@ -39,22 +39,24 @@ export const VendorOutletProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setIsLoading(true);
     try {
       const data = await kdsApi.getAccessibleOutlets();
-      setOutlets(data);
+      const safeData = Array.isArray(data) ? data : [];
+      setOutlets(safeData);
 
       const savedOutlet = localStorage.getItem('deliveryos_active_outlet');
 
-      if (!isMultiBranch && data.length > 0) {
+      if (!isMultiBranch && safeData.length > 0) {
         // Locked to single assigned outlet for PARTICULAR_OUTLET
-        setActiveOutletIdState(data[0].id);
-      } else if (savedOutlet && (savedOutlet === 'ALL' || data.some((o) => o.id === savedOutlet))) {
+        setActiveOutletIdState(safeData[0].id);
+      } else if (savedOutlet && (savedOutlet === 'ALL' || safeData.some((o) => o.id === savedOutlet))) {
         setActiveOutletIdState(savedOutlet);
-      } else if (data.length > 0) {
-        setActiveOutletIdState(data[0].id);
+      } else if (safeData.length > 0) {
+        setActiveOutletIdState(safeData[0].id);
       } else {
         setActiveOutletIdState('ALL');
       }
     } catch (err) {
       console.error('Failed to load accessible outlets:', err);
+      setOutlets([]);
     } finally {
       setIsLoading(false);
     }

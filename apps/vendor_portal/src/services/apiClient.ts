@@ -9,7 +9,7 @@ export const apiClient = axios.create({
 
 // Attach JWT token to requests
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('deliveryos_token');
+  const token = localStorage.getItem('deliveryos_vendor_token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -23,8 +23,8 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // If we are not already on the login page, clear session and redirect
       if (!window.location.pathname.includes('/login')) {
-        localStorage.removeItem('deliveryos_token');
-        localStorage.removeItem('deliveryos_user');
+        localStorage.removeItem('deliveryos_vendor_token');
+        localStorage.removeItem('deliveryos_vendor_user');
         const loginPath = window.location.pathname.startsWith('/vendor') ? '/vendor/login' : '/login';
         window.location.href = loginPath;
       }

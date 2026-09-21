@@ -14,29 +14,38 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export const VENDOR_TOKEN_KEY = 'deliveryos_vendor_token';
+export const VENDOR_USER_KEY = 'deliveryos_vendor_user';
+
+const getInitialVendorToken = (): string | null => {
+  try {
+    return localStorage.getItem(VENDOR_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const getInitialVendorUser = (): User | null => {
+  try {
+    const raw = localStorage.getItem(VENDOR_USER_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [token, setToken] = useState<string | null>(getInitialVendorToken);
+  const [user, setUser] = useState<User | null>(getInitialVendorUser);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    // Rehydrate session from localStorage
-    const storedToken = localStorage.getItem('deliveryos_token');
-    const storedUser = localStorage.getItem('deliveryos_user');
-
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        connectSocket();
-      } catch (err) {
-        console.error('Error hydrating auth state:', err);
-        localStorage.removeItem('deliveryos_token');
-        localStorage.removeItem('deliveryos_user');
-      }
+    // If authenticated on mount, ensure socket connection
+    if (token && user) {
+      connectSocket();
     }
-    setIsLoading(false);
-  }, []);
+  }, [token, user]);
 
   const login = async (phone: string, password: string) => {
     setIsLoading(true);
@@ -91,8 +100,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         managedVendorIds,
       };
 
-      localStorage.setItem('deliveryos_token', accessToken);
-      localStorage.setItem('deliveryos_user', JSON.stringify(formattedUser));
+      localStorage.setItem(VENDOR_TOKEN_KEY, accessToken);
+      localStorage.setItem(VENDOR_USER_KEY, JSON.stringify(formattedUser));
 
       setToken(accessToken);
       setUser(formattedUser);
@@ -105,8 +114,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('deliveryos_token');
-    localStorage.removeItem('deliveryos_user');
+    localStorage.removeItem(VENDOR_TOKEN_KEY);
+    localStorage.removeItem(VENDOR_USER_KEY);
     disconnectSocket();
     setToken(null);
     setUser(null);

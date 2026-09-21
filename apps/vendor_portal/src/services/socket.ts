@@ -4,7 +4,7 @@ let socket: Socket | null = null;
 
 export const getSocket = (): Socket => {
   if (!socket) {
-    const token = localStorage.getItem('deliveryos_token') || '';
+    const token = localStorage.getItem('deliveryos_vendor_token') || '';
     socket = io('/events', {
       auth: { token },
       transports: ['websocket'],
@@ -15,7 +15,7 @@ export const getSocket = (): Socket => {
 };
 
 export const connectSocket = () => {
-  const token = localStorage.getItem('deliveryos_token');
+  const token = localStorage.getItem('deliveryos_vendor_token');
   if (!token) return;
 
   const s = getSocket();

@@ -10,7 +10,7 @@ import { Alert } from '../../components/ui/Alert';
 
 export const LoginPage: React.FC = () => {
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -39,6 +39,7 @@ export const LoginPage: React.FC = () => {
           navigate('/', { replace: true });
         }
       } else {
+        logout();
         setErrorMsg('Access denied: This console is strictly reserved for DeliveryOS Super Administrators.');
       }
     } catch (err: unknown) {

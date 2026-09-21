@@ -5,7 +5,7 @@ import en from './locales/en.json';
 import ar from './locales/ar.json';
 import bn from './locales/bn.json';
 
-const savedLanguage = localStorage.getItem('deliveryos_lang') || 'en';
+const savedLanguage = localStorage.getItem('deliveryos_vendor_lang') || 'en';
 
 export const updateHtmlDirection = (lng: string) => {
   document.documentElement.lang = lng;
@@ -36,7 +36,7 @@ updateHtmlDirection(savedLanguage);
 
 // Update HTML tag direction on language change
 i18n.on('languageChanged', (lng) => {
-  localStorage.setItem('deliveryos_lang', lng);
+  localStorage.setItem('deliveryos_vendor_lang', lng);
   updateHtmlDirection(lng);
 });
 
