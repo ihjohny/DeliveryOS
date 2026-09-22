@@ -21,7 +21,7 @@ Because DeliveryOS development is **AI-driven**, this ADR framework serves as a 
 | **[ADR-007](./ADR-007-web-audio-api-synthesized-kds-chime.md)** | In-Memory Web Audio API Oscillator Synthesis for Vendor Kitchen Audio Alarms | **Accepted** | 2026-09-22 | Web App / Vendor KDS |
 | **[ADR-008](./ADR-008-immutable-jsonb-historical-snapshots.md)** | Immutable Historical Order Snapshots using JSONB for Audit Integrity | **Accepted** | 2026-09-22 | Database / E-Commerce Integrity |
 | **[ADR-009](./ADR-009-deterministic-financial-accounting-ledger.md)** | Deterministic Floating-Point Math & Double-Entry Commission Settlement Ledger | **Accepted** | 2026-09-22 | Financial Ledger / Commission |
-| **[ADR-010](./ADR-010-ai-driven-engineering-governance-and-no-auto-commits.md)** | Autonomous AI Agent Engineering Governance, Type Invariants & Commit Authority | **Accepted** | 2026-09-22 | AI Governance / Quality Invariants |
+| **[ADR-010](./ADR-010-ai-driven-engineering-governance-and-no-auto-commits.md)** | Autonomous AI Engineering Governance, Type Invariants & Version Control Boundaries | **Accepted** | 2026-09-22 | AI Governance / Quality Invariants |
 
 ---
 
@@ -63,7 +63,11 @@ A new ADR **must** be created whenever a change introduces:
 3. A change in ingress reverse-proxy routing, port topologies, or session storage.
 4. A breaking API response envelope or inter-process communication protocol.
 
-### 3. ADR Structure Standard
+### 3. Documentation Style Standard: Clear, Concise & Lean
+- **No Overpopulation**: Keep every ADR concise, actionable, and strictly relevant. Do not include narrative filler, hypothetical roadmaps, or duplicated background.
+- **Visual & Structural Clarity**: Favor sequence diagrams, state machines, data schemas, and copy-paste-ready code over long prose.
+
+### 4. ADR Structure Standard
 Every ADR must follow this standardized Markdown structure:
 ```markdown
 # ADR-XXX: [Descriptive Title]

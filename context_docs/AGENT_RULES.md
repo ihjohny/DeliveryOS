@@ -152,9 +152,10 @@ Before marking any engineering task as complete, verify that:
 
 ## 6. Git & Version Control Protocol
 
-1. **NO AUTO-COMMITS**:
-   - Never commit code automatically or autonomously.
-   - You must only run `git commit` when explicitly instructed by the user.
+1. **NO AUTO-COMMITS & NO AUTO-PUSH**:
+   - **Never commit code autonomously**: You must only run `git commit` when explicitly instructed by the user (e.g. `"make a commit"`).
+   - **Never push code autonomously**: When instructed to commit, perform **ONLY the commit**. Do NOT push code to remote.
+   - **Explicit push command required**: You must only execute `git push` when the user provides an explicit command to push (e.g. `"push code"`, `"push to remote"`, or `"git push"`). Under no circumstances should `git commit` and `git push` be executed together unless both are explicitly commanded by the user.
 2. **Commit Message Convention**:
    - Always adhere to **Conventional Commits**: `<type>(<scope>): <clear description in imperative mood>`.
    - Types: `feat`, `fix`, `refactor`, `docs`, `test`, `perf`, `chore`.
@@ -195,6 +196,13 @@ Before marking any engineering task as complete, verify that:
 4. **MANDATORY ADR COMPLIANCE & AUTHORING**:
    - Every AI agent and developer must consult `context_docs/architecture-decision-records/README.md` before making architectural changes.
    - Any new architectural pattern, state machine alteration, primary dependency, or database strategy must be documented with an ADR. See **ADR-010** for full AI governance standards.
+5. **LEAN, HIGH-DENSITY DOCUMENTATION STANDARD**:
+   - When writing or updating any documentation (ADRs, BRDs, TIDs, README, code docs):
+     - Use clear, concise, and easily understandable language.
+     - **Do NOT over-populate** documents with verbose prose, speculative fluff, or repetitive filler.
+     - Keep content strictly relevant, actionable, and useful to developers and AI assistants.
+     - Favor structured tables, Mermaid diagrams, and copy-paste-ready code snippets over lengthy paragraphs.
+
 
 
 ---
