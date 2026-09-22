@@ -11,11 +11,60 @@ import { CouponService } from '../promotions/coupons/coupon.service';
 import { DeliveryFeeService } from '../promotions/pricing/delivery-fee.service';
 import { CheckoutDto, DeliveryMethod } from './dto/checkout.dto';
 import { ValidateReorderDto } from './dto/validate-reorder.dto';
-import { OrderStatus, PaymentStatus, SettlementStatus, UserRole } from '@prisma/client';
+import { OrderStatus, PaymentStatus, Prisma, SettlementStatus, UserRole } from '@prisma/client';
 
 import { TrackingGateway } from '../realtime/tracking.gateway';
 import { OrderFlowService } from '../order-flow/order-flow.service';
 import { RedisService } from '../../common/redis/redis.service';
+
+export interface OrderAddressSnapshot {
+  type: string;
+  vendorAddress?: string;
+  addressId?: string;
+  addressLine?: string;
+  buildingFloor?: string | null;
+  label?: string;
+  latitude?: number;
+  longitude?: number;
+  deliveryNote?: string | null;
+  [key: string]: Prisma.InputJsonValue | undefined;
+}
+
+export interface OrderVariantSnapshot {
+  id: string;
+  name: string;
+  priceModifier: number;
+  [key: string]: Prisma.InputJsonValue | undefined;
+}
+
+export interface OrderAddonSnapshot {
+  id: string;
+  name: string;
+  price: number;
+  [key: string]: Prisma.InputJsonValue | undefined;
+}
+
+export interface OrderItemCreatePayload {
+  productId: string;
+  productNameSnapshot: string;
+  unitPrice: number;
+  quantity: number;
+  totalPrice: number;
+  specialInstructions?: string;
+  variantSnapshot?: OrderVariantSnapshot | null;
+  addonsSnapshot?: OrderAddonSnapshot[] | null;
+}
+
+export interface RiderTelemetryLocation {
+  riderId: string;
+  fullName: string;
+  phone: string;
+  latitude: number;
+  longitude: number;
+  bearing: number;
+  speed: number;
+  updatedAt?: string;
+}
 
 @Injectable()
 export class OrderService {
@@ -50,7 +99,7 @@ export class OrderService {
 
     // 3. Validate Delivery Address & Spatial Geofence Guard
     let distanceKm = 0;
-    let addressSnapshot: any = {
+    let addressSnapshot: OrderAddressSnapshot = {
       type: 'TAKEAWAY',
       vendorAddress: vendor.addressText,
     };
@@ -137,13 +186,13 @@ export class OrderService {
 
     // Calculate Items and Freeze Snapshots
     let grossSubtotal = 0;
-    const itemsToCreate: any[] = [];
+    const itemsToCreate: OrderItemCreatePayload[] = [];
 
     for (const itemDto of dto.items) {
       const product = products.find((p) => p.id === itemDto.productId)!;
       let unitPrice = Number(product.basePrice);
 
-      let variantSnapshot: any = null;
+      let variantSnapshot: OrderVariantSnapshot | null = null;
       if (itemDto.variantId) {
         const variant = product.variants.find((v) => v.id === itemDto.variantId);
         if (!variant) {
@@ -160,7 +209,7 @@ export class OrderService {
         };
       }
 
-      const addonsSnapshot: any[] = [];
+      const addonsSnapshot: OrderAddonSnapshot[] = [];
       if (itemDto.addonIds && itemDto.addonIds.length > 0) {
         const allAddons = product.addonGroups.flatMap((g) => g.addons);
         for (const addonId of itemDto.addonIds) {
@@ -248,7 +297,7 @@ export class OrderService {
           totalAmount,
           paymentMethod: dto.paymentMethod || 'CASH_ON_DELIVERY',
           paymentStatus: PaymentStatus.PENDING,
-          deliveryAddressSnapshot: addressSnapshot,
+          deliveryAddressSnapshot: addressSnapshot as unknown as Prisma.InputJsonObject,
           customerPhoneSnapshot: customer.phone,
           prepTimeMinutes: vendor.defaultPrepTimeMinutes,
           customerNotes: dto.customerNotes,
@@ -265,8 +314,8 @@ export class OrderService {
             unitPrice: item.unitPrice,
             quantity: item.quantity,
             totalPrice: item.totalPrice,
-            variantSnapshot: item.variantSnapshot,
-            addonsSnapshot: item.addonsSnapshot,
+            variantSnapshot: item.variantSnapshot ? (item.variantSnapshot as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+            addonsSnapshot: item.addonsSnapshot ? (item.addonsSnapshot as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
           },
         });
       }
@@ -497,7 +546,7 @@ export class OrderService {
     };
 
     // Retrieve latest rider telemetry: 1st from Redis live order, 2nd from Redis telemetry, 3rd from DB
-    let riderLocation: any = null;
+    let riderLocation: RiderTelemetryLocation | null = null;
     let estimatedMinutesRemaining = 10;
 
     const liveLocRaw = await this.redis.get(`order:live_location:${orderId}`);

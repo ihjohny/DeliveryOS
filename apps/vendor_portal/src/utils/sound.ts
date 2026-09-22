@@ -1,17 +1,15 @@
 /**
- * Sound Alert Engine for DeliveryOS Web Portal
- * Supports both Web Audio API synthetic bell chimes (zero external assets)
- * and optional HTMLAudioElement file playback (/sounds/order-alarm.mp3).
+ * Clean Synthetic Sound Alert Engine for DeliveryOS Web Portal
+ * Uses the Web Audio API to synthesize crisp, dual-tone bell chimes (D5 -> A5)
+ * without external audio asset dependencies or 404 network errors.
  */
 
 class SoundEngine {
   private audioCtx: AudioContext | null = null;
   private alarmInterval: number | null = null;
-  private audioTag: HTMLAudioElement | null = null;
   private isMuted: boolean = false;
 
   constructor() {
-    // Unlock Web Audio API on first user gesture
     if (typeof window !== 'undefined') {
       const unlock = () => {
         this.getAudioContext();
@@ -27,7 +25,9 @@ class SoundEngine {
 
   private getAudioContext(): AudioContext | null {
     if (!this.audioCtx && typeof window !== 'undefined') {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioContextClass) {
         this.audioCtx = new AudioContextClass();
       }
@@ -50,7 +50,7 @@ class SoundEngine {
   }
 
   /**
-   * Synthesizes a bright, pleasant notification chime (D5 -> A5)
+   * Synthesizes a bright, pleasant notification chime (D5: 587.33Hz -> A5: 880Hz)
    */
   public playChime() {
     if (this.isMuted) return;
@@ -89,46 +89,26 @@ class SoundEngine {
   }
 
   /**
-   * Starts a persistent kitchen order alarm loop until acknowledged
+   * Starts a persistent kitchen order alarm chime loop until acknowledged
    */
   public startOrderAlarm() {
     if (this.isMuted || this.alarmInterval) return;
-
-    // Try HTML Audio element first if file exists
-    if (!this.audioTag && typeof window !== 'undefined') {
-      this.audioTag = new Audio('/sounds/order-alarm.mp3');
-      this.audioTag.loop = true;
-    }
-
-    if (this.audioTag) {
-      this.audioTag.play().catch(() => {
-        // Fallback to synthetic alarm chime loop
-        this.playChime();
-        this.alarmInterval = window.setInterval(() => {
-          this.playChime();
-        }, 3000);
-      });
-    } else {
+    this.playChime();
+    this.alarmInterval = window.setInterval(() => {
       this.playChime();
-      this.alarmInterval = window.setInterval(() => {
-        this.playChime();
-      }, 3000);
-    }
+    }, 3000);
   }
 
   /**
-   * Stops the ongoing kitchen order alarm
+   * Stops the ongoing kitchen order alarm loop
    */
   public stopOrderAlarm() {
     if (this.alarmInterval) {
       clearInterval(this.alarmInterval);
       this.alarmInterval = null;
     }
-    if (this.audioTag) {
-      this.audioTag.pause();
-      this.audioTag.currentTime = 0;
-    }
   }
 }
 
 export const soundEngine = new SoundEngine();
+

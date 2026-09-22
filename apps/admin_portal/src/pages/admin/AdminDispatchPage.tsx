@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Navigation,
@@ -14,6 +14,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import adminApi, { FleetRider } from '../../services/adminApi';
+import { getSocket } from '../../services/socket';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -32,14 +33,35 @@ export const AdminDispatchPage: React.FC = () => {
   const { data: fleet = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-fleet'],
     queryFn: adminApi.getFleet,
-    refetchInterval: 10000,
+    refetchInterval: 30000,
   });
 
   const { data: unassignedOrders = [] } = useQuery({
     queryKey: ['admin-unassigned-orders'],
     queryFn: () => adminApi.getOrders('PLACED'),
-    refetchInterval: 10000,
+    refetchInterval: 30000,
   });
+
+  // Real-time WebSocket Listeners for Dispatch and Fleet Updates
+  useEffect(() => {
+    const socket = getSocket();
+
+    const handleFleetAndOrderEvent = () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-fleet'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-unassigned-orders'] });
+    };
+
+    socket.on('order:new', handleFleetAndOrderEvent);
+    socket.on('order:status:changed', handleFleetAndOrderEvent);
+    socket.on('dispatch:broadcast', handleFleetAndOrderEvent);
+
+    return () => {
+      socket.off('order:new', handleFleetAndOrderEvent);
+      socket.off('order:status:changed', handleFleetAndOrderEvent);
+      socket.off('dispatch:broadcast', handleFleetAndOrderEvent);
+    };
+  }, [queryClient]);
+
 
   const updateCashLimitMutation = useMutation({
     mutationFn: ({ id, limit }: { id: string; limit: number }) =>

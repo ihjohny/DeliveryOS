@@ -1,16 +1,70 @@
 import apiClient from './apiClient';
-import { KDSOrder, OutletCatalog, KDSOrderItem } from '../types/kds';
+import { KDSOrder, OutletCatalog, KDSOrderItem, Category, Product, ProductVariant } from '../types/kds';
+
+export interface RawBackendOrderItem {
+  id?: string;
+  productId?: string;
+  productName?: string;
+  productNameSnapshot?: string;
+  quantity?: number;
+  unitPrice?: number | string;
+  subtotal?: number | string;
+  totalPrice?: number | string;
+  instructions?: string | null;
+  specialInstructions?: string | null;
+  variant?: { id: string; name: string; priceDelta: number } | null;
+  variantSnapshot?: { id: string; name: string; priceModifier: number } | null;
+  toppings?: Array<{ id: string; name: string; price: number }>;
+  addonsSnapshot?: Array<{ id: string; name: string; price: number }>;
+}
+
+export interface RawBackendOrder {
+  id: string;
+  orderNumber?: string;
+  vendorId?: string;
+  status: KDSOrder['status'];
+  subtotal?: number | string;
+  taxAmount?: number | string;
+  deliveryFee?: number | string;
+  discountAmount?: number | string;
+  couponDiscount?: number | string;
+  totalAmount?: number | string;
+  paymentMethod?: 'CASH_ON_DELIVERY' | 'ONLINE_GATEWAY';
+  paymentStatus?: 'PENDING' | 'PAID' | 'FAILED';
+  deliveryAddress?: { addressLine: string; label?: string } | null;
+  deliveryAddressSnapshot?: { addressLine: string; label?: string } | null;
+  customerNotes?: string | null;
+  prepTimeMinutes?: number | null;
+  vendor?: { defaultPrepTimeMinutes?: number };
+  createdAt?: string;
+  placedAt?: string;
+  updatedAt?: string;
+  acceptedAt?: string | null;
+  readyAt?: string | null;
+  items?: RawBackendOrderItem[];
+  orderItems?: RawBackendOrderItem[];
+  customer?: { id?: string; fullName?: string; phone?: string };
+  customerPhoneSnapshot?: string;
+  rider?: {
+    id: string;
+    fullName?: string;
+    phone?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+    user?: { fullName?: string; phone?: string };
+  } | null;
+}
 
 /**
  * Normalizes backend Prisma order entity into typed KDSOrder format.
  * Bridges differences between Prisma relational fields (orderItems, placedAt, rider.user)
  * and the frontend UI model.
  */
-export function normalizeKDSOrder(raw: any): KDSOrder {
+export function normalizeKDSOrder(raw: RawBackendOrder): KDSOrder {
   if (!raw) return raw;
 
   const rawItems = raw.items || raw.orderItems || [];
-  const items: KDSOrderItem[] = rawItems.map((item: any) => ({
+  const items: KDSOrderItem[] = rawItems.map((item: RawBackendOrderItem) => ({
     id: item.id || '',
     productId: item.productId || '',
     productName: item.productName || item.productNameSnapshot || 'Item',
@@ -18,7 +72,11 @@ export function normalizeKDSOrder(raw: any): KDSOrder {
     unitPrice: Number(item.unitPrice) || 0,
     subtotal: Number(item.subtotal ?? item.totalPrice) || 0,
     instructions: item.instructions || item.specialInstructions || null,
-    variant: item.variant || item.variantSnapshot || null,
+    variant: item.variant || (item.variantSnapshot ? {
+      id: item.variantSnapshot.id,
+      name: item.variantSnapshot.name,
+      priceDelta: item.variantSnapshot.priceModifier,
+    } : null),
     toppings: item.toppings || item.addonsSnapshot || [],
   }));
 

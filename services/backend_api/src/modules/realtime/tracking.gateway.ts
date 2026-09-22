@@ -13,6 +13,38 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { PermissionScope, UserRole } from '@prisma/client';
 
+export interface NewOrderRealtimePayload {
+  orderId?: string;
+  orderNumber?: string;
+  vendorId?: string;
+  vendorName?: string;
+  itemCount?: number;
+  totalAmount?: number;
+  paymentMethod?: string;
+  customerNotes?: string | null;
+  items?: Array<{
+    name: string;
+    quantity: number;
+    notes?: string;
+  }>;
+  placedAt?: string;
+  [key: string]: unknown;
+}
+
+export interface DispatchBroadcastPayload {
+  orderId: string;
+  orderNumber?: string;
+  vendorId?: string;
+  vendorName?: string;
+  vendorAddress?: string;
+  deliveryArea?: string;
+  itemCount?: number;
+  totalAmount?: number;
+  riderEarnings?: number;
+  timeoutSeconds?: number;
+  [key: string]: unknown;
+}
+
 @WebSocketGateway({
   namespace: '/events',
   cors: { origin: '*' },
@@ -123,8 +155,9 @@ export class TrackingGateway
         userId: user.id,
         role: user.role,
       });
-    } catch (err: any) {
-      this.logger.warn(`Client ${client.id} authentication failed: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
+      this.logger.warn(`Client ${client.id} authentication failed: ${errorMessage}`);
       client.emit('error', { message: 'Invalid or expired authentication token' });
       client.disconnect(true);
     }
@@ -268,13 +301,13 @@ export class TrackingGateway
    * Event: order:new (Server -> Vendor Console & Admin)
    * Triggers audio alarm on vendor KDS screen
    */
-  notifyNewOrder(vendorId: string, orderData: any) {
+  notifyNewOrder(vendorId: string, orderData: NewOrderRealtimePayload) {
     const payload = {
       event: 'order:new',
       data: orderData,
     };
     this.server.to(`vendor_${vendorId}`).to('admin_hq').emit('order:new', payload);
-    this.logger.log(`Emitted [order:new] for order ${orderData.orderNumber} to room vendor_${vendorId}`);
+    this.logger.log(`Emitted [order:new] for order ${orderData.orderNumber || orderData.orderId} to room vendor_${vendorId}`);
   }
 
   /**
@@ -285,7 +318,7 @@ export class TrackingGateway
     customerId: string,
     previousStatus: string,
     newStatus: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
   ) {
     const payload = {
       event: 'order:status:changed',
@@ -338,12 +371,12 @@ export class TrackingGateway
   /**
    * Event: dispatch:broadcast (Server -> Online Riders Pool)
    */
-  broadcastDispatch(dispatchData: any) {
+  broadcastDispatch(dispatchData: DispatchBroadcastPayload) {
     const payload = {
       event: 'dispatch:broadcast',
       data: dispatchData,
     };
     this.server.to('riders_pool').emit('dispatch:broadcast', payload);
-    this.logger.log(`Emitted [dispatch:broadcast] to riders_pool for order ${dispatchData.orderNumber}`);
+    this.logger.log(`Emitted [dispatch:broadcast] to riders_pool for order ${dispatchData.orderNumber || dispatchData.orderId}`);
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   FileText,
@@ -14,6 +14,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import adminApi, { AdminOrder, FleetRider } from '../../services/adminApi';
+import { getSocket } from '../../services/socket';
 import { Table, Column } from '../../components/ui/Table';
 import { Badge, OrderStatusBadge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -33,8 +34,26 @@ export const AdminOrdersPage: React.FC = () => {
   const { data: orders = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-orders', selectedStatus],
     queryFn: () => adminApi.getOrders(selectedStatus),
-    refetchInterval: 8000,
+    refetchInterval: 30000,
   });
+
+  // Real-time WebSocket Order Invalidation
+  useEffect(() => {
+    const socket = getSocket();
+
+    const handleOrderUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+    };
+
+    socket.on('order:new', handleOrderUpdate);
+    socket.on('order:status:changed', handleOrderUpdate);
+
+    return () => {
+      socket.off('order:new', handleOrderUpdate);
+      socket.off('order:status:changed', handleOrderUpdate);
+    };
+  }, [queryClient]);
+
 
   const { data: fleet = [] } = useQuery({
     queryKey: ['admin-fleet-assignable'],

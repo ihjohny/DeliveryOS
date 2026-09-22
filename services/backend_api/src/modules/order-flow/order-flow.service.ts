@@ -11,6 +11,16 @@ import { TrackingGateway } from '../realtime/tracking.gateway';
 import { OrderFlowMode, UpdateOrderFlowDto } from './dto/update-order-flow.dto';
 import { OrderStatus } from '@prisma/client';
 
+interface OrderFlowSettingValue {
+  mode?: OrderFlowMode;
+  rider_search_timeout_seconds?: number;
+}
+
+interface AddressSnapshot {
+  addressLine?: string;
+  [key: string]: unknown;
+}
+
 @Injectable()
 export class OrderFlowService {
   private readonly logger = new Logger(OrderFlowService.name);
@@ -23,6 +33,8 @@ export class OrderFlowService {
 
   /**
    * 1. Get Active Order Flow Configuration
+   * Reads from Redis cache (or Postgres fallback) to determine whether
+   * the system is operating in RIDER_FIRST or VENDOR_FIRST.
    */
   async getOrderFlowConfig(): Promise<{
     mode: OrderFlowMode;
@@ -32,7 +44,7 @@ export class OrderFlowService {
       where: { key: 'order_flow_config' },
     });
 
-    const val = (setting?.value as any) || {};
+    const val = (setting?.value as OrderFlowSettingValue | null) || {};
     return {
       mode: val.mode === OrderFlowMode.VENDOR_FIRST ? OrderFlowMode.VENDOR_FIRST : OrderFlowMode.RIDER_FIRST,
       riderSearchTimeoutSeconds: val.rider_search_timeout_seconds || 90,
@@ -137,7 +149,7 @@ export class OrderFlowService {
       // RIDER_FIRST: Zero Food Waste Mode
       // Broadcast immediately to nearby riders in riders_pool.
       // Vendor chime is withheld until a delivery rider is secured!
-      const deliveryAddress = (order.deliveryAddressSnapshot as any)?.addressLine || 'Customer Address';
+      const deliveryAddress = (order.deliveryAddressSnapshot as AddressSnapshot | null)?.addressLine || 'Customer Address';
       const riderEarnings = Math.round(Number(order.deliveryFee) * 0.8 * 100) / 100;
 
       this.trackingGateway.broadcastDispatch({
@@ -194,7 +206,7 @@ export class OrderFlowService {
 
       if (!order || order.riderId) return; // already assigned or not found
 
-      const deliveryAddress = (order.deliveryAddressSnapshot as any)?.addressLine || 'Customer Address';
+      const deliveryAddress = (order.deliveryAddressSnapshot as AddressSnapshot | null)?.addressLine || 'Customer Address';
       const riderEarnings = Math.round(Number(order.deliveryFee) * 0.8 * 100) / 100;
 
       this.trackingGateway.broadcastDispatch({

@@ -11,6 +11,51 @@ import { GetNearbyVendorsDto } from './dto/get-nearby-vendors.dto';
 import { SearchVendorsDto } from './dto/search-vendors.dto';
 import { ValidateAddressCoverageDto } from './dto/validate-address-coverage.dto';
 
+export interface RawNearbyVendorRow {
+  id: string;
+  name: string;
+  vertical: string;
+  contactPhone: string;
+  logoUrl: string | null;
+  bannerUrl: string | null;
+  addressText: string;
+  latitude: number;
+  longitude: number;
+  commissionRate: number;
+  deliveryRadiusKm: number;
+  defaultPrepTimeMinutes: number;
+  isActive: boolean;
+  isBusy: boolean;
+  distanceKm: number | string;
+}
+
+export interface RawOutletSearchRow {
+  id: string;
+  name: string;
+  vertical: string;
+  logoUrl: string | null;
+  addressText: string;
+  distanceKm: number | string;
+}
+
+export interface RawProductSearchRow {
+  id: string;
+  name: string;
+  description: string | null;
+  basePrice: number | string;
+  unitType: string;
+  imageUrl: string | null;
+  isInStock: boolean;
+  vendorId: string;
+  vendorName: string;
+  distanceKm: number | string;
+}
+
+export interface RawCoverageCheckRow {
+  distanceKm: number | string;
+  isWithinCoverage: boolean;
+}
+
 @Injectable()
 export class VendorService {
   constructor(private readonly prisma: PrismaService) {}
@@ -25,7 +70,7 @@ export class VendorService {
       ? Prisma.sql`AND v.vertical = ${vertical}::"VendorVertical"`
       : Prisma.empty;
 
-    const nearbyVendors: any[] = await this.prisma.$queryRaw`
+    const nearbyVendors: RawNearbyVendorRow[] = await this.prisma.$queryRaw`
       SELECT 
         v.id,
         v.name,
@@ -72,7 +117,7 @@ export class VendorService {
     const term = `%${q}%`;
 
     // 1. Matching Outlets within coverage
-    const outlets: any[] = await this.prisma.$queryRaw`
+    const outlets: RawOutletSearchRow[] = await this.prisma.$queryRaw`
       SELECT 
         v.id,
         v.name,
@@ -96,7 +141,7 @@ export class VendorService {
     `;
 
     // 2. Matching Products from active outlets within coverage
-    const items: any[] = await this.prisma.$queryRaw`
+    const items: RawProductSearchRow[] = await this.prisma.$queryRaw`
       SELECT 
         p.id,
         p.name,
@@ -204,7 +249,7 @@ export class VendorService {
       throw new BadRequestException('Either addressId or latitude/longitude coordinates must be provided');
     }
 
-    const checkResult: any[] = await this.prisma.$queryRaw`
+    const checkResult: RawCoverageCheckRow[] = await this.prisma.$queryRaw`
       SELECT 
         ROUND((ST_Distance(
           CAST(ST_SetSRID(ST_MakePoint(${vendor.longitude}, ${vendor.latitude}), 4326) AS geography),

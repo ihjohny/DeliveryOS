@@ -56,8 +56,13 @@ export const AdminVendorsPage: React.FC = () => {
   });
 
   const assignStaffMutation = useMutation({
-    mutationFn: ({ vendorId, data }: { vendorId: string; data: any }) =>
-      adminApi.assignVendorStaff(vendorId, data),
+    mutationFn: ({
+      vendorId,
+      data,
+    }: {
+      vendorId: string;
+      data: { userId: string; scope: 'ALL_OUTLETS_MASTER' | 'PARTICULAR_OUTLET'; brandId?: string };
+    }) => adminApi.assignVendorStaff(vendorId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
       setIsAssignStaffModalOpen(false);

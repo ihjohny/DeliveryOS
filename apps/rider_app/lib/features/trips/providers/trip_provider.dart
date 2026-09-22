@@ -106,11 +106,19 @@ class RiderTripNotifier extends Notifier<RiderTripState> {
     try {
       final dio = ref.read(dioClientProvider);
       final response = await dio.post('${ApiConstants.claimOrder}/${trip.id}/claim');
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Successfully acquired atomic Redis mutex lock
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        state = state.copyWith(
+          isClaiming: false,
+          error: 'Failed to claim order. It may have been claimed by another courier.',
+        );
+        return false;
       }
-    } catch (_) {
-      // Dev mode fallback
+    } catch (e) {
+      state = state.copyWith(
+        isClaiming: false,
+        error: 'Network error claiming order. Please check connection and try again.',
+      );
+      return false;
     }
 
     final claimedTrip = trip.copyWith(
@@ -135,9 +143,20 @@ class RiderTripNotifier extends Notifier<RiderTripState> {
 
     try {
       final dio = ref.read(dioClientProvider);
-      await dio.patch('${ApiConstants.pickupOrder}/${trip.id}/pickup');
-    } catch (_) {
-      // Dev mode fallback
+      final response = await dio.patch('${ApiConstants.pickupOrder}/${trip.id}/pickup');
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        state = state.copyWith(
+          isUpdating: false,
+          error: 'Server rejected pickup confirmation. Please re-try.',
+        );
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isUpdating: false,
+        error: 'Network error confirming pickup. Please check connection.',
+      );
+      return false;
     }
 
     final updated = trip.copyWith(
@@ -181,15 +200,26 @@ class RiderTripNotifier extends Notifier<RiderTripState> {
 
     try {
       final dio = ref.read(dioClientProvider);
-      await dio.patch(
+      final response = await dio.patch(
         '${ApiConstants.deliverOrder}/${trip.id}/deliver',
         data: {
           'codCashCollected': codCashCollected,
           'amountCollected': amountCollected,
         },
       );
-    } catch (_) {
-      // Dev mode fallback
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        state = state.copyWith(
+          isUpdating: false,
+          error: 'Server rejected delivery confirmation. Please re-try.',
+        );
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isUpdating: false,
+        error: 'Network error completing delivery. Please check connection and try again.',
+      );
+      return false;
     }
 
     final completedRecord = RiderCompletedTrip(
