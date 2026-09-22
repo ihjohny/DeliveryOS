@@ -37,22 +37,22 @@ Chosen option: **Dual-Store Architecture with WebSocket Invalidation**.
 
 ```mermaid
 flowchart TD
-    subgraph ClientState["Client State (Zustand)"]
-        Z1["useAuthStore (JWT, User Profile)"]
-        Z2["useVendorOutletStore (Active Outlet Filter)"]
+    subgraph ClientState["Client State: Zustand"]
+        Z1["useAuthStore: JWT and User Profile"]
+        Z2["useVendorOutletStore: Active Outlet Filter"]
     end
 
-    subgraph ServerState["Server Cache (TanStack Query)"]
-        Q1["useQuery('admin-orders')"]
-        Q2["useQuery('admin-fleet')"]
+    subgraph ServerState["Server Cache: TanStack Query"]
+        Q1["useQuery: admin-orders"]
+        Q2["useQuery: admin-fleet"]
     end
 
-    subgraph WSGateway["Real-Time Gateway (Socket.IO)"]
-        W1["order:new / order:status:changed"]
-        W2["dispatch:broadcast"]
+    subgraph WSGateway["Real-Time Gateway: Socket.IO"]
+        W1["Events: order:new and order:status:changed"]
+        W2["Event: dispatch:broadcast"]
     end
 
-    ClientState -->|Supplies JWT & Outlet ID| ServerState
+    ClientState -->|Supplies JWT and Outlet ID| ServerState
     WSGateway -->|queryClient.invalidateQueries| ServerState
 ```
 

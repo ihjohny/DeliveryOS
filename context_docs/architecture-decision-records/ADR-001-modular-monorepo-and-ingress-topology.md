@@ -32,12 +32,12 @@ Chosen option: **Modular Monorepo with Nginx Edge Ingress**.
 
 ```mermaid
 flowchart TD
-    Client["Client Traffic (Web & Mobile)"] -->|Port 8080| Ingress["Nginx Edge Proxy (nginx.local.conf)"]
+    Client["Client Traffic: Web and Mobile"] -->|Port 8080| Ingress["Nginx Edge Proxy: nginx.local.conf"]
     
-    Ingress -->|"/" (Port 3000)| Admin["Super Admin Portal (Vite SPA)"]
-    Ingress -->|"/vendor/" (Port 3001)| Vendor["Vendor KDS Portal (Vite SPA)"]
-    Ingress -->|"/api/v1/" (Port 4000)| API["NestJS REST API Engine"]
-    Ingress -->|"/events" (Port 4000)| WS["Socket.IO WebSocket Gateway"]
+    Ingress -->|Route: /| Admin["Super Admin Portal: Port 3000"]
+    Ingress -->|Route: /vendor/| Vendor["Vendor KDS Portal: Port 3001"]
+    Ingress -->|Route: /api/v1/| API["NestJS REST API Engine: Port 4000"]
+    Ingress -->|Route: /events| WS["Socket.IO WebSocket Gateway: Port 4000"]
 ```
 
 ### Positive Consequences

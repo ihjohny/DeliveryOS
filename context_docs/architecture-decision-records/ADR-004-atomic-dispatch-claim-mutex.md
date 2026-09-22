@@ -36,8 +36,8 @@ Chosen option: **Redis Atomic Distributed Mutex**.
 ```mermaid
 sequenceDiagram
     autonumber
-    actor CourierA as Courier A (t=0ms)
-    actor CourierB as Courier B (t=2ms)
+    actor CourierA as Courier A
+    actor CourierB as Courier B
     participant Redis as Redis 7.2
     participant API as OrderFlowService
     participant DB as PostgreSQL 16
@@ -46,18 +46,18 @@ sequenceDiagram
     CourierB->>API: POST /rider/orders/ORD_101/claim
     
     API->>Redis: SET lock:order:claim:ORD_101 CourierA PX 5000 NX
-    Redis-->>API: "OK" (Lock Acquired)
+    Redis-->>API: OK - Lock Acquired
     
     API->>Redis: SET lock:order:claim:ORD_101 CourierB PX 5000 NX
-    Redis-->>API: nil (Lock Refused)
+    Redis-->>API: nil - Lock Refused
     
-    API-->>CourierB: HTTP 409 Conflict ("Already claimed")
+    API-->>CourierB: HTTP 409 Conflict - Already claimed
 
     Note over API,DB: Courier A proceeds with PostgreSQL transaction
-    API->>DB: UPDATE orders SET rider_id = CourierA, status = 'RIDER_ASSIGNED'
+    API->>DB: UPDATE orders SET rider_id = CourierA, status = RIDER_ASSIGNED
     DB-->>API: Order Assigned
     API->>Redis: DEL lock:order:claim:ORD_101
-    API-->>CourierA: HTTP 200 OK (Trip Confirmed)
+    API-->>CourierA: HTTP 200 OK - Trip Confirmed
 ```
 
 ### Positive Consequences

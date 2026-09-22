@@ -35,11 +35,11 @@ Chosen option: **Native Web Audio API Oscillator Synthesis**.
 
 ```mermaid
 flowchart LR
-    Ctx["AudioContext (Web Audio API)"]
-    Osc1["Oscillator 1: Sine (880 Hz - Root A5)"]
-    Osc2["Oscillator 2: Triangle (1320 Hz - Fifth E6)"]
-    Gain["GainNode (Exponential Decay Envelope)"]
-    Speakers["Destination (Device Speakers)"]
+    Ctx["AudioContext: Web Audio API"]
+    Osc1["Oscillator 1: Sine 880 Hz - Root A5"]
+    Osc2["Oscillator 2: Triangle 1320 Hz - Fifth E6"]
+    Gain["GainNode: Exponential Decay Envelope"]
+    Speakers["Destination: Device Speakers"]
 
     Ctx --> Osc1
     Ctx --> Osc2

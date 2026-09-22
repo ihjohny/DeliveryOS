@@ -32,10 +32,10 @@ Every ADR transitions through clear lifecycle states:
 ```mermaid
 stateDiagram-v2
     [*] --> Proposed: Authored by Engineer or AI Assistant
-    Proposed --> Accepted: Reviewed & Approved by Lead Architect / Operator
-    Proposed --> Rejected: Proposal does not meet platform requirements
-    Accepted --> Deprecated: Decision is retired without direct replacement
-    Accepted --> Superseded: Replaced by a newer ADR (e.g. ADR-015 supersedes ADR-002)
+    Proposed --> Accepted: Reviewed and Approved by Operator
+    Proposed --> Rejected: Proposal does not meet requirements
+    Accepted --> Deprecated: Decision retired without replacement
+    Accepted --> Superseded: Replaced by newer ADR
     Deprecated --> [*]
     Rejected --> [*]
 ```

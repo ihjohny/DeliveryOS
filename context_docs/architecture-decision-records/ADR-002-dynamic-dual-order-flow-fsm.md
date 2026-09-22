@@ -35,23 +35,23 @@ Chosen option: **Configurable Sequential Dual Mode (`OrderFlowMode`)**.
 
 ```mermaid
 flowchart TD
-    subgraph RF["Mode A: RIDER_FIRST (Zero Food Waste — Restaurants)"]
-        A1["Order PLACED"] --> A2["Status: RIDER_SEARCH<br/>(Broadcast to riders_pool)"]
-        A2 --> A3["Courier Claims Order (Redis Mutex)"]
-        A3 --> A4["Status: RIDER_ASSIGNED<br/>(Vendor chime sounds)"]
-        A4 --> A5["Status: PREPARING (Kitchen cooks)"]
+    subgraph RF["Mode A: RIDER_FIRST - Zero Food Waste"]
+        A1["Order PLACED"] --> A2["Status: RIDER_SEARCH<br/>Broadcast to riders_pool"]
+        A2 --> A3["Courier Claims Order via Redis Mutex"]
+        A3 --> A4["Status: RIDER_ASSIGNED<br/>Vendor chime sounds"]
+        A4 --> A5["Status: PREPARING<br/>Kitchen cooks"]
         A5 --> A6["Status: READY_FOR_PICKUP"]
-        A6 --> A7["Status: DISPATCHED (Handover)"]
+        A6 --> A7["Status: DISPATCHED - Handover"]
         A7 --> A8["Status: DELIVERED"]
     end
 
-    subgraph VF["Mode B: VENDOR_FIRST (Retail & Grocery)"]
-        B1["Order PLACED"] --> B2["Status: PLACED<br/>(Vendor chime sounds immediately)"]
+    subgraph VF["Mode B: VENDOR_FIRST - Retail and Grocery"]
+        B1["Order PLACED"] --> B2["Status: PLACED<br/>Vendor chime sounds"]
         B2 --> B3["Vendor packs goods<br/>Status: PREPARING"]
         B3 --> B4["Vendor marks READY_FOR_PICKUP"]
-        B4 --> B5["Status: RIDER_SEARCH<br/>(Broadcast to riders_pool)"]
-        B5 --> B6["Courier Claims -> RIDER_ASSIGNED"]
-        B6 --> B7["Status: DISPATCHED (Handover)"]
+        B4 --> B5["Status: RIDER_SEARCH<br/>Broadcast to riders_pool"]
+        B5 --> B6["Courier Claims: RIDER_ASSIGNED"]
+        B6 --> B7["Status: DISPATCHED - Handover"]
         B7 --> B8["Status: DELIVERED"]
     end
 ```
