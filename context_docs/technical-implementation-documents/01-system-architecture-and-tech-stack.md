@@ -8,38 +8,38 @@ This document defines the high-level system topology, software architectural pat
 
 ```mermaid
 graph TD
-    subgraph Client Applications
-        CA[Customer Mobile App<br/>Flutter iOS & Android]
-        RA[Rider Mobile App<br/>Flutter iOS & Android]
-        AP[Super Admin Web Portal<br/>React 18+ Vite SPA]
-        VP[Vendor KDS Web Portal<br/>React 18+ Vite SPA]
+    subgraph Clients["Client Applications"]
+        CA["Customer Mobile App<br/>Flutter iOS & Android"]
+        RA["Rider Mobile App<br/>Flutter iOS & Android"]
+        AP["Super Admin Web Portal<br/>React 18+ Vite SPA"]
+        VP["Vendor KDS Web Portal<br/>React 18+ Vite SPA"]
     end
 
-    subgraph Edge & Ingress Layer
-        NGINX[Nginx 1.25+ Reverse Proxy<br/>Port 8080 Ingress / SSL / Subpath Routing]
+    subgraph EdgeLayer["Edge & Ingress Layer"]
+        NGINX["Nginx 1.25+ Reverse Proxy<br/>Port 8080 Ingress / SSL / Subpath Routing"]
     end
 
-    subgraph Web App Services (Docker Containers)
-        AP_SVC[Admin Portal Container<br/>Port 3000 / Root Path /]
-        VP_SVC[Vendor Portal Container<br/>Port 3001 / Subpath /vendor/]
+    subgraph WebServices["Web App Services (Docker Containers)"]
+        AP_SVC["Admin Portal Container<br/>Port 3000 / Root Path /"]
+        VP_SVC["Vendor Portal Container<br/>Port 3001 / Subpath /vendor/"]
     end
 
-    subgraph Application Tier
-        API[NestJS 10.x REST API<br/>Node.js 20 LTS TypeScript]
-        WSS[Socket.IO 4.x WebSocket Gateway<br/>Real-Time Tracking & Alerts]
+    subgraph AppTier["Application Tier"]
+        API["NestJS 10.x REST API<br/>Node.js 20 LTS TypeScript"]
+        WSS["Socket.IO 4.x WebSocket Gateway<br/>Real-Time Tracking & Alerts"]
     end
 
-    subgraph Data & Caching Tier
-        DB[(PostgreSQL 16 + PostGIS 3.4<br/>ACID Data Store & Spatial Indexes)]
-        CACHE[(Redis 7.2 In-Memory<br/>Geo Coordinates & Pub/Sub Bus)]
-        STORAGE[(AWS S3 / Cloudflare R2<br/>Static Assets & Photos)]
+    subgraph DataTier["Data & Caching Tier"]
+        DB[("PostgreSQL 16 + PostGIS 3.4<br/>ACID Data Store & Spatial Indexes")]
+        CACHE[("Redis 7.2 In-Memory<br/>Geo Coordinates & Pub/Sub Bus")]
+        STORAGE[("AWS S3 / Cloudflare R2<br/>Static Assets & Photos")]
     end
 
-    subgraph External Provider Integrations
-        GMAPS[Google Maps Platform<br/>Places Autocomplete & Geocoding]
-        FCM[Firebase Cloud Messaging<br/>Push Notifications]
-        SMS[SMS Gateway API<br/>Twilio / Local SMS Gateway]
-        PAY[Payment Gateway SDKs<br/>Moyasar / bKash / SSLCommerz]
+    subgraph Integrations["External Provider Integrations"]
+        GMAPS["Google Maps Platform<br/>Places Autocomplete & Geocoding"]
+        FCM["Firebase Cloud Messaging<br/>Push Notifications"]
+        SMS["SMS Gateway API<br/>Twilio / Local SMS Gateway"]
+        PAY["Payment Gateway SDKs<br/>Moyasar / bKash / SSLCommerz"]
     end
 
     CA -->|HTTPS / WSS| NGINX

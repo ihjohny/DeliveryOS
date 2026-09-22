@@ -8,20 +8,20 @@ This document defines the real-time bidirectional communication layer for **Deli
 
 ```mermaid
 graph TD
-    subgraph Clients
-        CA[Customer App]
-        RA[Rider App]
-        VK[Vendor KDS Tablet]
-        AD[Super Admin Console]
+    subgraph Clients["Clients Tier"]
+        CA["Customer App"]
+        RA["Rider App"]
+        VK["Vendor KDS Tablet"]
+        AD["Super Admin Console"]
     end
 
-    subgraph Socket.IO Gateway - NestJS
-        GW[Tracking & Orders Gateway]
-        AUTH[JWT Handshake Guard]
+    subgraph Gateway["Socket.IO Gateway - NestJS"]
+        GW["Tracking & Orders Gateway"]
+        AUTH["JWT Handshake Guard"]
     end
 
-    subgraph Redis Message Bus
-        REDIS[(Redis 7 Pub/Sub Adapter)]
+    subgraph RedisBus["Redis Message Bus"]
+        REDIS[("Redis 7 Pub/Sub Adapter")]
     end
 
     CA -->|Connect & Join order_1042| GW
