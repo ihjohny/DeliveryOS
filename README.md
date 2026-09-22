@@ -52,6 +52,77 @@ DeliveryOS/
 
 ---
 
+## 🏗️ System Architecture & Ingress Topology
+
+```mermaid
+flowchart TD
+    subgraph Clients["Client Tier (Mobile & Web Applications)"]
+        CA["📱 Customer Mobile App<br/>(Flutter iOS & Android)"]
+        RA["🛵 Rider Mobile App<br/>(Flutter iOS & Android)"]
+        AP["🖥️ Super Admin Console<br/>(React 18 + Vite SPA)"]
+        VP["🍳 Vendor KDS Console<br/>(React 18 + Vite SPA)"]
+    end
+
+    subgraph Edge["Ingress & Edge Proxy Layer (Port 8080)"]
+        NGINX["🌐 Nginx 1.25+ Edge Reverse Proxy<br/>SSL Termination • Subpath Routing • Gzip • WebSocket Proxying"]
+    end
+
+    subgraph WebContainers["Frontend Presentation Tier (Docker Containers)"]
+        AP_SVC["Admin Portal Container<br/>(Internal Port 80 • Host :3000 • Serves /)"]
+        VP_SVC["Vendor Portal Container<br/>(Internal Port 80 • Host :3001 • Serves /vendor/)"]
+    end
+
+    subgraph AppTier["Application Core Tier (Port 4000)"]
+        API["⚙️ NestJS 10 REST API Engine<br/>(Auth, Orders, Vendors, Fleet, Finance, Promos)"]
+        WSS["📡 Socket.IO 4.x WebSocket Gateway<br/>(/events namespace: targeted room broadcasts)"]
+    end
+
+    subgraph DataTier["Data Persistence & Caching Tier"]
+        PG[("🐘 PostgreSQL 16 + PostGIS 3.4<br/>(Host Port :5433)<br/>ACID Schemas • Spatial Radii (ST_DWithin)")]
+        RD[("⚡ Redis 7.2 In-Memory Data Store<br/>(Host Port :6380)<br/>GEO Telemetry • Mutex Dispatch Locks • Pub/Sub")]
+    end
+
+    subgraph External["External Cloud Integrations"]
+        MAPS["🗺️ Google Maps Platform<br/>(Places, Routing & Distance Matrix)"]
+        FCM["🔔 Firebase Cloud Messaging<br/>(Transactional Push Notifications)"]
+        PAY["💳 Payment Gateways<br/>(bKash, Moyasar, Stripe)"]
+    end
+
+    %% Client Ingress Traffic
+    CA -->|HTTPS / WSS| NGINX
+    RA -->|HTTPS / WSS| NGINX
+    AP -->|HTTPS / WSS| NGINX
+    VP -->|HTTPS / WSS| NGINX
+
+    %% Ingress Reverse Proxying
+    NGINX -->|/ -> Port 3000| AP_SVC
+    NGINX -->|/vendor/ -> Port 3001| VP_SVC
+    NGINX -->|/api/v1/ -> Port 4000| API
+    NGINX -->|/events -> Port 4000| WSS
+
+    %% Backend Service Connections
+    API --> PG
+    API --> RD
+    WSS --> RD
+    WSS --> PG
+    API --> MAPS
+    API --> FCM
+    API --> PAY
+```
+
+### 🔌 Architecture & Service Topology for System Architects
+
+| Service / Container | Tech Stack | Exposed / Host Port | Container Port | Ingress Route / Operational Role |
+| :--- | :--- | :--- | :--- | :--- |
+| **Nginx Edge Ingress** | Nginx 1.25 (Alpine) | `http://localhost:8080` | `80`, `443` | Edge gateway handling SSL termination, `/vendor/` subpaths, `/api/v1/` REST proxying, and `/events` WebSocket upgrades. |
+| **Super Admin Portal** | React 18 + Vite + Tailwind + Zustand | `http://localhost:3000` | `80` | Root route (`/`). Platform governance, live fleet radar, and manual dispatch overrides. |
+| **Vendor KDS Portal** | React 18 + Vite + Tailwind + Zustand | `http://localhost:3001` | `80` | Subpath (`/vendor/`). 3-lane kitchen order board, stock toggling, and Web Audio synthesizer chimes. |
+| **Backend API Engine** | NestJS 10 + Prisma + TypeScript | `http://localhost:4000` | `4000` | Core domain logic under `/api/v1/*` and bidirectional Socket.IO gateway under `/events`. |
+| **PostgreSQL + PostGIS** | PostgreSQL 16 + PostGIS 3.4 | `localhost:5433` | `5432` | ACID data persistence, geospatial indexes (`ST_DWithin`), and commission ledger accounting. |
+| **Redis Cache & Mutex** | Redis 7.2 (Alpine) | `localhost:6380` | `6379` | Sub-millisecond courier `GEOADD` locations, atomic dispatch claim mutexes, and real-time pub/sub. |
+
+---
+
 ## 📖 Quick Links
 
 - **[Master Work Breakdown Structure (WBS)](./WORK_BREAKDOWN.md)**
@@ -59,4 +130,5 @@ DeliveryOS/
 - **[AI Agent Rules & Operating Procedures](./context_docs/AGENT_RULES.md)**
 - **[Business Requirements Suite](./context_docs/business-requirements-documents/README.md)**
 - **[Technical Implementation Suite](./context_docs/technical-implementation-documents/README.md)**
+
 

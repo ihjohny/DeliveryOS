@@ -6,7 +6,8 @@
 ### Core Components:
 - **Customer Mobile App**: Cross-platform Flutter app (iOS & Android) for store discovery, cart customization, and live order tracking.
 - **Rider Mobile App**: Cross-platform Flutter app (iOS & Android) with a streamlined 3-step fulfillment workflow.
-- **Unified Web Portal**: React.js SPA (Vite + TailwindCSS) for Super Admin operations (`/admin`) and Merchant store management (`/vendor`).
+- **Super Admin Web Portal**: Dedicated React.js SPA (Vite + TailwindCSS) for platform governance, fleet radar, and dispatch overrides (`/`).
+- **Vendor Kitchen Web Portal**: Dedicated React.js SPA (Vite + TailwindCSS) for merchant store management and real-time KDS (`/vendor`).
 - **Backend API & Real-time Engine**: NestJS REST API, PostgreSQL 16 + PostGIS spatial database, Redis 7 cache/pub-sub, and Socket.IO.
 
 ---

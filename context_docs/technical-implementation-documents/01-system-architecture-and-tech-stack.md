@@ -11,11 +11,17 @@ graph TD
     subgraph Client Applications
         CA[Customer Mobile App<br/>Flutter iOS & Android]
         RA[Rider Mobile App<br/>Flutter iOS & Android]
-        WP[Unified Web Portal<br/>React.js 18+ SPA with Vite]
+        AP[Super Admin Web Portal<br/>React 18+ Vite SPA]
+        VP[Vendor KDS Web Portal<br/>React 18+ Vite SPA]
     end
 
-    subgraph Edge & Ingress
-        NGINX[Nginx 1.25+ Reverse Proxy<br/>SSL / Rate Limiting / Gzip]
+    subgraph Edge & Ingress Layer
+        NGINX[Nginx 1.25+ Reverse Proxy<br/>Port 8080 Ingress / SSL / Subpath Routing]
+    end
+
+    subgraph Web App Services (Docker Containers)
+        AP_SVC[Admin Portal Container<br/>Port 3000 / Root Path /]
+        VP_SVC[Vendor Portal Container<br/>Port 3001 / Subpath /vendor/]
     end
 
     subgraph Application Tier
@@ -38,10 +44,13 @@ graph TD
 
     CA -->|HTTPS / WSS| NGINX
     RA -->|HTTPS / WSS| NGINX
-    WP -->|HTTPS / WSS| NGINX
+    AP -->|HTTPS / WSS| NGINX
+    VP -->|HTTPS / WSS| NGINX
 
-    NGINX --> API
-    NGINX --> WSS
+    NGINX -->|/ -> Port 3000| AP_SVC
+    NGINX -->|/vendor/ -> Port 3001| VP_SVC
+    NGINX -->|/api/v1/ -> Port 4000| API
+    NGINX -->|/events -> Port 4000| WSS
 
     API --> DB
     API --> CACHE

@@ -15,7 +15,7 @@
 graph TD
     P1[Phase 1: Project Foundation & Database] ──► P2[Phase 2: Core Backend Domain Modules]
     P2 ──► P3[Phase 3: Realtime Engine & Dispatch FSM]
-    P3 ──► P4[Phase 4: Unified Web Portal - React SPA]
+    P3 ──► P4[Phase 4: Dedicated Web Portals - React SPAs]
     P3 ──► P5[Phase 5: Customer Mobile App - Flutter]
     P3 ──► P6[Phase 6: Rider Mobile App - Flutter]
     P4 & P5 & P6 ──► P7[Phase 7: End-to-End Testing & Pilot Deployment]
