@@ -54,9 +54,9 @@ DeliveryOS/
 
 ## 📖 Quick Links
 
-- 🚀 **[Master Work Breakdown Structure (WBS)](./WORK_BREAKDOWN.md)**
-- 🌟 **[Master Product Overview & Feature Guide (Non-Technical)](./context_docs/business-requirements-documents/00-master-product-overview.md)**
-- [AI Agent Rules & Operating Procedures](./context_docs/AGENT_RULES.md)
-- [Business Requirements Suite](./context_docs/business-requirements-documents/README.md)
-- [Technical Implementation Suite](./context_docs/technical-implementation-documents/README.md)
+- **[Master Work Breakdown Structure (WBS)](./WORK_BREAKDOWN.md)**
+- **[Master Product Overview & Feature Guide (Non-Technical)](./context_docs/business-requirements-documents/00-master-product-overview.md)**
+- **[AI Agent Rules & Operating Procedures](./context_docs/AGENT_RULES.md)**
+- **[Business Requirements Suite](./context_docs/business-requirements-documents/README.md)**
+- **[Technical Implementation Suite](./context_docs/technical-implementation-documents/README.md)**
 
