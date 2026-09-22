@@ -110,17 +110,6 @@ flowchart TD
     API --> PAY
 ```
 
-### 🔌 Architecture & Service Topology for System Architects
-
-| Service / Container | Tech Stack | Exposed / Host Port | Container Port | Ingress Route / Operational Role |
-| :--- | :--- | :--- | :--- | :--- |
-| **Nginx Edge Ingress** | Nginx 1.25 (Alpine) | `http://localhost:8080` | `80`, `443` | Edge gateway handling SSL termination, `/vendor/` subpaths, `/api/v1/` REST proxying, and `/events` WebSocket upgrades. |
-| **Super Admin Portal** | React 18 + Vite + Tailwind + Zustand | `http://localhost:3000` | `80` | Root route (`/`). Platform governance, live fleet radar, and manual dispatch overrides. |
-| **Vendor KDS Portal** | React 18 + Vite + Tailwind + Zustand | `http://localhost:3001` | `80` | Subpath (`/vendor/`). 3-lane kitchen order board, stock toggling, and Web Audio synthesizer chimes. |
-| **Backend API Engine** | NestJS 10 + Prisma + TypeScript | `http://localhost:4000` | `4000` | Core domain logic under `/api/v1/*` and bidirectional Socket.IO gateway under `/events`. |
-| **PostgreSQL + PostGIS** | PostgreSQL 16 + PostGIS 3.4 | `localhost:5433` | `5432` | ACID data persistence, geospatial indexes (`ST_DWithin`), and commission ledger accounting. |
-| **Redis Cache & Mutex** | Redis 7.2 (Alpine) | `localhost:6380` | `6379` | Sub-millisecond courier `GEOADD` locations, atomic dispatch claim mutexes, and real-time pub/sub. |
-
 ---
 
 ## 📖 Quick Links
