@@ -24,7 +24,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./init-postgis.sql:/docker-entrypoint-initdb.d/10-postgis.sql
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5433}:5432"
     networks:
       - deliveryos_network
 
@@ -37,7 +37,7 @@ services:
     volumes:
       - redisdata:/data
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6380}:6379"
     networks:
       - deliveryos_network
 
@@ -88,8 +88,8 @@ services:
     container_name: deliveryos_nginx
     restart: always
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
@@ -171,10 +171,17 @@ PORT=4000
 # Database (PostgreSQL + PostGIS)
 DATABASE_URL="postgresql://postgres:secretpassword@postgres:5432/deliveryos?schema=public"
 
-# Redis Cache & WebSockets
-REDIS_HOST=redis
-REDIS_PORT=6379
-REDIS_PASSWORD=redispassword
+DB_HOST="localhost"
+DB_PORT=5433
+DB_NAME="deliveryos"
+DB_USER="postgres"
+DB_PASSWORD="secretpassword"
+DATABASE_URL="postgresql://postgres:secretpassword@localhost:5433/deliveryos?schema=public"
+
+# Redis In-Memory Cache & Pub/Sub
+REDIS_HOST="localhost"
+REDIS_PORT=6380
+REDIS_PASSWORD="redispassword"
 
 # JWT Authentication Secrets
 JWT_ACCESS_SECRET="super-secret-access-token-key"
@@ -195,7 +202,7 @@ BASE_DELIVERY_KM=2.0
 PER_KM_DELIVERY_RATE=10.0
 
 # Order Fulfillment Sequence Flow
-ORDER_FLOW_MODE="RIDER_FIRST" # "RIDER_FIRST" (Zero Food Waste) | "VENDOR_FIRST" | "PARALLEL"
+ORDER_FLOW_MODE="RIDER_FIRST" # "RIDER_FIRST" (Zero Food Waste) | "VENDOR_FIRST" (Traditional Retail)
 RIDER_SEARCH_TIMEOUT_SECONDS=90
 
 # Google Maps API

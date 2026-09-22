@@ -53,8 +53,7 @@ enum DiscountType { PERCENTAGE = 'PERCENTAGE', FLAT = 'FLAT' }
 // Configurable Order Dispatch Flow Sequence
 enum OrderFlowMode { 
   RIDER_FIRST = 'RIDER_FIRST',     // Rider claimed first -> Sent to Vendor for manual acceptance -> Zero food waste
-  VENDOR_FIRST = 'VENDOR_FIRST',   // Vendor accepts & preps first -> Rider broadcasted when ready
-  PARALLEL = 'PARALLEL'           // Simultaneous broadcast to riders and vendor alert
+  VENDOR_FIRST = 'VENDOR_FIRST'    // Vendor accepts & preps first -> Rider broadcasted when ready
 }
 ```
 

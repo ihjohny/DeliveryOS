@@ -62,7 +62,6 @@ When generating code, you must strictly uphold these inviolable business rules:
    - The order fulfillment sequence must be dynamic and config-driven (`order_flow_mode` in `system_settings`):
      - **`RIDER_FIRST` (Zero Food Waste Mode)**: When customer orders, verify store status (open/items in stock) before DB write → immediately broadcast to riders → assign rider → send order to vendor for manual acceptance & prep timer selection. Prevents food waste from unassigned orders while preserving vendor control.
      - **`VENDOR_FIRST`**: Traditional flow where vendor accepts and preps first, broadcasting to riders when food is packing/ready.
-     - **`PARALLEL`**: Simultaneous rider broadcast and vendor alert upon checkout.
 
 ---
 

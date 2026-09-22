@@ -166,10 +166,14 @@ This document specifies the RESTful API endpoints for the **DeliveryOS** backend
 
 ## 4. Vendor Store Console Module (`/vendor`)
 
+> **Role Access & Portal Isolation Note**:
+> - The standalone **Vendor Portal** (`/vendor`) is exclusively accessed by authenticated `VENDOR_ADMIN` users.
+> - The underlying `/api/v1/vendor/*` endpoints permit both `VENDOR_ADMIN` (for store staff/managers) and `SUPER_ADMIN` (when platform administrators inspect, govern, or perform overrides on vendor data directly through the Super Admin Console).
+
 ### 4.1 Get Live Store Orders (Kitchen Display)
 - **Endpoint**: `GET /vendor/orders/live`
 - **Access**: Authenticated (`VENDOR_ADMIN`, `SUPER_ADMIN`)
-- **Scope Enforced**: Restricted to user's assigned outlet (`vendor_id`) if `PARTICULAR_OUTLET` scope.
+- **Scope Enforced**: Restricted to user's assigned outlet (`vendor_id`) if `PARTICULAR_OUTLET` scope. When accessed by `SUPER_ADMIN`, outlet scope is not restricted.
 
 ### 4.2 Accept Incoming Order
 - **Endpoint**: `PATCH /vendor/orders/:id/accept`
