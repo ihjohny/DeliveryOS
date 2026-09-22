@@ -1,68 +1,63 @@
 # ADR-003: Tiered Spatial Architecture (PostGIS Ellipsoid Geofencing & Redis Geohash Radar)
 
 ## Status
-Accepted (2026-09-19)
+**Accepted** (2026-09-19)
+
+---
 
 ## Context & Problem Statement
-Hyperlocal logistics requires handling two fundamentally different types of geographic calculations:
-1. **Persistent Boundaries & Radius Coverage**: Validating whether a customer's delivery address falls within a merchant's 3–10 km delivery coverage radius.
-2. **High-Frequency Courier Telemetry**: Tracking 50–500 active couriers reporting GPS coordinates every 3–5 seconds and discovering nearby online couriers within 3–5 km of a restaurant.
+Hyperlocal on-demand delivery requires handling two distinct geospatial query profiles:
+1. **Persistent Boundary Geofencing**: Calculating whether a customer's address falls within a merchant's 3–10 km delivery radius during checkout.
+2. **High-Frequency Courier Telemetry**: Ingesting GPS pings from hundreds of active riders every 3–5 seconds and discovering nearby riders within 3–5 km.
 
-Handling high-frequency courier GPS pings with database disk writes leads to database connection pool exhaustion and table bloat. Conversely, storing authoritative merchant polygons or calculating spherical distances exclusively in application memory leads to distortion errors and slow full-table scans.
+Writing frequent GPS ticks directly to PostgreSQL causes connection pool exhaustion, write lock contention, and WAL table bloat. Conversely, storing merchant polygons exclusively in application memory risks data loss on restart and fails in multi-process clusters.
+
+---
 
 ## Decision Drivers
-- **Spherical Accuracy**: Earth's curvature must be accounted for over real-world geographies (Dhaka, Riyadh) to prevent coverage radius false positives.
-- **Sub-Millisecond Search Latency**: Finding 10 nearby available couriers must complete in under 5 milliseconds.
-- **Zero Database Write Contention**: High-frequency rider location updates must not write to relational disk tables on every ping.
+- **Ellipsoidal Accuracy**: Exact distance calculations over the WGS 84 ellipsoid (accounting for Earth's curvature) to prevent checkout false positives.
+- **Microsecond Telemetry Lookup**: Discovering available couriers within radius in $<5$ ms.
+- **Relational Write Isolation**: High-frequency location updates must not burden PostgreSQL disks.
+
+---
 
 ## Considered Options
-1. **All-in-PostgreSQL**: Store rider GPS pings directly into PostgreSQL via `UPDATE couriers SET location = ...`. (Rejected: Causes extreme write contention, vacuuming overhead, and disk I/O bottlenecks).
-2. **All-in-Application Memory**: Keep merchants and riders in Node.js in-memory spatial trees (e.g. `rbush` or `kdbush`). (Rejected: Fails across multi-process clusters; loses data on process restart).
+1. **All-in-PostgreSQL**: Store rider GPS pings directly into PostgreSQL via periodic updates. *(Rejected: Extreme write lock contention and table bloat)*.
+2. **All-in-Application Memory**: Store locations in Node.js spatial indexing libraries (e.g. `rbush`). *(Rejected: Data loss on restarts, broken cross-process scaling)*.
 3. **Tiered Spatial Architecture (PostGIS + Redis) (Chosen)**: PostGIS for ACID coverage boundary queries; Redis Geospatial indexing (`GEOADD`/`GEORADIUS`) for live fleet telemetry.
 
+---
+
 ## Decision Outcome
-Chosen option: **Tiered Spatial Architecture**, because:
-- **PostgreSQL 16 + PostGIS 3.4**: Uses `geography(Point, 4326)` with a GiST spatial index. PostGIS executes great-circle spherical distance over the WGS 84 ellipsoid via `ST_DWithin` in sub-milliseconds during checkout.
-- **Redis 7.2 In-Memory Geohash**: Couriers stream pings to the WebSocket gateway, which executes in-memory `GEOADD fleet:riders <lon> <lat> <rider_id>`. Radius queries (`GEORADIUS`) execute in microseconds with zero relational database disk impact.
+Chosen option: **Tiered Spatial Architecture**.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│             Tier 1: Relational Spatial Engine               │
-│  PostgreSQL 16 + PostGIS 3.4 (Host Port 5433)               │
-│  - Authoritative merchant outlet coordinates                │
-│  - Customer saved delivery addresses                        │
-│  - Spatial index: CREATE INDEX USING GIST (location)        │
-│  - Query: ST_DWithin(v.location, customer_pt, radius * 1000)│
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│             Tier 2: Volatile Geospatial Cache               │
-│  Redis 7.2 In-Memory Key-Value Store (Host Port 6380)       │
-│  - 52-bit integer Geohash indexing                          │
-│  - High-frequency courier telemetry (GEOADD fleet:riders)   │
-│  - Radius dispatch query: GEORADIUS fleet:riders 5 km       │
-│  - Volatile telemetry hashes: rider:telemetry:<id>          │
-└─────────────────────────────────────────────────────────────┘
-```
+| Layer | Technology | Primary Function | Data Structure / Query |
+| :--- | :--- | :--- | :--- |
+| **Tier 1: Relational Spatial Engine** | PostgreSQL 16 + PostGIS 3.4 | Authoritative store locations & customer delivery addresses | `geography(Point, 4326)` with GiST index<br/>`ST_DWithin(v.location, cust_pt, radius * 1000)` |
+| **Tier 2: Volatile Telemetry Radar** | Redis 7.2 In-Memory Store | Live courier location tracking & nearby dispatch discovery | 52-bit integer Geohash indexing<br/>`GEOADD fleet:riders <lon> <lat> <riderId>`<br/>`GEORADIUS fleet:riders <lon> <lat> 5 km` |
 
 ### Positive Consequences
-- **Zero Planar Distortion**: Distances are accurate to within centimeters regardless of global latitude.
-- **Extreme High Concurrency**: Thousands of courier telemetry pings per minute cause 0% database CPU overhead.
-- **Instant Dispatch Discovery**: `GEORADIUS` finds couriers near a restaurant in $<1$ ms.
+- **Zero Planar Distortion**: Spherical math accurate to centimeter level worldwide.
+- **Zero Disk Write Overhead for Pings**: High-frequency rider ticks are purely in-memory.
+- **Instantaneous Dispatch**: Nearby rider radius discovery completes in under 1 ms.
 
-### Negative Consequences / Trade-offs
-- Requires maintaining two separate geospatial stores.
-- Couriers' long-term historical breadcrumb tracks require async batching if persistent trip playback is needed later.
+### Negative Consequences & Mitigations
+- *Trade-off*: Two spatial data layers must be maintained.
+- *Mitigation*: Redis holds ephemeral telemetry only; PostgreSQL remains the sole source of truth for persistent entities.
+
+---
 
 ## Technical Implementation Details
-- PostGIS setup automated via [`deploy/init-postgis.sql`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/deploy/init-postgis.sql):
+- PostGIS initialization script: [`deploy/init-postgis.sql`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/deploy/init-postgis.sql):
   ```sql
   CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
   CREATE EXTENSION IF NOT EXISTS "postgis";
   ```
-- Coverage check implemented in [`vendor.service.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/vendors/vendor.service.ts).
-- Courier tracking implemented in [`tracking.gateway.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/realtime/tracking.gateway.ts) and [`rider.service.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/riders/rider.service.ts).
+- Store geofence validation: [`vendor.service.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/vendors/vendor.service.ts).
+- Realtime telemetry gateway: [`tracking.gateway.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/realtime/tracking.gateway.ts).
+
+---
 
 ## Compliance & Verification
-- Validated via database initialization health check.
-- Verified in `apps/admin_portal/scripts/test-admin-console.ts` (Section 3: Fleet Radar telemetry retrieval).
+- PostGIS verification: Database initialization scripts verify spatial GiST indexes.
+- Telemetry verification: [`test-admin-console.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/admin_portal/scripts/test-admin-console.ts) validates real-time fleet radar coordinates.

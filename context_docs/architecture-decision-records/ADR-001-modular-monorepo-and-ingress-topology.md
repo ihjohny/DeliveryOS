@@ -1,38 +1,55 @@
 # ADR-001: Modular Monorepo Architecture & Nginx Edge Ingress Topology
 
 ## Status
-Accepted (2026-09-18)
+**Accepted** (2026-09-18)
+
+---
 
 ## Context & Problem Statement
-DeliveryOS is a multi-stakeholder ecosystem comprising four distinct frontends (Customer Mobile App, Rider Mobile App, Super Admin Console, and Vendor Kitchen Console), a centralized backend API, real-time WebSocket streaming, and persistent/caching data stores.
+DeliveryOS comprises four client applications (Customer App, Rider App, Super Admin Console, Vendor KDS), a NestJS API engine, and real-time streaming services.
 
-We needed an architectural layout that allows rapid iteration, shared business contracts, simplified local development for both humans and AI agents, and a unified production deployment boundary without introducing the network and distributed tracing overhead of separate repositories or microservice network hops.
+We required an architectural layout that prevents version drift across shared business contracts, maximizes AI coding agent navigation efficiency, and provides a unified single-port ingress (`8080`) for local and production deployment without microservice network complexity.
+
+---
 
 ## Decision Drivers
-- **Cognitive Cohesion**: Frontends, backend, and data models must evolve together under shared TypeScript and Dart types.
-- **AI Agent Context Window Efficiency**: An AI coding agent must be able to explore the client and server code in a single workspace.
-- **Zero-Port Collision Edge Ingress**: A single unified public port (`8080`) must route to the appropriate micro-frontend or API service seamlessly.
-- **Production Parity**: Local Docker Compose setup must reflect production Nginx reverse proxying.
+- **Cognitive Cohesion**: Frontends, backend, and database schemas evolve under unified TypeScript and Dart contracts.
+- **AI Agent Context Efficiency**: Autonomous agents navigate the entire client-server surface in a single workspace.
+- **Zero Port Collisions**: Unified edge ingress on port `8080` routes cleanly to all applications.
+- **Deterministic Orchestration**: One command spins up the complete multi-container stack.
+
+---
 
 ## Considered Options
-1. **Multi-Repo Architecture**: Separate git repositories for backend, admin portal, vendor portal, customer app, and rider app.
-2. **Polyrepo with Microservices**: Microservice backend (Auth service, Order service, Dispatch service) with independent repositories.
-3. **Modular Monorepo with Nginx Edge Ingress (Chosen)**: Single repository with `/apps`, `/services`, `/deploy`, and a centralized Nginx edge reverse proxy routing all traffic through port `8080`.
+1. **Multi-Repo Architecture**: Separate git repositories per app. *(Rejected: High overhead, contract desynchronization, complex CI/CD)*.
+2. **Polyrepo Microservices**: Fragmented microservice backends. *(Rejected: Network hop latency, distributed tracing overhead)*.
+3. **Modular Monorepo with Nginx Edge Ingress (Chosen)**: Unified repository structure with `/apps`, `/services`, and `/deploy`.
+
+---
 
 ## Decision Outcome
-Chosen option: **Modular Monorepo with Nginx Edge Ingress**, because:
-- It eliminates the overhead of managing multiple git remotes, version drift, and multi-repo CI/CD orchestration.
-- A single `docker compose -f deploy/docker-compose.yml up -d` spins up the entire working environment (Postgres, Redis, Backend API, Admin Portal, Vendor Portal, Nginx) deterministically.
-- Nginx acts as the single entry point, managing SSL termination, rate limiting, and subpath routing.
+Chosen option: **Modular Monorepo with Nginx Edge Ingress**.
+
+```mermaid
+flowchart TD
+    Client["Client Traffic (Web & Mobile)"] -->|Port 8080| Ingress["Nginx Edge Proxy (nginx.local.conf)"]
+    
+    Ingress -->|"/" (Port 3000)| Admin["Super Admin Portal (Vite SPA)"]
+    Ingress -->|"/vendor/" (Port 3001)| Vendor["Vendor KDS Portal (Vite SPA)"]
+    Ingress -->|"/api/v1/" (Port 4000)| API["NestJS REST API Engine"]
+    Ingress -->|"/events" (Port 4000)| WS["Socket.IO WebSocket Gateway"]
+```
 
 ### Positive Consequences
-- Immediate local verification of end-to-end flows.
-- Clean directory layout separating presentation (`apps/`), domain logic (`services/`), and orchestration (`deploy/`).
-- Seamless path-based routing: `/` routes to Super Admin, `/vendor/` routes to Vendor KDS, `/api/v1/` routes to NestJS API, and `/events` routes to Socket.IO.
+- **Single Command Boot**: `docker compose -f deploy/docker-compose.yml up -d` launches the entire ecosystem.
+- **Clean Separation of Concerns**: Clear demarcation between UI (`apps/`), domain logic (`services/`), and ops (`deploy/`).
+- **Unified SSL & Security**: Nginx manages rate-limiting, CORS, and subpath proxies centrally.
 
-### Negative Consequences / Trade-offs
-- Monorepo git repository size is larger than individual repos.
-- Build artifacts must be strictly cached to avoid rebuilds of unchanged apps.
+### Negative Consequences & Mitigations
+- *Trade-off*: Monorepo build times scale with project size.
+- *Mitigation*: Docker layer caching and independent npm workspaces prevent unnecessary rebuilds.
+
+---
 
 ## Technical Implementation Details
 
@@ -44,18 +61,20 @@ DeliveryOS/
 │   ├── customer_app/       # Flutter Cross-Platform Mobile
 │   └── rider_app/          # Flutter Cross-Platform Mobile
 ├── services/
-│   └── backend_api/        # NestJS 10 + Prisma ORM
+│   └── backend_api/        # NestJS 10 + Prisma ORM + Socket.IO
 └── deploy/
     ├── docker-compose.yml  # Multi-container local orchestration
     └── nginx.local.conf    # Edge ingress reverse proxy
 ```
 
-### Ingress Port Mapping (`deploy/docker-compose.yml`):
-- `http://localhost:8080/` $\rightarrow$ Nginx reverse proxies to `deliveryos_admin_portal:80` (Port 3000)
-- `http://localhost:8080/vendor/` $\rightarrow$ Nginx reverse proxies to `deliveryos_vendor_portal:80` (Port 3001)
-- `http://localhost:8080/api/v1/` $\rightarrow$ Nginx reverse proxies to `deliveryos_api:4000/api/v1/`
-- `ws://localhost:8080/events` $\rightarrow$ Nginx upgrades connection to `deliveryos_api:4000/events`
+### Ingress Routing Specifications:
+- `http://localhost:8080/` ➔ Proxied to `admin_portal:80`
+- `http://localhost:8080/vendor/` ➔ Proxied to `vendor_portal:80/vendor/`
+- `http://localhost:8080/api/v1/` ➔ Proxied to `backend_api:4000/api/v1/`
+- `ws://localhost:8080/events` ➔ Upgraded to `backend_api:4000/events`
+
+---
 
 ## Compliance & Verification
-- CI build checks run `npm run build` across `services/backend_api`, `apps/admin_portal`, and `apps/vendor_portal`.
-- Ingress integration verified via automated test scripts (`npm test` in both portals and health check `GET /api/v1/health` via Nginx).
+- Verify build integrity: `npm run build` in [`apps/admin_portal`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/admin_portal), [`apps/vendor_portal`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/vendor_portal), and [`services/backend_api`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api).
+- Verify ingress: `curl -I http://localhost:8080/` and `curl -I http://localhost:8080/vendor/`.

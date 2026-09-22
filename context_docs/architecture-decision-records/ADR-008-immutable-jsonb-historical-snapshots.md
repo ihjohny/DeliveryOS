@@ -1,44 +1,60 @@
 # ADR-008: Immutable Historical Order Snapshots using JSONB for Audit Integrity
 
 ## Status
-Accepted (2026-09-22)
+**Accepted** (2026-09-22)
+
+---
 
 ## Context & Problem Statement
-In multi-vendor e-commerce, catalogs and customer addresses are mutable:
-- A restaurant frequently changes prices, alters item names, or deletes old dishes.
-- Customers edit their saved addresses or delete old apartment numbers.
+In multi-vendor delivery platforms, merchant catalogs and customer addresses change constantly:
+- Merchants edit dish names, alter prices, or delete discontinued menu items.
+- Customers modify apartment numbers or delete old delivery addresses.
 
-If order history records only store foreign keys (`product_id`, `address_id`) and join against mutable tables:
-1. Past receipts and financial reports retroactively reflect new prices or altered descriptions.
-2. Deleted items or addresses break past order views with `Foreign Key Constraint Violation` or `null` exceptions.
-3. Legal invoice audit trails and VAT tax declarations are corrupted.
+If orders reference only foreign keys (`product_id`, `customer_address_id`) and join against live tables:
+1. Past receipts retroactively reflect new prices or missing items.
+2. Deleting an item or address causes `Foreign Key Constraint Violation` errors or null references.
+3. Financial audit trails and VAT tax records become legally invalid.
+
+---
 
 ## Decision Drivers
-- **Audit & Invoicing Immutability**: A receipt generated today must be identical 5 years from now.
-- **Resilience to Catalog Deletions**: Merchants must be able to delete obsolete products without cascading failures into order history.
-- **Extensible Snapshot Schemas**: Snapshots must capture variant names, price modifiers, and dynamic addons cleanly.
+- **Legal & Tax Audit Immutability**: A customer receipt or tax invoice issued today must remain unchanged indefinitely.
+- **De-linking from Mutable State**: Merchants must be free to modify catalogs without cascading failures into historical orders.
+- **Zero Join Overhead**: Historical receipts should render without joining 5+ mutable tables.
+- **Type Safety**: Avoid untyped data; enforce explicit TypeScript snapshot interfaces.
+
+---
 
 ## Considered Options
-1. **Live Relational Joins on Mutable Tables**: Only store `product_id` and `customer_address_id`. (Rejected: Severe audit trail corruption).
-2. **Duplicated Relational Snapshot Tables**: Create `order_address_snapshots`, `order_product_snapshots`, `order_addon_snapshots`. (Rejected: Schema bloat; requires dozens of joining tables for simple receipt lookups).
-3. **Immutable JSONB Snapshots on Order & OrderItem Tables (Chosen)**: Store frozen JSON snapshots in `deliveryAddressSnapshot`, `variantSnapshot`, and `addonsSnapshot` at checkout.
+1. **Live Relational Joins**: Store only IDs and join against mutable entities. *(Rejected: Corrupts historical audit trails)*.
+2. **Duplicated Relational Snapshot Tables**: Create separate snapshot tables per entity. *(Rejected: Massive schema bloat and complex migrations)*.
+3. **Immutable JSONB Snapshots on Orders (Chosen)**: Store frozen JSON objects in `deliveryAddressSnapshot`, `variantSnapshot`, and `addonsSnapshot` at order creation.
+
+---
 
 ## Decision Outcome
-Chosen option: **Immutable JSONB Snapshots**, because:
-- PostgreSQL `JSONB` stores structured binary JSON with zero join overhead.
-- When an order is placed in [`order.service.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/orders/order.service.ts), the exact address text, product title, chosen variant, and addons are frozen in time.
-- Strongly typed TypeScript interfaces (`OrderAddressSnapshot`, `OrderVariantSnapshot`, `OrderAddonSnapshot`) ensure compile-time safety and eliminate untyped `any` data.
+Chosen option: **Immutable JSONB Snapshots**.
+
+| Aspect | Mutable Foreign Key Joins | Immutable JSONB Snapshots |
+| :--- | :--- | :--- |
+| **Catalog Price Change** | Past orders retroactively show new price ❌ | Past orders preserve purchase-time price ✅ |
+| **Product Deletion** | Past orders break with foreign key / null errors ❌ | Past orders retain complete product snapshot ✅ |
+| **Invoice Query Speed** | Requires 4–6 table joins ❌ | Single indexed row lookup ✅ |
+| **Schema Flexibility** | Rigid relational columns ❌ | Extensible typed JSON payload ✅ |
 
 ### Positive Consequences
-- **Permanent Legal Auditability**: Past invoices and tax reports can never be altered by future menu updates.
-- **Fast Historical Retrieval**: Viewing an old order does not require complex 6-table joins.
-- **Resilient Cascade Rules**: Products and customer addresses can be safely deactivated without breaking historical orders.
+- **Permanent Audit Trail**: Receipts are legally immutable.
+- **Resilient Operations**: Merchants can delete products without breaking past user order histories.
+- **Fast Historical Queries**: Order history lookups require zero joins.
 
-### Negative Consequences / Trade-offs
-- Schema changes in snapshots over time must handle optional fields for backwards compatibility. (Mitigated with TypeScript optional fields `?`).
+### Negative Consequences & Mitigations
+- *Trade-off*: Snapshot evolution must maintain backwards compatibility.
+- *Mitigation*: Snapshot TypeScript interfaces define optional fields (`?`).
+
+---
 
 ## Technical Implementation Details
-In Prisma schema and [`order.service.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/orders/order.service.ts):
+Implemented in [`order.service.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/orders/order.service.ts):
 ```typescript
 export interface OrderAddressSnapshot {
   type: string;
@@ -68,6 +84,8 @@ export interface OrderAddonSnapshot {
 }
 ```
 
+---
+
 ## Compliance & Verification
-- Validated by Prisma compilation and backend tests.
-- Re-order validation logic in [`ValidateReorderDto`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/orders/dto/validate-reorder.dto.ts) explicitly compares snapshot data against current live catalog prices.
+- Re-order verification: [`ValidateReorderDto`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/orders/dto/validate-reorder.dto.ts) verifies snapshot integrity against live catalog data.
+- Unit tests: Backend order service tests verify snapshot persistence across mutations.

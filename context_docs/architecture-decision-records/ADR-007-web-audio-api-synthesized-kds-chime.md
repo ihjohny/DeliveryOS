@@ -1,35 +1,43 @@
 # ADR-007: In-Memory Web Audio API Oscillator Synthesis for Vendor Kitchen Audio Alarms
 
 ## Status
-Accepted (2026-09-22)
+**Accepted** (2026-09-22)
+
+---
 
 ## Context & Problem Statement
-In a restaurant kitchen, visual notifications on a tablet are insufficient during busy service. When an order arrives, store staff require an immediate, audible chime to capture attention and trigger the 3-minute acceptance window.
+In commercial kitchens, visual screen cues on tablets are easily missed during busy meal rushes. Store staff require an immediate, audible chime when an order arrives to trigger prompt order acceptance.
 
-Previously, the sound utility attempted to load an external audio asset (`/sounds/order-alarm.mp3`) over HTTP. In local setups, containerized Nginx subpaths, and offline situations, this led to `404 Not Found` network console errors, audio playback failures, and 130+ lines of fallback logic.
+Attempting to load external audio files (`/sounds/order-alarm.mp3`) over HTTP causes:
+- 404 Not Found network errors under varying Vite base paths and Nginx subpaths (`/vendor/`).
+- Playback latencies while downloading audio assets.
+- Fragile fallback code (130+ lines) to handle broken audio assets.
+
+---
 
 ## Decision Drivers
-- **Zero External Asset Dependencies**: The audio alert must never fail due to missing `.mp3` files or network 404s.
-- **Immediate Playback (<1ms)**: No network roundtrip to download audio chunks before triggering the bell.
-- **Harmonious Culinary Tone**: The sound must be pleasant yet piercing enough to be heard over commercial kitchen noise.
-- **Simplicity**: Maintainable in under 50 lines of clean TypeScript.
+- **Zero External Dependencies**: Audio alerts must never fail due to missing `.mp3` assets or 404 paths.
+- **Instant Playback ($<1$ ms)**: No network roundtrip required before sounding the alarm.
+- **Harmonious Acoustic Presence**: Penetrating tone heard over kitchen noise without harsh distortion.
+- **Code Simplicity**: Maintainable in under 40 lines of standard TypeScript.
+
+---
 
 ## Considered Options
-1. **HTML5 `<audio>` tag with Bundled MP3**: Store a 50KB `.mp3` file in `/public/sounds/`. (Rejected: Subject to Vite base path mismatches, missing file 404s, and browser caching bugs).
-2. **Base64 Encoded Audio String**: Embed a large base64 MP3 string inside source code. (Rejected: Bloats JavaScript bundle by 50–100KB; fragile to maintain).
-3. **Native Web Audio API Oscillator Synthesis (Chosen)**: Use the browser's native `AudioContext` to synthesize dual sine and triangle waveforms mathematically in memory.
+1. **HTML5 `<audio>` with Bundled MP3**: Host MP3 in `/public/sounds/`. *(Rejected: Path mismatches under subpath proxying, network 404s)*.
+2. **Base64 Encoded Audio String**: Embed large base64 string in JS. *(Rejected: Bloats bundle size by 50–100KB)*.
+3. **Native Web Audio API Oscillator Synthesis (Chosen)**: Synthesize dual sine and triangle waveforms mathematically via browser `AudioContext`.
+
+---
 
 ## Decision Outcome
-Chosen option: **Native Web Audio API Oscillator Synthesis**, because:
-- It requires **zero external assets** and makes **zero HTTP requests**.
-- Dual oscillators create a warm, harmonious chime (880 Hz root $A_5$ + 1320 Hz perfect fifth overtone $E_6$).
-- An exponential gain envelope creates a fast attack (50ms) followed by natural acoustic decay (1.2s).
+Chosen option: **Native Web Audio API Oscillator Synthesis**.
 
 ```mermaid
 flowchart LR
     Ctx["AudioContext (Web Audio API)"]
-    Osc1["Oscillator 1 (Sine: 880 Hz - Root A5)"]
-    Osc2["Oscillator 2 (Triangle: 1320 Hz - Fifth E6)"]
+    Osc1["Oscillator 1: Sine (880 Hz - Root A5)"]
+    Osc2["Oscillator 2: Triangle (1320 Hz - Fifth E6)"]
     Gain["GainNode (Exponential Decay Envelope)"]
     Speakers["Destination (Device Speakers)"]
 
@@ -41,15 +49,18 @@ flowchart LR
 ```
 
 ### Positive Consequences
-- **100% Reliability**: Completely eliminates `404 Not Found` errors in browser consoles.
-- **Zero Asset Overhead**: Zero kilobytes added to network requests.
-- **Pure Web Standards**: Works universally on modern browsers (Chrome, Safari, Firefox, Edge, Android/iOS WebViews).
+- **100% Availability**: Eliminates all audio asset 404 network errors.
+- **Zero Bandwidth Overhead**: 0 KB network transfer.
+- **Universal Browser Support**: Runs on all modern desktop and tablet browsers without external codecs.
 
-### Negative Consequences / Trade-offs
-- Web browsers enforce an "Autoplay Policy" requiring at least one initial user interaction (e.g. click anywhere on the screen) before audio can sound. (Handled gracefully with fallback catches).
+### Negative Consequences & Mitigations
+- *Trade-off*: Browser Autoplay Policies require user gesture interaction before enabling audio.
+- *Mitigation*: AudioContext is lazily initialized and unlocked upon the user's first tap/click on the KDS board.
+
+---
 
 ## Technical Implementation Details
-Implemented in [`apps/vendor_portal/src/utils/sound.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/vendor_portal/src/utils/sound.ts):
+Implemented in [`sound.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/vendor_portal/src/utils/sound.ts):
 ```typescript
 export function playOrderAlarmChime(): void {
   try {
@@ -59,7 +70,7 @@ export function playOrderAlarmChime(): void {
     const ctx = new AudioCtx();
     const osc1 = ctx.createOscillator();
     const osc2 = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+    const gain = ctx.createGain();
 
     osc1.type = 'sine';
     osc1.frequency.setValueAtTime(880, ctx.currentTime);
@@ -67,13 +78,13 @@ export function playOrderAlarmChime(): void {
     osc2.type = 'triangle';
     osc2.frequency.setValueAtTime(1320, ctx.currentTime);
 
-    gainNode.gain.setValueAtTime(0.001, ctx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.05);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
 
-    osc1.connect(gainNode);
-    osc2.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
 
     osc1.start();
     osc2.start();
@@ -85,6 +96,7 @@ export function playOrderAlarmChime(): void {
 }
 ```
 
+---
+
 ## Compliance & Verification
-- Tested and verified in `apps/vendor_portal/scripts/test-kds-operations.ts`.
-- Verified zero network requests logged in browser network tabs upon order arrivals.
+- Unit & operational verification: [`test-kds-operations.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/vendor_portal/scripts/test-kds-operations.ts) validates zero network 404s on order arrival.

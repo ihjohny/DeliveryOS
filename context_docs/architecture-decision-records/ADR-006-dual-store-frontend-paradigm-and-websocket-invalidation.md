@@ -1,75 +1,79 @@
 # ADR-006: Dual-Store Frontend Paradigm (Zustand + TanStack Query) & Real-Time WebSocket Invalidation
 
 ## Status
-Accepted (2026-09-22)
+**Accepted** (2026-09-22)
+
+---
 
 ## Context & Problem Statement
-Web frontends in delivery platforms must handle two distinct categories of state:
-1. **Client / Session State**: JWT authentication tokens, active user profile, multi-outlet scope (`ALL_OUTLETS_MASTER` vs `PARTICULAR_OUTLET`), UI sidebar collapse state, and active Socket.IO connection references.
-2. **Server / Remote State**: Active orders list, live fleet radar courier locations, product inventory, and financial ledger summaries.
+Frontend web applications in delivery ecosystems manage two fundamentally different categories of state:
+1. **Client / Session State**: Auth tokens, current user roles, outlet filter selection, and sidebar collapse state.
+2. **Server / Remote Cache State**: Order queues, fleet radar locations, catalog stock statuses, and financial summaries.
 
-Attempting to store all server responses inside global client stores (like Redux or Zustand) results in "State Bloat", boilerplate reducers, cache invalidation bugs, and stale data. Conversely, relying purely on short HTTP polling loops (e.g. polling every 5 seconds) degrades server performance and introduces latency.
+Storing remote server data inside global client stores (e.g. Redux/Zustand) creates state duplication, complex reducers, and cache drift. Relying on continuous short polling (every 3–5 seconds) floods servers with redundant HTTP requests.
+
+---
 
 ## Decision Drivers
-- **Separation of Concerns**: Client session state must be clearly separated from server cache state.
-- **Real-Time UI Responsiveness**: Changes to orders or fleet status must be visible in under 100 milliseconds without tight polling loops.
-- **Deterministic Cache Invalidation**: Server data must auto-refresh upon receiving targeted WebSocket events.
-- **Lightweight Implementation**: No heavy Redux boilerplate.
+- **Explicit Separation of Concerns**: Isolate transient UI/session state from remote server cache.
+- **Sub-100ms Event Responsiveness**: Instantaneous UI updates upon state changes without tight polling loops.
+- **Zero Cache Duplication**: Let the server cache manage pagination, deduplication, and refetching.
+- **Minimal Boilerplate**: Lightweight state management without verbose action creators or reducers.
+
+---
 
 ## Considered Options
-1. **Redux Toolkit + Redux Thunks for Everything**: Everything in Redux. (Rejected: Excessive boilerplate; difficult cache lifecycle management).
-2. **TanStack Query + Short HTTP Polling**: React Query with 5-second `refetchInterval`. (Rejected: Causes continuous HTTP traffic spikes; still lags behind instantaneous events).
+1. **Monolithic Global Redux**: Everything in Redux actions/reducers. *(Rejected: High boilerplate, manual cache management)*.
+2. **TanStack Query with Aggressive Polling**: Short interval polling. *(Rejected: Network request floods, high server CPU load)*.
 3. **Dual-Store Architecture (Zustand + TanStack Query + WebSocket Invalidation) (Chosen)**:
-   - **Zustand** manages client persistent and session state.
+   - **Zustand** manages client persistent and UI state.
    - **TanStack Query** manages server cache.
-   - **Socket.IO Events** trigger immediate cache invalidations.
+   - **Socket.IO Events** trigger targeted cache invalidations.
+
+---
 
 ## Decision Outcome
-Chosen option: **Dual-Store Architecture with WebSocket Invalidation**:
+Chosen option: **Dual-Store Architecture with WebSocket Invalidation**.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Client State                           │
-│  Managed by ZUSTAND (LocalStorage Synchronized)             │
-│  - useAuthStore: Token, User, Login/Logout, Socket handle   │
-│  - useVendorOutletStore: Active Outlet ID, Multi-tier scope │
-└─────────────────────────────────────────────────────────────┘
-                               ▲
-                               │ (Supplies JWT to queries)
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      Server State                           │
-│  Managed by TANSTACK QUERY (React Query)                    │
-│  - useQuery(['admin-orders'], fetchOrders)                  │
-│  - useQuery(['admin-fleet'], fetchFleet)                    │
-│  - useQuery(['admin-overview'], fetchOverview)              │
-└─────────────────────────────────────────────────────────────┘
-                               ▲
-                               │ (Triggers Invalidation)
-┌─────────────────────────────────────────────────────────────┐
-│                Real-Time WebSocket Gateway                  │
-│  Socket.IO (/events)                                        │
-│  - Event 'order:new' -> queryClient.invalidateQueries(...)  │
-│  - Event 'order:status:changed' -> invalidateQueries(...)   │
-│  - Event 'dispatch:broadcast' -> invalidateQueries(...)     │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ClientState["Client State (Zustand)"]
+        Z1["useAuthStore (JWT, User Profile)"]
+        Z2["useVendorOutletStore (Active Outlet Filter)"]
+    end
+
+    subgraph ServerState["Server Cache (TanStack Query)"]
+        Q1["useQuery('admin-orders')"]
+        Q2["useQuery('admin-fleet')"]
+    end
+
+    subgraph WSGateway["Real-Time Gateway (Socket.IO)"]
+        W1["order:new / order:status:changed"]
+        W2["dispatch:broadcast"]
+    end
+
+    ClientState -->|Supplies JWT & Outlet ID| ServerState
+    WSGateway -->|queryClient.invalidateQueries| ServerState
 ```
 
 ### Positive Consequences
-- **Instantaneous Real-Time Updates**: UI updates within 50ms of a backend state change.
-- **Drastic Reduction in HTTP Overhead**: Eliminates unnecessary polling requests when the system is quiet.
-- **Zero Stale Cache Bugs**: Server data is revalidated directly from authoritative backend endpoints.
+- **Instantaneous Real-Time Updates**: UI refreshes within 50ms of a backend status change.
+- **Minimized Network Overhead**: Zero polling when the system is idle.
+- **Zero Cache Staleness**: UI re-fetches authoritative data directly from API endpoints.
 
-### Negative Consequences / Trade-offs
-- Frontend pages must register and clean up WebSocket listeners in `useEffect` hooks to prevent duplicate event triggers.
+### Negative Consequences & Mitigations
+- *Trade-off*: Page components must clean up Socket.IO listeners on unmount.
+- *Mitigation*: Encapsulated inside custom React hooks with explicit return cleanup handlers.
+
+---
 
 ## Technical Implementation Details
-In [`AdminOrdersPage.tsx`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/admin_portal/src/pages/admin/AdminOrdersPage.tsx):
+Implemented in [`AdminOrdersPage.tsx`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/admin_portal/src/pages/admin/AdminOrdersPage.tsx):
 ```typescript
 const queryClient = useQueryClient();
 
 // 1. Fetch server state with relaxed fallback polling (30s)
-const { data: orders = [], isLoading } = useQuery({
+const { data: orders = [] } = useQuery({
   queryKey: ['admin-orders'],
   queryFn: () => adminApi.getOrders(),
   refetchInterval: 30000,
@@ -94,6 +98,8 @@ useEffect(() => {
 }, [queryClient]);
 ```
 
+---
+
 ## Compliance & Verification
-- Implemented across `AdminDashboardPage.tsx`, `AdminOrdersPage.tsx`, and `AdminDispatchPage.tsx`.
-- Verified in `apps/admin_portal` test suites (8/8 passing).
+- Unit & component verification: All portal test suites verify query caching and auth state isolation (`npm run test:run`).
+- Real-time simulation: [`test-admin-console.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/admin_portal/scripts/test-admin-console.ts) validates real-time order progression.
