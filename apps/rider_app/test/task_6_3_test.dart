@@ -1,9 +1,12 @@
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:rider_app/core/network/dio_client.dart';
 import 'package:rider_app/core/storage/local_storage.dart';
 import 'package:rider_app/features/dashboard/domain/duty_models.dart';
 import 'package:rider_app/features/dashboard/providers/duty_provider.dart';
@@ -12,25 +15,44 @@ import 'package:rider_app/features/trips/domain/trip_models.dart';
 import 'package:rider_app/features/trips/presentation/widgets/incoming_trip_modal.dart';
 import 'package:rider_app/features/trips/providers/trip_provider.dart';
 
+class MockSuccessAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
+    return ResponseBody.fromString('{"success": true}', 200, headers: {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    });
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late LocalStorage storage;
+  late Dio testDio;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     storage = LocalStorage(prefs);
+    testDio = Dio();
+    testDio.httpClientAdapter = MockSuccessAdapter();
   });
+
+  ProviderContainer createContainer() {
+    return ProviderContainer(
+      overrides: [
+        localStorageProvider.overrideWithValue(storage),
+        dioClientProvider.overrideWithValue(testDio),
+      ],
+    );
+  }
 
   Widget createTestWidget({required Widget child, ProviderContainer? container}) {
     return UncontrolledProviderScope(
-      container: container ??
-          ProviderContainer(
-            overrides: [
-              localStorageProvider.overrideWithValue(storage),
-            ],
-          ),
+      container: container ?? createContainer(),
       child: MaterialApp(
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
@@ -147,11 +169,7 @@ void main() {
 
   group('Task 6.3 - Safety Limit Guard: claimTrip Enforcement', () {
     test('claimTrip blocks COD orders when rider cash limit is reached', () async {
-      final container = ProviderContainer(
-        overrides: [
-          localStorageProvider.overrideWithValue(storage),
-        ],
-      );
+      final container = createContainer();
       addTearDown(container.dispose);
 
       // Push rider to limit
@@ -169,11 +187,7 @@ void main() {
     });
 
     test('claimTrip permits prepaid (non-COD) orders even when cash limit is reached', () async {
-      final container = ProviderContainer(
-        overrides: [
-          localStorageProvider.overrideWithValue(storage),
-        ],
-      );
+      final container = createContainer();
       addTearDown(container.dispose);
 
       // Push rider to limit

@@ -174,27 +174,31 @@ void main() {
       await tester.pumpAndSettle();
 
       // Initial price with default first in-stock variant (Half: 340) and qty 1
-      expect(find.text('৳340'), findsOneWidget);
+      expect(find.descendant(of: find.byType(ElevatedButton), matching: find.text('৳340')), findsOneWidget);
 
       // Select Full variant (460)
       await tester.tap(find.text('Full (2 pcs)'));
       await tester.pumpAndSettle();
-      expect(find.text('৳460'), findsOneWidget);
+      expect(find.descendant(of: find.byType(ElevatedButton), matching: find.text('৳460')), findsOneWidget);
+
+      // Scroll down to addons
+      await tester.drag(find.byType(ListView), const Offset(0, -250));
+      await tester.pumpAndSettle();
 
       // Add Borhani (+60) -> 460 + 60 = 520
       await tester.tap(find.text('Borhani'));
       await tester.pumpAndSettle();
-      expect(find.text('৳520'), findsOneWidget);
+      expect(find.descendant(of: find.byType(ElevatedButton), matching: find.text('৳520')), findsOneWidget);
 
       // Add Firni (+80) -> 520 + 80 = 600
       await tester.tap(find.text('Firni'));
       await tester.pumpAndSettle();
-      expect(find.text('৳600'), findsOneWidget);
+      expect(find.descendant(of: find.byType(ElevatedButton), matching: find.text('৳600')), findsOneWidget);
 
       // Increment Quantity to 2 -> 600 * 2 = 1200
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pumpAndSettle();
-      expect(find.text('৳1200'), findsOneWidget);
+      expect(find.descendant(of: find.byType(ElevatedButton), matching: find.text('৳1200')), findsOneWidget);
 
       // Tap Add to Cart
       await tester.tap(find.text('Add to Cart'));

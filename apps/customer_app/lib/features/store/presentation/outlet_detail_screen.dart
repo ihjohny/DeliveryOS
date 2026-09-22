@@ -585,9 +585,9 @@ class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: const BoxDecoration(
+        color: Colors.white,
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: ListView.builder(

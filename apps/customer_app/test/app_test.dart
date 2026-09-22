@@ -247,6 +247,10 @@ void main() {
       expect(find.textContaining('Banani'), findsWidgets);
       expect(find.text("Sultan's Dine - Banani"), findsOneWidget);
       expect(find.text('Kacchi Bhai - Gulshan 1'), findsOneWidget);
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -250));
+      await tester.pumpAndSettle();
+
       expect(find.text('Shwapno Superstore Express'), findsOneWidget);
     });
   });

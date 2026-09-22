@@ -249,16 +249,28 @@ void main() {
       expect(find.text('2'), findsOneWidget);
       expect(find.text('Home Delivery'), findsOneWidget);
       expect(find.text('Takeaway'), findsOneWidget);
+
+      // Scroll down to reveal Bill Summary
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+
       expect(find.text('Bill Summary'), findsOneWidget);
       expect(find.text('Item Subtotal'), findsOneWidget);
       expect(find.text('৳840'), findsOneWidget); // 420 * 2
       expect(find.text('Delivery Fee'), findsOneWidget);
       expect(find.text('৳60'), findsOneWidget);
       expect(find.text('Total Payable'), findsOneWidget);
-      expect(find.text('৳900'), findsOneWidget); // 840 + 60
+      expect(find.text('৳900'), findsWidgets); // 840 + 60 in bill summary & bottom bar
 
-      // Tap Takeaway mode
+      // Scroll back up to tap Takeaway mode
+      await tester.drag(find.byType(ListView), const Offset(0, 300));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.text('Takeaway'));
+      await tester.pumpAndSettle();
+
+      // Scroll down to verify updated bill
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
       await tester.pumpAndSettle();
 
       expect(find.text('FREE'), findsOneWidget);
