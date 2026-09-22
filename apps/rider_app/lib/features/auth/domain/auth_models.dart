@@ -155,11 +155,11 @@ class RiderProfileData {
       vehicleType: VehicleTypeExtension.fromString(vehicleStr),
       status: AccountStatusExtension.fromString(statusStr),
       isOnline: json['isOnline'] as bool? ?? false,
-      earningsBalance: (json['earningsBalance'] as num?)?.toDouble() ?? 0.0,
-      cashInHand: (json['cashInHand'] as num?)?.toDouble() ?? 0.0,
-      maxCashLimit: (json['maxCashLimit'] as num?)?.toDouble() ?? 5000.0,
-      completedTripsCount: (json['completedTripsCount'] as num?)?.toInt() ?? 0,
-      rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
+      earningsBalance: double.tryParse(json['earningsBalance']?.toString() ?? '') ?? 0.0,
+      cashInHand: double.tryParse(json['cashInHand']?.toString() ?? '') ?? 0.0,
+      maxCashLimit: double.tryParse(json['maxCashLimit']?.toString() ?? '') ?? 5000.0,
+      completedTripsCount: int.tryParse(json['completedTripsCount']?.toString() ?? '') ?? 0,
+      rating: double.tryParse(json['rating']?.toString() ?? '') ?? 5.0,
     );
   }
 

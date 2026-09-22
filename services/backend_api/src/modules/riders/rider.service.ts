@@ -32,6 +32,7 @@ export class RiderService {
             phone: true,
             email: true,
             role: true,
+            status: true,
           },
         },
       },

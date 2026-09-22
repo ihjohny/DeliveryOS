@@ -57,6 +57,34 @@ DeliveryOS/
 
 ---
 
+## 📸 Platform Application Showcase
+
+DeliveryOS delivers a unified multi-tier experience across high-density web control towers and mobile applications:
+
+### 1. 🖥️ Super Admin Master Console
+> **Centralized platform control tower**: Real-time dispatch engine toggle, live operational KPI metrics (Active Deliveries, System Revenue, Active Fleet), and tabular order management with instant status filters.
+
+![Super Admin Portal Dashboard](docs/screenshots/01_admin_portal_dashboard.png)
+
+---
+
+### 2. 🍳 Vendor Kitchen Display System (KDS)
+> **Culinary & merchant operations console**: Three-stage Kanban progression (*New Orders*, *Preparing*, *Ready for Pickup*), SLA preparation countdown timers, synthesized Web Audio chimes, and one-tap order actions.
+
+![Vendor KDS Console](docs/screenshots/02_vendor_kds_dashboard.png)
+
+---
+
+### 3. 📱 Mobile Applications: Customer & Rider Fleet
+> **Flutter applications**: High-contrast UI, low-latency WebSocket updates, PostGIS/Redis GPS spatial telemetry, and localized multi-region support.
+
+| 📱 Customer Ordering Experience | 🛵 Rider Fleet Duty Cockpit |
+| :---: | :---: |
+| <img src="docs/screenshots/03_customer_app_home.png" width="380" alt="Customer Mobile App Home" /> | <img src="docs/screenshots/04_rider_app_dashboard.png" width="380" alt="Rider Fleet App Dashboard" /> |
+| **Hyperlocal Store Discovery & Promos**<br/>• Live address selector & promotional banners<br/>• Multi-vertical category grid<br/>• Dynamic vendor cards with delivery time & fee | **Active Duty & Dispatch Radar**<br/>• One-tap shift toggle (`YOU ARE ONLINE`)<br/>• Live GPS radar beaconing (`23.7925° N, 90.4078° E`)<br/>• Shift earnings, completed trips & COD safety limits |
+
+---
+
 ## 🏗️ System Architecture & Ingress Topology
 
 ```mermaid
