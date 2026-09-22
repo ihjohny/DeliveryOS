@@ -16,6 +16,11 @@ DeliveryOS/
 │
 └── context_docs/                                # Authoritative project context directory
     ├── AGENT_RULES.md                           # Master AI engineering rules, standards & DoD
+    ├── QUICK_REFERENCE.md                       # Task-to-File Context Router
+    │
+    ├── architecture-decision-records/           # Architecture Decision Records (ADRs)
+    │   ├── README.md                            # ADR Master Index, lifecycle & AI protocol
+    │   └── ADR-001 through ADR-010              # Infrastructure, FSM, GIS, Concurrency & AI ADRs
     │
     ├── business-requirements-documents/         # For founders, business stakeholders & non-tech users
     │   ├── README.md                            # Business suite guide & index
@@ -115,9 +120,11 @@ flowchart TD
 ## 📖 Quick Links
 
 - **[Master Work Breakdown Structure (WBS)](./WORK_BREAKDOWN.md)**
+- **[Architecture Decision Records (ADRs)](./context_docs/architecture-decision-records/README.md)**
 - **[Master Product Overview & Feature Guide (Non-Technical)](./context_docs/business-requirements-documents/00-master-product-overview.md)**
 - **[AI Agent Rules & Operating Procedures](./context_docs/AGENT_RULES.md)**
 - **[Business Requirements Suite](./context_docs/business-requirements-documents/README.md)**
 - **[Technical Implementation Suite](./context_docs/technical-implementation-documents/README.md)**
+
 
 

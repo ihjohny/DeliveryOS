@@ -15,4 +15,6 @@ Before loading large documentation files, inspect the **Context Router** to iden
 3. **[Quick Reference & Context Router](./context_docs/QUICK_REFERENCE.md)**
 4. **[Business Requirements Documents (BRD)](./context_docs/business-requirements-documents/README.md)**
 5. **[Technical Implementation Documents (TID)](./context_docs/technical-implementation-documents/README.md)**
+6. **[Architecture Decision Records (ADR)](./context_docs/architecture-decision-records/README.md)**
+
 

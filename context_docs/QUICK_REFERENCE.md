@@ -9,6 +9,15 @@
 | :--- | :--- |
 | **Engineering Roadmap & Step-by-Step WBS** | `WORK_BREAKDOWN.md` |
 | **Non-Technical Master Product Overview** | `BRD-00` (`00-master-product-overview.md`) |
+| **Architecture Decision Records (ADR Index)** | [`ADR Index`](./architecture-decision-records/README.md) (`ADR-001` - `ADR-010`) |
+| **Monorepo Topology, Ingress & Routing** | `ADR-001`, `ADR-005` + `TID-01`, `TID-07` |
+| **Order Flow FSM (`RIDER_FIRST` vs `VENDOR_FIRST`)** | `ADR-002` + `TID-05` + `BRD-03` |
+| **Spatial PostGIS Geofencing & Redis Geohash Radar** | `ADR-003` + `TID-02` + `TID-05` |
+| **Rider Atomic Claim Mutex & Concurrency** | `ADR-004` + `TID-05` + `TID-04` |
+| **Frontend State (Zustand + React Query) & WS** | `ADR-006` + `TID-06` + `TID-04` |
+| **Vendor KDS Web Audio Synthesizer Chime** | `ADR-007` + `apps/vendor_portal` + `BRD-05` |
+| **Immutable JSONB Snapshots & Financial Ledgers** | `ADR-008`, `ADR-009` + `TID-02` + `BRD-03` |
+| **AI Governance, Invariants & No-Auto-Commits** | `ADR-010` + `AGENT_RULES.md` |
 | **Authentication, OTP, JWT, Role Guards** | `TID-03` (API Specs: Section 2) + `TID-02` (Users table) |
 | **Customer App UI, Cart, Banners, Coupons** | `BRD-04` (Customer Journey) + `TID-03` (API Specs: Section 3) |
 | **Cart Address Geofence Guard & Radius Check**| `BRD-03` (Sec 1.3) + `BRD-04` (Screen 6) + `TID-02` (Sec 3.2) + `TID-03` (Sec 3.4) |

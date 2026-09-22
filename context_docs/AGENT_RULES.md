@@ -15,6 +15,10 @@ Before implementing, modifying, or refactoring any code in this repository, you 
 context_docs/
 ├── AGENT_RULES.md                                # This document (Master AI Engineering Rules)
 │
+├── architecture-decision-records/                # Permanent architectural & engineering decisions
+│   ├── README.md                                # Master ADR Index, lifecycle & AI protocol
+│   └── ADR-001 through ADR-010                  # System, FSM, GIS, Concurrency & Governance ADRs
+│
 ├── business-requirements-documents/             # Business logic, user journeys & operations
 │   ├── 01-executive-summary-and-vision.md       # High-level vision & multi-vertical model
 │   ├── 02-stakeholder-roles-and-personas.md     # Customer, Merchant, Rider, Super Admin personas
@@ -188,6 +192,10 @@ Before marking any engineering task as complete, verify that:
 3. **ENTERPRISE TEAM COLLABORATION MINDSET**:
    - Build and maintain every module as if collaborating in a large, distributed engineering team.
    - Ensure clean modular boundaries, explicit type signatures, predictable error handling, and self-documenting code to enable effortless team onboarding and long-term production resilience.
+4. **MANDATORY ADR COMPLIANCE & AUTHORING**:
+   - Every AI agent and developer must consult `context_docs/architecture-decision-records/README.md` before making architectural changes.
+   - Any new architectural pattern, state machine alteration, primary dependency, or database strategy must be documented with an ADR. See **ADR-010** for full AI governance standards.
+
 
 ---
 
