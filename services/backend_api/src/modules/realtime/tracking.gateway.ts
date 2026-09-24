@@ -338,15 +338,30 @@ export class TrackingGateway
   }
 
   /**
-   * Event: order:status:changed (Server -> Customer App, Order Room & Admin)
+   * Event: order:status:changed (Server -> Customer App, Order Room, Vendor KDS & Admin)
    */
-  notifyOrderStatusChanged(
+  async notifyOrderStatusChanged(
     orderId: string,
     customerId: string,
     previousStatus: string,
     newStatus: string,
     metadata?: Record<string, unknown>,
   ) {
+    let vendorId = (metadata?.vendorId as string) || (metadata?.vendor as any)?.id;
+    if (!vendorId && this.prisma) {
+      try {
+        const order = await this.prisma.order.findUnique({
+          where: { id: orderId },
+          select: { vendorId: true },
+        });
+        if (order?.vendorId) {
+          vendorId = order.vendorId;
+        }
+      } catch {
+        // Non-blocking fallback
+      }
+    }
+
     const payload = {
       event: 'order:status:changed',
       data: {
@@ -354,17 +369,24 @@ export class TrackingGateway
         previousStatus,
         newStatus,
         timestamp: new Date().toISOString(),
+        ...(vendorId ? { vendorId } : {}),
         ...metadata,
       },
     };
-    this.server
-      .to(`order_${orderId}`)
-      .to(`user_${customerId}`)
-      .to('admin_hq')
-      .emit('order:status:changed', payload);
+
+    const targetRooms: string[] = [
+      `order_${orderId}`,
+      `user_${customerId}`,
+      'admin_hq',
+    ];
+    if (vendorId) {
+      targetRooms.push(`vendor_${vendorId}`);
+    }
+
+    this.server.to(targetRooms).emit('order:status:changed', payload);
 
     this.logger.log(
-      `Emitted [order:status:changed] for order ${orderId}: ${previousStatus} -> ${newStatus}`,
+      `Emitted [order:status:changed] for order ${orderId}: ${previousStatus} -> ${newStatus}${vendorId ? ` (vendor: ${vendorId})` : ''}`,
     );
   }
 

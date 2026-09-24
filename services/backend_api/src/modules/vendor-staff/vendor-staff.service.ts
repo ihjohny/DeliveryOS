@@ -194,7 +194,7 @@ export class VendorStaffService {
       order.customerId,
       order.status,
       OrderStatus.PREPARING,
-      { prepTimeMinutes },
+      { prepTimeMinutes, vendorId: order.vendorId },
     );
 
     return updatedOrder;
@@ -275,6 +275,7 @@ export class VendorStaffService {
       order.customerId,
       order.status,
       OrderStatus.READY_FOR_PICKUP,
+      { vendorId: order.vendorId },
     );
 
     // If running in VENDOR_FIRST mode, broadcast to riders now that items are ready
@@ -313,6 +314,7 @@ export class VendorStaffService {
       order.customerId,
       order.status,
       OrderStatus.DISPATCHED,
+      { vendorId: order.vendorId },
     );
 
     return updatedOrder;
@@ -599,6 +601,93 @@ export class VendorStaffService {
   }
 
   /**
+   * 11. Get Full Merchant Catalog (Including Out-of-Stock Items)
+   */
+  async getFullCatalog(user: User, vendorId?: string) {
+    let targetVendorId = vendorId;
+    if (!targetVendorId || targetVendorId === 'ALL') {
+      const accessible = await this.getAccessibleOutlets(user);
+      if (accessible.length === 0) {
+        throw new ForbiddenException('No accessible outlet found');
+      }
+      targetVendorId = accessible[0].id;
+    }
+
+    await this.validateStaffOutletAccess(user, targetVendorId);
+
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { id: targetVendorId },
+      include: {
+        categories: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            products: {
+              orderBy: { sortOrder: 'asc' },
+              include: {
+                variants: {
+                  orderBy: { name: 'asc' },
+                },
+                addonGroups: {
+                  include: {
+                    addons: {
+                      orderBy: { name: 'asc' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException('Vendor outlet not found');
+    }
+
+    return {
+      vendorId: vendor.id,
+      vendorName: vendor.name,
+      defaultPrepTimeMinutes: vendor.defaultPrepTimeMinutes,
+      categories: vendor.categories.map((c) => ({
+        id: c.id,
+        name: c.name,
+        sortOrder: c.sortOrder,
+        products: c.products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          basePrice: Number(p.basePrice),
+          imageUrl: p.imageUrl,
+          isInStock: p.isInStock,
+          sortOrder: p.sortOrder,
+          variants: p.variants.map((v) => ({
+            id: v.id,
+            name: v.name,
+            priceDelta: Number(v.priceModifier),
+            priceModifier: Number(v.priceModifier),
+            isInStock: v.isInStock,
+          })),
+          addonGroups: p.addonGroups.map((ag) => ({
+            id: ag.id,
+            name: ag.title,
+            title: ag.title,
+            minSelection: ag.minSelection,
+            maxSelection: ag.maxSelection,
+            addons: ag.addons.map((a) => ({
+              id: a.id,
+              name: a.name,
+              price: Number(a.price),
+              isInStock: a.isInStock,
+            })),
+          })),
+        })),
+      })),
+    };
+  }
+
+  /**
    * 12. Get Sales Ledger & Commission Breakdown
    */
   async getSalesLedger(user: User, vendorId?: string) {
@@ -623,12 +712,27 @@ export class VendorStaffService {
             orderNumber: true,
             status: true,
             paymentMethod: true,
+            subtotal: true,
+            deliveryFee: true,
             totalAmount: true,
+            customerNotes: true,
+            deliveryAddressSnapshot: true,
             placedAt: true,
             customer: {
               select: {
                 fullName: true,
                 phone: true,
+              },
+            },
+            orderItems: {
+              select: {
+                id: true,
+                productNameSnapshot: true,
+                quantity: true,
+                unitPrice: true,
+                totalPrice: true,
+                variantSnapshot: true,
+                addonsSnapshot: true,
               },
             },
           },
@@ -663,6 +767,9 @@ export class VendorStaffService {
         vendorId: l.vendorId,
         vendorName: l.vendor?.name || 'Unknown Outlet',
         customerName: l.order?.customer?.fullName || 'Guest Customer',
+        customerPhone: l.order?.customer?.phone || '',
+        customerNotes: l.order?.customerNotes || null,
+        deliveryAddress: l.order?.deliveryAddressSnapshot || null,
         paymentMethod: l.order?.paymentMethod || 'CASH_ON_DELIVERY',
         orderStatus: l.order?.status || 'UNKNOWN',
         grossAmount: gross,
@@ -672,6 +779,15 @@ export class VendorStaffService {
         settlementStatus: l.settlementStatus,
         settledAt: l.settledAt,
         createdAt: l.createdAt,
+        items: (l.order?.orderItems || []).map((i) => ({
+          id: i.id,
+          productName: i.productNameSnapshot,
+          quantity: i.quantity,
+          unitPrice: Number(i.unitPrice),
+          totalPrice: Number(i.totalPrice),
+          variant: i.variantSnapshot,
+          addons: i.addonsSnapshot,
+        })),
       };
     });
 

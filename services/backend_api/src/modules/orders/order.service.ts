@@ -864,6 +864,7 @@ export class OrderService {
           reason,
           cancelledBy: cancelledByRole,
           paymentStatus: updatedOrder.paymentStatus,
+          vendorId: order.vendorId,
         },
       );
 

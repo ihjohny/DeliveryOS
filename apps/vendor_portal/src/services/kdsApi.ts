@@ -185,13 +185,14 @@ export const kdsApi = {
   },
 
   /**
-   * Retrieve full outlet catalog for stock management
+   * Retrieve full outlet catalog for stock management (includes out-of-stock items)
    */
-  async getOutletCatalog(vendorId: string): Promise<OutletCatalog> {
-    const response = await apiClient.get(`/api/v1/vendors/${vendorId}/catalog`);
+  async getOutletCatalog(vendorId?: string): Promise<OutletCatalog> {
+    const params = vendorId && vendorId !== 'ALL' ? { vendorId } : undefined;
+    const response = await apiClient.get('/api/v1/vendor/catalog', { params });
     const payload = response.data?.data || response.data;
     if (!payload || !payload.categories) {
-      return payload || { vendorId, vendorName: '', defaultPrepTimeMinutes: 20, categories: [] };
+      return payload || { vendorId: vendorId || '', vendorName: '', defaultPrepTimeMinutes: 20, categories: [] };
     }
     // Normalize variant price modifiers to priceDelta
     const categories = payload.categories.map((cat: any) => ({
@@ -325,6 +326,18 @@ export const kdsApi = {
       vendorId: string;
       vendorName: string;
       customerName: string;
+      customerPhone?: string;
+      customerNotes?: string | null;
+      deliveryAddress?: { addressLine: string; label?: string } | null;
+      items?: Array<{
+        productName: string;
+        quantity: number;
+        unitPrice: number;
+        totalPrice: number;
+        instructions?: string | null;
+        variant?: { name: string; priceDelta: number } | null;
+        addons?: Array<{ name: string; price: number }>;
+      }>;
       paymentMethod: string;
       orderStatus: string;
       grossAmount: number;

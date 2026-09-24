@@ -55,7 +55,10 @@ async function runCancellationTests() {
 
     // Active Vendor & Product
     const vendor = await prisma.vendor.findFirst({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        products: { some: { isInStock: true } },
+      },
       include: { products: { where: { isInStock: true } } },
     });
     if (!vendor || vendor.products.length === 0) {

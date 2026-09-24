@@ -52,6 +52,20 @@ export class VendorStaffController {
     };
   }
 
+  @Get('catalog')
+  @ApiOperation({ summary: 'Get full merchant catalog including out-of-stock items' })
+  @ApiResponse({ status: 200, description: 'Merchant catalog retrieved' })
+  async getCatalog(
+    @CurrentUser() user: User,
+    @Query('vendorId') vendorId?: string,
+  ) {
+    const catalog = await this.vendorStaffService.getFullCatalog(user, vendorId);
+    return {
+      message: 'Merchant catalog retrieved successfully',
+      data: catalog,
+    };
+  }
+
   @Get('settings')
   @ApiOperation({ summary: 'Get outlet settings, preparation time, and operating schedule' })
   @ApiResponse({ status: 200, description: 'Outlet settings and schedule' })

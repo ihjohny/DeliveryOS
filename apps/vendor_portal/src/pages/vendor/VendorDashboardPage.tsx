@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   UtensilsCrossed,
@@ -9,6 +9,8 @@ import {
   VolumeX,
   Volume2,
   Sparkles,
+  Flame,
+  PauseCircle,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVendorOutlet } from '../../contexts/VendorOutletContext';
@@ -18,11 +20,28 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { soundEngine } from '../../utils/sound';
+import kdsApi from '../../services/kdsApi';
 
 export const VendorDashboardPage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { activeOutletId, activeOutlet } = useVendorOutlet();
+  const { activeOutletId, activeOutlet, refetchOutlets } = useVendorOutlet();
+  const [isTogglingRush, setIsTogglingRush] = useState(false);
+
+  const toggleRushPause = async () => {
+    if (!activeOutlet || activeOutlet.id === 'ALL' || isTogglingRush) return;
+    try {
+      setIsTogglingRush(true);
+      await kdsApi.updateOutletSettings(activeOutlet.id, {
+        isBusy: !activeOutlet.isBusy,
+      });
+      await refetchOutlets();
+    } catch (err) {
+      console.error('Failed to toggle rush pause:', err);
+    } finally {
+      setIsTogglingRush(false);
+    }
+  };
 
   const targetVendorId =
     activeOutletId && activeOutletId !== 'ALL'
@@ -68,6 +87,24 @@ export const VendorDashboardPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
+          {activeOutlet && activeOutlet.id !== 'ALL' && (
+            <Button
+              variant={activeOutlet.isBusy ? 'danger' : 'outline'}
+              size="sm"
+              onClick={toggleRushPause}
+              isLoading={isTogglingRush}
+              leftIcon={
+                activeOutlet.isBusy ? (
+                  <Flame className="h-4 w-4 text-white animate-pulse" />
+                ) : (
+                  <PauseCircle className="h-4 w-4 text-amber-500" />
+                )
+              }
+            >
+              {activeOutlet.isBusy ? 'Rush Paused (Resume)' : 'Rush Pause'}
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="sm"

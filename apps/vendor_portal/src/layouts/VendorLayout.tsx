@@ -13,6 +13,8 @@ import {
   X,
   BellRing,
   AlertTriangle,
+  Flame,
+  PauseCircle,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { VendorOutletProvider, useVendorOutlet } from '../contexts/VendorOutletContext';
@@ -20,14 +22,31 @@ import { OutletSwitcher } from '../components/vendor/OutletSwitcher';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { Badge } from '../components/ui/Badge';
 import { soundEngine } from '../utils/sound';
+import kdsApi from '../services/kdsApi';
 
 const VendorLayoutInner: React.FC = () => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
-  const { activeOutlet } = useVendorOutlet();
+  const { activeOutlet, refetchOutlets } = useVendorOutlet();
   const location = useLocation();
   const [isMuted, setIsMuted] = useState(soundEngine.getIsMuted());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isTogglingRush, setIsTogglingRush] = useState(false);
+
+  const toggleRushPause = async () => {
+    if (!activeOutlet || activeOutlet.id === 'ALL' || isTogglingRush) return;
+    try {
+      setIsTogglingRush(true);
+      await kdsApi.updateOutletSettings(activeOutlet.id, {
+        isBusy: !activeOutlet.isBusy,
+      });
+      await refetchOutlets();
+    } catch (err) {
+      console.error('Failed to toggle rush pause:', err);
+    } finally {
+      setIsTogglingRush(false);
+    }
+  };
 
   const navItems = [
     { label: t('nav.vendor.kds'), href: '/', icon: UtensilsCrossed },
@@ -137,6 +156,36 @@ const VendorLayoutInner: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
+            {/* 1-Click Rush Hour Pause Toggle Button */}
+            {activeOutlet && activeOutlet.id !== 'ALL' && (
+              <button
+                onClick={toggleRushPause}
+                disabled={isTogglingRush}
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all border shadow-sm ${
+                  activeOutlet.isBusy
+                    ? 'border-amber-500 bg-amber-500 text-slate-950 hover:bg-amber-400'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                } ${isTogglingRush ? 'opacity-60 cursor-not-allowed' : ''}`}
+                title={
+                  activeOutlet.isBusy
+                    ? 'Store is paused. Click to resume incoming customer orders'
+                    : 'Rush hour? Click to temporarily pause new incoming orders'
+                }
+              >
+                {activeOutlet.isBusy ? (
+                  <>
+                    <Flame className="h-3.5 w-3.5 text-slate-950 animate-bounce" />
+                    <span>{isTogglingRush ? 'Resuming...' : 'Rush Paused (Resume)'}</span>
+                  </>
+                ) : (
+                  <>
+                    <PauseCircle className="h-3.5 w-3.5 text-amber-500" />
+                    <span className="hidden sm:inline">{isTogglingRush ? 'Pausing...' : 'Rush Pause'}</span>
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Audio Alert Trigger / Toggle Button */}
             <button
               onClick={toggleSound}
@@ -174,12 +223,21 @@ const VendorLayoutInner: React.FC = () => {
                 Emergency Rush Hour Pause Active for {activeOutlet.name} — Incoming customer orders are temporarily blocked.
               </span>
             </div>
-            <Link
-              to="/settings"
-              className="rounded bg-slate-950/20 px-2 py-0.5 text-slate-950 hover:bg-slate-950/30 transition-colors"
-            >
-              Manage
-            </Link>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleRushPause}
+                disabled={isTogglingRush}
+                className="rounded bg-slate-950 text-white px-2.5 py-1 text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
+              >
+                {isTogglingRush ? 'Resuming...' : 'Resume Orders Now'}
+              </button>
+              <Link
+                to="/settings"
+                className="rounded bg-slate-950/20 px-2 py-1 text-slate-950 hover:bg-slate-950/30 transition-colors"
+              >
+                Manage
+              </Link>
+            </div>
           </div>
         )}
 

@@ -126,7 +126,7 @@ export class RiderService {
       order.customerId,
       order.status,
       OrderStatus.DISPATCHED,
-      { riderId: rider.id },
+      { riderId: rider.id, vendorId: order.vendorId },
     );
 
     return updatedOrder;
@@ -213,7 +213,7 @@ export class RiderService {
       order.customerId,
       order.status,
       OrderStatus.DELIVERED,
-      { codCollected },
+      { codCollected, vendorId: order.vendorId },
     );
 
     // Release rider active trip state in Redis

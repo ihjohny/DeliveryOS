@@ -114,10 +114,16 @@ export const useKDSOrders = (vendorId?: string) => {
     mutationFn: ({ orderId, prepTimeMinutes }: { orderId: string; prepTimeMinutes?: number }) =>
       kdsApi.acceptOrder(orderId, prepTimeMinutes),
     onSuccess: (updatedOrder) => {
-      soundEngine.stopOrderAlarm();
-      queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) =>
-        old.map((o) => (o.id === updatedOrder.id ? { ...o, ...updatedOrder, status: 'PREPARING' } : o))
-      );
+      queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) => {
+        const next = old.map((o) => (o.id === updatedOrder.id ? { ...o, ...updatedOrder, status: 'PREPARING' as const } : o));
+        const remainingUnaccepted = next.some(
+          (o) => o.status === 'PLACED' || o.status === 'RIDER_ASSIGNED'
+        );
+        if (!remainingUnaccepted) {
+          soundEngine.stopOrderAlarm();
+        }
+        return next;
+      });
     },
   });
 
@@ -132,10 +138,16 @@ export const useKDSOrders = (vendorId?: string) => {
       reasonNotes?: string;
     }) => kdsApi.rejectOrder(orderId, reasonCode, reasonNotes),
     onSuccess: (updatedOrder) => {
-      soundEngine.stopOrderAlarm();
-      queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) =>
-        old.filter((o) => o.id !== updatedOrder.id)
-      );
+      queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) => {
+        const next = old.filter((o) => o.id !== updatedOrder.id);
+        const remainingUnaccepted = next.some(
+          (o) => o.status === 'PLACED' || o.status === 'RIDER_ASSIGNED'
+        );
+        if (!remainingUnaccepted) {
+          soundEngine.stopOrderAlarm();
+        }
+        return next;
+      });
     },
   });
 

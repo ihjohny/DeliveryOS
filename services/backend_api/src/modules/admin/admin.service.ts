@@ -318,6 +318,7 @@ export class AdminService {
         riderName: rider.user.fullName,
         riderPhone: rider.user.phone,
         forcedByAdmin: true,
+        vendorId: order.vendorId,
       },
     );
 

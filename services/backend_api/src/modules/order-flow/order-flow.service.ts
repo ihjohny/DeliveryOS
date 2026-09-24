@@ -367,6 +367,7 @@ export class OrderFlowService implements OnModuleInit, OnModuleDestroy {
             riderId: rider.id,
             riderName: rider.user.fullName,
             riderPhone: rider.user.phone,
+            vendorId: updatedOrder.vendorId,
           },
         );
 
@@ -404,6 +405,7 @@ export class OrderFlowService implements OnModuleInit, OnModuleDestroy {
             riderId: rider.id,
             riderName: rider.user.fullName,
             riderPhone: rider.user.phone,
+            vendorId: updatedOrder.vendorId,
           },
         );
       }

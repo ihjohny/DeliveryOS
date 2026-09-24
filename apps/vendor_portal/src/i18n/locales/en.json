@@ -47,14 +47,6 @@
     "switchAccount": "Sign In with Different Account"
   },
   "nav": {
-    "admin": {
-      "dashboard": "Overview",
-      "vendors": "Merchants & Outlets",
-      "dispatch": "Live Dispatch & Fleet",
-      "orders": "Order Ledger",
-      "promotions": "Coupons & Banners",
-      "settings": "System Settings"
-    },
     "vendor": {
       "kds": "Kitchen Board (KDS)",
       "catalog": "Menu & Stock",
