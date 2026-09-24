@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
@@ -27,17 +28,38 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
 
   Future<void> _handleProceed() async {
     final rawPhone = _phoneController.text.trim();
-    if (rawPhone.isEmpty || rawPhone.length < 10) {
+    if (rawPhone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter a valid mobile number (min 10 digits)'),
+          content: Text('Please enter a valid mobile number'),
           backgroundColor: AppColors.error,
         ),
       );
       return;
     }
 
-    final formattedPhone = rawPhone.startsWith('+') ? rawPhone : '+880$rawPhone';
+    final String formattedPhone;
+    if (rawPhone.startsWith('+') && !rawPhone.startsWith('+880')) {
+      formattedPhone = rawPhone;
+    } else {
+      String cleanDigits = rawPhone.replaceAll(RegExp(r'\D'), '');
+      if (cleanDigits.startsWith('880')) {
+        cleanDigits = cleanDigits.substring(3);
+      }
+      if (cleanDigits.startsWith('0')) {
+        cleanDigits = cleanDigits.substring(1);
+      }
+      if (cleanDigits.length < 9) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a valid mobile number (min 9 digits)'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+      formattedPhone = '+880$cleanDigits';
+    }
 
     if (_isRegistering && _nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -342,52 +364,54 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                if (kDebugMode) ...[
+                  const SizedBox(height: 20),
 
-                // Pilot Demo Shortcut Pills
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.dutyOnlineBackground,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.dutyOnlineLight.withValues(alpha: 0.3)),
+                  // Pilot Demo Shortcut Pills (Dev Mode Only)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.dutyOnlineBackground,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.dutyOnlineLight.withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          '⚡ PILOT TEST ACCOUNTS (DEBUG ONLY)',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            ActionChip(
+                              avatar: const Icon(Icons.check_circle_rounded, color: AppColors.dutyOnline, size: 16),
+                              label: const Text('Approved Pilot (+8801700112233)'),
+                              onPressed: () {
+                                setState(() {
+                                  _isRegistering = false;
+                                  _phoneController.text = '1700112233';
+                                });
+                              },
+                            ),
+                            ActionChip(
+                              avatar: const Icon(Icons.pending_actions_rounded, color: AppColors.warning, size: 16),
+                              label: const Text('New / Pending (+8801700998877)'),
+                              onPressed: () {
+                                setState(() {
+                                  _isRegistering = true;
+                                  _nameController.text = 'Shafiqul Islam';
+                                  _phoneController.text = '1700998877';
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        '⚡ PILOT TEST ACCOUNTS',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          ActionChip(
-                            avatar: const Icon(Icons.check_circle_rounded, color: AppColors.dutyOnline, size: 16),
-                            label: const Text('Approved Pilot (+8801700112233)'),
-                            onPressed: () {
-                              setState(() {
-                                _isRegistering = false;
-                                _phoneController.text = '1700112233';
-                              });
-                            },
-                          ),
-                          ActionChip(
-                            avatar: const Icon(Icons.pending_actions_rounded, color: AppColors.warning, size: 16),
-                            label: const Text('New / Pending (+8801700998877)'),
-                            onPressed: () {
-                              setState(() {
-                                _isRegistering = true;
-                                _nameController.text = 'Shafiqul Islam';
-                                _phoneController.text = '1700998877';
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ],
             ),
           ),

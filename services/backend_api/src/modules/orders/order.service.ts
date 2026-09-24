@@ -919,4 +919,71 @@ export class OrderService {
 
     return updatedOrder;
   }
+
+  /**
+   * 8. Switch unpaid online order to Cash on Delivery and trigger dispatch broadcast
+   */
+  async switchToCOD(customerId: string, orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        vendor: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    if (order.customerId !== customerId) {
+      throw new ForbiddenException('You do not have permission to modify this order');
+    }
+
+    if (order.status !== OrderStatus.PLACED) {
+      throw new BadRequestException(`Cannot switch payment method for order in status ${order.status}`);
+    }
+
+    if (order.paymentStatus === PaymentStatus.PAID) {
+      throw new BadRequestException('Order is already marked as paid');
+    }
+
+    if (order.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
+      return order; // Already COD
+    }
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentMethod: PaymentMethod.CASH_ON_DELIVERY,
+      },
+      include: {
+        vendor: true,
+        orderItems: true,
+      },
+    });
+
+    try {
+      this.trackingGateway.notifyOrderStatusChanged(
+        order.id,
+        order.customerId,
+        order.status,
+        order.status,
+        {
+          paymentMethod: PaymentMethod.CASH_ON_DELIVERY,
+          customerId: order.customerId,
+          vendorId: order.vendorId,
+        },
+      );
+    } catch (err: unknown) {
+      this.logger.warn(`Failed to broadcast switch-cod socket event: ${err instanceof Error ? err.message : 'Unknown'}`);
+    }
+
+    try {
+      await this.orderFlowService.handleOrderPlaced(order.id);
+    } catch (err: unknown) {
+      this.logger.error(`Error triggering order flow after switch to COD: ${err instanceof Error ? err.message : 'Unknown'}`);
+    }
+
+    return updatedOrder;
+  }
 }

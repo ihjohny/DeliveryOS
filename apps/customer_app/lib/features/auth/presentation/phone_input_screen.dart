@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
@@ -145,37 +146,38 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
 
               const SizedBox(height: 16),
 
-              // Dev Mode Quick Fill Chip
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedCountryCode = '+880';
-                    _phoneController.text = '1700000005';
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.flash_on_rounded, size: 16, color: AppColors.primary),
-                      SizedBox(width: 6),
-                      Text(
-                        'Demo Customer: +8801700000005',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryDark,
+              // Dev Mode Quick Fill Chip (Gated for Debug Mode)
+              if (kDebugMode)
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedCountryCode = '+880';
+                      _phoneController.text = '1700000005';
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.flash_on_rounded, size: 16, color: AppColors.primary),
+                        SizedBox(width: 6),
+                        Text(
+                          'Demo Customer: +8801700000005',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryDark,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
               const Spacer(),
 

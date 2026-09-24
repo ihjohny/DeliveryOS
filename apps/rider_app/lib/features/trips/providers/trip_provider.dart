@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/dio_client.dart';
@@ -138,10 +139,23 @@ class RiderTripNotifier extends Notifier<RiderTripState> {
       clearError: true,
     );
 
+    // Initial alert chime & haptic pulse
+    try {
+      SystemSound.play(SystemSoundType.alert);
+      HapticFeedback.heavyImpact();
+    } catch (_) {}
+
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (state.countdownSeconds <= 1) {
         dismissIncomingAlert();
       } else {
+        // Continuous alert pulse every 3 seconds while alert is pending
+        if (state.countdownSeconds % 3 == 0) {
+          try {
+            SystemSound.play(SystemSoundType.alert);
+            HapticFeedback.heavyImpact();
+          } catch (_) {}
+        }
         state = state.copyWith(countdownSeconds: state.countdownSeconds - 1);
       }
     });
@@ -316,6 +330,45 @@ class RiderTripNotifier extends Notifier<RiderTripState> {
     state = state.copyWith(
       isUpdating: false,
       clearActiveTrip: true,
+    );
+
+    return true;
+  }
+
+  Future<bool> reportDeliveryIssue({required String reason}) async {
+    final trip = state.activeTrip;
+    if (trip == null) return false;
+
+    state = state.copyWith(isUpdating: true, clearError: true);
+
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.post(
+        '${ApiConstants.claimOrder}/${trip.id}/report-issue',
+        data: {'reason': reason},
+      );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        state = state.copyWith(
+          isUpdating: false,
+          error: 'Failed to report delivery issue. Dispatcher could not be reached.',
+        );
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isUpdating: false,
+        error: 'Network error submitting issue report.',
+      );
+      return false;
+    }
+
+    // Leave order socket room
+    ref.read(riderSocketServiceProvider).leaveOrder(trip.id);
+
+    state = state.copyWith(
+      isUpdating: false,
+      clearActiveTrip: true,
+      error: 'Delivery issue recorded: $reason. Order escalated to dispatch.',
     );
 
     return true;

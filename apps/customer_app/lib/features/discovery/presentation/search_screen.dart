@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../cart/presentation/cart_screen.dart';
+import '../../cart/providers/cart_provider.dart';
 import '../../store/domain/store_catalog_model.dart';
 import '../../store/presentation/item_customizer_sheet.dart';
 import '../../store/presentation/outlet_detail_screen.dart';
@@ -334,12 +336,88 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   specialInstructions,
                                   required totalPrice,
                                 }) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Added $quantity x ${product.name} to cart'),
-                                      backgroundColor: AppColors.secondary,
-                                    ),
-                                  );
+                                  final result = ref.read(cartProvider.notifier).addItem(
+                                        vendorId: item.vendorId,
+                                        vendorName: item.vendorName,
+                                        product: product,
+                                        selectedVariant: selectedVariant,
+                                        selectedAddons: selectedAddons,
+                                        quantity: quantity,
+                                        specialInstructions: specialInstructions,
+                                        unitPrice: totalPrice / quantity,
+                                      );
+
+                                  if (result == AddToCartResult.vendorConflict) {
+                                    showDialog(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        title: const Text('Replace Cart Items?', style: TextStyle(fontWeight: FontWeight.w800)),
+                                        content: Text(
+                                          'Your cart already contains items from a different store. Clear cart and add from ${item.vendorName}?',
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(ctx).pop(),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              ref.read(cartProvider.notifier).addItem(
+                                                    vendorId: item.vendorId,
+                                                    vendorName: item.vendorName,
+                                                    product: product,
+                                                    selectedVariant: selectedVariant,
+                                                    selectedAddons: selectedAddons,
+                                                    quantity: quantity,
+                                                    specialInstructions: specialInstructions,
+                                                    unitPrice: totalPrice / quantity,
+                                                    forceReplace: true,
+                                                  );
+                                              Navigator.of(ctx).pop();
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Added $quantity x ${product.name} to cart'),
+                                                  backgroundColor: AppColors.secondary,
+                                                  action: SnackBarAction(
+                                                    label: 'VIEW CART',
+                                                    textColor: Colors.white,
+                                                    onPressed: () {
+                                                      Navigator.of(context).push(
+                                                        MaterialPageRoute(builder: (_) => const CartScreen()),
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.primary,
+                                              foregroundColor: Colors.white,
+                                            ),
+                                            child: const Text('Clear & Add'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Added $quantity x ${product.name} to cart'),
+                                        backgroundColor: AppColors.secondary,
+                                        action: SnackBarAction(
+                                          label: 'VIEW CART',
+                                          textColor: Colors.white,
+                                          onPressed: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(builder: (_) => const CartScreen()),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  }
                                 },
                               );
                             }

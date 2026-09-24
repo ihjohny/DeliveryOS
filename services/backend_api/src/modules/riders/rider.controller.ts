@@ -126,4 +126,33 @@ export class RiderController {
       data: deposits,
     };
   }
+
+  @Get('trips')
+  @ApiOperation({ summary: 'Get history of completed delivery trips and earnings for current rider' })
+  @ApiResponse({ status: 200, description: 'Rider trip history and earnings' })
+  async getTrips(@CurrentUser() user: User) {
+    const trips = await this.riderService.getRiderTrips(user.id);
+    return {
+      message: 'Rider trips retrieved successfully',
+      data: trips,
+    };
+  }
+
+  @Post('orders/:id/report-issue')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Report delivery issue or unreachable customer at doorstep' })
+  @ApiResponse({ status: 200, description: 'Issue reported and courier released' })
+  async reportIssue(
+    @CurrentUser() user: User,
+    @Param('id') orderId: string,
+    @Body('reason') reason?: string,
+  ) {
+    const result = await this.riderService.reportDeliveryIssue(
+      user.id,
+      orderId,
+      reason || 'Customer unreachable at delivery address',
+    );
+    return result;
+  }
 }
+

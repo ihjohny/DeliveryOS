@@ -32,6 +32,8 @@ class CartNotifier extends Notifier<CartState> {
     String? specialInstructions,
     required double unitPrice,
     bool forceReplace = false,
+    bool isVendorActive = true,
+    bool isVendorBusy = false,
   }) {
     if (!product.isInStock) {
       return AddToCartResult.outOfStock;
@@ -85,6 +87,8 @@ class CartNotifier extends Notifier<CartState> {
       vendorLat: vendorLat ?? 23.7925,
       vendorLng: vendorLng ?? 90.4078,
       items: updatedItems,
+      isVendorActive: isVendorActive,
+      isVendorBusy: isVendorBusy,
     );
 
     // Validate coverage for customer's current location
@@ -165,10 +169,13 @@ class CartNotifier extends Notifier<CartState> {
       );
 
       if (response.statusCode == 200) {
+        final data = response.data['data'] as Map<String, dynamic>? ?? {};
         state = state.copyWith(
           isWithinCoverage: true,
           clearCoverageError: true,
           isCheckingCoverage: false,
+          isVendorActive: data['isActive'] as bool? ?? true,
+          isVendorBusy: data['isBusy'] as bool? ?? false,
         );
         return;
       }

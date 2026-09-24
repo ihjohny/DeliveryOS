@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
@@ -172,27 +173,29 @@ class PendingApprovalScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
 
-              // Dev Mode Instant Approval Button
-              OutlinedButton.icon(
-                onPressed: () {
-                  ref.read(riderAuthProvider.notifier).forceApproveForDev();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const RiderDashboardScreen()),
-                    (route) => false,
-                  );
-                },
-                icon: const Icon(Icons.bolt_rounded, size: 18, color: AppColors.dutyOnline),
-                label: const Text(
-                  'Simulate Admin Approval (Dev Mode)',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
+              // Dev Mode Instant Approval Button (Debug Only)
+              if (kDebugMode) ...[
+                OutlinedButton.icon(
+                  onPressed: () {
+                    ref.read(riderAuthProvider.notifier).forceApproveForDev();
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const RiderDashboardScreen()),
+                      (route) => false,
+                    );
+                  },
+                  icon: const Icon(Icons.bolt_rounded, size: 18, color: AppColors.dutyOnline),
+                  label: const Text(
+                    'Simulate Admin Approval (Dev Mode)',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.dutyOnline),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
                 ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.dutyOnline),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
 
               // Logout Button
               TextButton.icon(

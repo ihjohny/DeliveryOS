@@ -91,6 +91,8 @@ class CartState {
   final bool isCheckingCoverage;
   final bool isApplyingCoupon;
   final String? couponMessage;
+  final bool isVendorActive;
+  final bool isVendorBusy;
 
   CartState({
     this.vendorId,
@@ -108,6 +110,8 @@ class CartState {
     this.isCheckingCoverage = false,
     this.isApplyingCoupon = false,
     this.couponMessage,
+    this.isVendorActive = true,
+    this.isVendorBusy = false,
   });
 
   bool get isEmpty => items.isEmpty;
@@ -129,6 +133,7 @@ class CartState {
 
   bool get canCheckout {
     if (isEmpty) return false;
+    if (!isVendorActive || isVendorBusy) return false;
     if (deliveryMethod == DeliveryMethod.homeDelivery && !isWithinCoverage) {
       return false;
     }
@@ -154,6 +159,8 @@ class CartState {
     bool? isApplyingCoupon,
     String? couponMessage,
     bool clearCouponMessage = false,
+    bool? isVendorActive,
+    bool? isVendorBusy,
   }) {
     return CartState(
       vendorId: vendorId ?? this.vendorId,
@@ -175,6 +182,8 @@ class CartState {
       isApplyingCoupon: isApplyingCoupon ?? this.isApplyingCoupon,
       couponMessage:
           clearCouponMessage ? null : (couponMessage ?? this.couponMessage),
+      isVendorActive: isVendorActive ?? this.isVendorActive,
+      isVendorBusy: isVendorBusy ?? this.isVendorBusy,
     );
   }
 }

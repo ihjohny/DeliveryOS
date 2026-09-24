@@ -15,16 +15,66 @@ import '../../orders/presentation/order_history_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../store/presentation/outlet_detail_screen.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  String? _selectedCategory; // null = All, 'FOOD', 'GROCERY', 'PHARMACY'
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final authState = ref.watch(authProvider);
     final locState = ref.watch(locationProvider);
     final currentLocale = ref.watch(languageProvider);
     final cartState = ref.watch(cartProvider);
+
+    final defaultPilotOutlets = [
+      {
+        'id': 'b8b33bf6-6b22-4bb3-9d41-e9fb94c25601',
+        'name': "Sultan's Dine - Banani",
+        'vertical': 'FOOD',
+        'cuisine': 'Biryani, Kacchi, Traditional',
+        'rating': 4.8,
+        'deliveryTime': '20-30 min',
+        'isOpen': true,
+        'isBusy': false,
+      },
+      {
+        'id': 'c7c44cf7-7c33-4cc4-8e52-f0fc05d36712',
+        'name': 'Kacchi Bhai - Gulshan 1',
+        'vertical': 'FOOD',
+        'cuisine': 'Platters, Kebabs, Desserts',
+        'rating': 4.6,
+        'deliveryTime': '25-35 min',
+        'isOpen': true,
+        'isBusy': false,
+      },
+      {
+        'id': 'd6d55df8-8d44-5dd5-9f63-01fd16e47823',
+        'name': 'Shwapno Superstore Express',
+        'vertical': 'GROCERY',
+        'cuisine': 'Groceries, Fresh Produce, Dairy',
+        'rating': 4.9,
+        'deliveryTime': '15-25 min',
+        'isOpen': true,
+        'isBusy': false,
+      },
+    ];
+
+    final rawVendors = locState.nearbyVendors.isNotEmpty
+        ? locState.nearbyVendors
+        : defaultPilotOutlets;
+
+    final displayedVendors = rawVendors.where((v) {
+      if (_selectedCategory == null) return true;
+      final vert = (v['vertical'] as String?)?.toUpperCase();
+      return vert == _selectedCategory;
+    }).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -396,11 +446,26 @@ class HomeScreen extends ConsumerWidget {
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      _CategoryChip(label: 'All', isSelected: true),
-                      _CategoryChip(label: l10n.translate('restaurants'), isSelected: false),
-                      _CategoryChip(label: l10n.translate('groceries'), isSelected: false),
-                      _CategoryChip(label: 'Pharmacy', isSelected: false),
-                      _CategoryChip(label: 'Beverages', isSelected: false),
+                      _CategoryChip(
+                        label: 'All',
+                        isSelected: _selectedCategory == null,
+                        onTap: () => setState(() => _selectedCategory = null),
+                      ),
+                      _CategoryChip(
+                        label: l10n.translate('restaurants'),
+                        isSelected: _selectedCategory == 'FOOD',
+                        onTap: () => setState(() => _selectedCategory = 'FOOD'),
+                      ),
+                      _CategoryChip(
+                        label: l10n.translate('groceries'),
+                        isSelected: _selectedCategory == 'GROCERY',
+                        onTap: () => setState(() => _selectedCategory = 'GROCERY'),
+                      ),
+                      _CategoryChip(
+                        label: 'Pharmacy',
+                        isSelected: _selectedCategory == 'PHARMACY',
+                        onTap: () => setState(() => _selectedCategory = 'PHARMACY'),
+                      ),
                     ],
                   ),
                 ),
@@ -412,32 +477,48 @@ class HomeScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _OutletCard(
-                    vendorId: 'b8b33bf6-6b22-4bb3-9d41-e9fb94c25601',
-                    name: "Sultan's Dine - Banani",
-                    cuisine: 'Biryani, Kacchi, Traditional',
-                    rating: 4.8,
-                    deliveryTime: '20-30 min',
-                    isOpen: true,
-                  ),
-                  const SizedBox(height: 12),
-                  _OutletCard(
-                    vendorId: 'c7c44cf7-7c33-4cc4-8e52-f0fc05d36712',
-                    name: 'Kacchi Bhai - Gulshan 1',
-                    cuisine: 'Platters, Kebabs, Desserts',
-                    rating: 4.6,
-                    deliveryTime: '25-35 min',
-                    isOpen: true,
-                  ),
-                  const SizedBox(height: 12),
-                  _OutletCard(
-                    vendorId: 'd6d55df8-8d44-5dd5-9f63-01fd16e47823',
-                    name: 'Shwapno Superstore Express',
-                    cuisine: 'Groceries, Fresh Produce, Dairy',
-                    rating: 4.9,
-                    deliveryTime: '15-25 min',
-                    isOpen: true,
-                  ),
+                  ...displayedVendors.map((vendor) {
+                    final isPilot = vendor is Map<String, dynamic> && vendor['cuisine'] != null;
+                    final vId = vendor['id']?.toString() ?? '';
+                    final vName = vendor['name']?.toString() ?? 'Outlet';
+                    final vCuisine = isPilot
+                        ? vendor['cuisine']?.toString() ?? 'Biryani, Traditional'
+                        : vendor['addressText']?.toString() ?? 'Store';
+                    final vRating = (vendor['rating'] as num?)?.toDouble() ?? 4.8;
+                    final vDeliveryTime = isPilot
+                        ? vendor['deliveryTime']?.toString() ?? '20-30 min'
+                        : '${vendor['defaultPrepTimeMinutes'] ?? 25} min';
+                    final vIsOpen = vendor['isActive'] as bool? ?? vendor['isOpen'] as bool? ?? true;
+                    final vIsBusy = vendor['isBusy'] as bool? ?? false;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: _OutletCard(
+                        vendorId: vId,
+                        name: vName,
+                        cuisine: vCuisine,
+                        rating: vRating,
+                        deliveryTime: vDeliveryTime,
+                        isOpen: vIsOpen,
+                        isBusy: vIsBusy,
+                      ),
+                    );
+                  }),
+                  if (displayedVendors.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      alignment: Alignment.center,
+                      child: const Column(
+                        children: [
+                          Icon(Icons.storefront_outlined, size: 48, color: AppColors.textMuted),
+                          SizedBox(height: 12),
+                          Text(
+                            'No outlets found in this category',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 24),
                 ]),
               ),
@@ -512,25 +593,34 @@ class HomeScreen extends ConsumerWidget {
 class _CategoryChip extends StatelessWidget {
   final String label;
   final bool isSelected;
+  final VoidCallback onTap;
 
-  const _CategoryChip({required this.label, required this.isSelected});
+  const _CategoryChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isSelected ? AppColors.primary : AppColors.border),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-          color: isSelected ? Colors.white : AppColors.textPrimary,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? AppColors.primary : AppColors.border),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? Colors.white : AppColors.textPrimary,
+          ),
         ),
       ),
     );
@@ -544,6 +634,7 @@ class _OutletCard extends StatelessWidget {
   final double rating;
   final String deliveryTime;
   final bool isOpen;
+  final bool isBusy;
 
   const _OutletCard({
     required this.vendorId,
@@ -552,6 +643,7 @@ class _OutletCard extends StatelessWidget {
     required this.rating,
     required this.deliveryTime,
     required this.isOpen,
+    this.isBusy = false,
   });
 
   @override
@@ -640,6 +732,34 @@ class _OutletCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: !isOpen
+                                ? const Color(0xFFFEE2E2)
+                                : isBusy
+                                    ? const Color(0xFFFEF3C7)
+                                    : const Color(0xFFDCFCE7),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            !isOpen
+                                ? 'CLOSED'
+                                : isBusy
+                                    ? 'BUSY'
+                                    : 'OPEN',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: !isOpen
+                                  ? const Color(0xFFDC2626)
+                                  : isBusy
+                                      ? const Color(0xFFD97706)
+                                      : const Color(0xFF16A34A),
+                            ),
                           ),
                         ),
                       ],

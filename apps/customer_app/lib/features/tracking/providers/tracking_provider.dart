@@ -171,6 +171,29 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
     return false;
   }
 
+  Future<bool> switchToCOD() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.post('${ApiConstants.orderDetails}/$orderId/switch-cod');
+      if (response.statusCode == 200) {
+        state = state.copyWith(
+          paymentMethod: 'CASH_ON_DELIVERY',
+          isLoading: false,
+        );
+        await refreshDetails();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error switching payment method to COD: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to switch to COD. Please try again.',
+      );
+    }
+    return false;
+  }
+
   Future<void> refreshDetails() async {
     try {
       final dio = ref.read(dioClientProvider);

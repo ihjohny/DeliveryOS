@@ -115,4 +115,25 @@ export class OrderController {
       data: order,
     };
   }
+
+  @Post(':id/switch-cod')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Switch an unpaid placed online order to Cash On Delivery' })
+  @ApiResponse({ status: 200, description: 'Order payment method switched to Cash on Delivery' })
+  @ApiResponse({ status: 400, description: 'Order not in PLACED status or already paid' })
+  @ApiResponse({ status: 403, description: 'Forbidden if not order owner' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  async switchPaymentToCOD(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    const order = await this.orderService.switchToCOD(user.id, id);
+    return {
+      message: 'Order payment method successfully switched to Cash on Delivery',
+      data: order,
+    };
+  }
 }
+

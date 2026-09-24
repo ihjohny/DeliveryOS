@@ -49,6 +49,10 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
       _startGpsBeaconing();
     }
 
+    if (profile?.isApproved ?? false) {
+      Future.microtask(() => fetchDailyTrips());
+    }
+
     return initialState;
   }
 
@@ -266,6 +270,47 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
       codCashInHand: state.codCashInHand + (codCollected ?? 0.0),
       completedTrips: updatedTrips,
     );
+  }
+
+  Future<void> fetchDailyTrips() async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.get(ApiConstants.trips);
+      if (response.statusCode == 200 && response.data is Map && response.data['data'] is List) {
+        final list = response.data['data'] as List;
+        final trips = list.map((item) {
+          final m = item as Map<String, dynamic>;
+          return RiderCompletedTrip(
+            orderId: m['id']?.toString() ?? '',
+            orderNumber: m['orderNumber']?.toString() ?? 'ORD',
+            storeName: m['vendorName']?.toString() ?? 'Store',
+            customerAddress: m['customerAddress']?.toString() ?? '',
+            completedAt: m['deliveredAt'] != null
+                ? DateTime.tryParse(m['deliveredAt'].toString()) ?? DateTime.now()
+                : (m['placedAt'] != null
+                    ? DateTime.tryParse(m['placedAt'].toString()) ?? DateTime.now()
+                    : DateTime.now()),
+            payout: (m['payout'] as num?)?.toDouble() ?? 0.0,
+            codCollected: (m['codCollected'] as num?)?.toDouble() ?? 0.0,
+            isCod: m['isCod'] == true,
+            distanceKm: 2.5,
+          );
+        }).toList();
+
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final todayList = trips.where((t) => t.completedAt.isAfter(today)).toList();
+        final todayEarnings = todayList.fold<double>(0.0, (sum, t) => sum + t.payout);
+
+        state = state.copyWith(
+          completedTrips: trips.isNotEmpty ? trips : state.completedTrips,
+          todayTrips: todayList.isNotEmpty ? todayList.length : state.todayTrips,
+          todayEarnings: todayEarnings > 0 ? todayEarnings : state.todayEarnings,
+        );
+      }
+    } catch (_) {
+      // Retain offline cache/state
+    }
   }
 
   Future<bool> depositCashToHub({double? amount}) async {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
@@ -21,25 +22,48 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
     final trip = tripState.activeTrip;
 
     if (trip == null) {
+      final isCancelled = tripState.error != null &&
+          (tripState.error!.toLowerCase().contains('cancel') ||
+              tripState.error!.toLowerCase().contains('issue'));
+
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(title: const Text('Trip Finished')),
+        appBar: AppBar(
+          title: Text(isCancelled ? 'Order Cancelled' : 'Trip Finished'),
+          automaticallyImplyLeading: false,
+        ),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.check_circle_rounded, color: AppColors.dutyOnline, size: 64),
-              const SizedBox(height: 16),
-              const Text(
-                'Trip Completed Successfully!',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Return to Dashboard'),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isCancelled ? Icons.cancel_rounded : Icons.check_circle_rounded,
+                  color: isCancelled ? AppColors.error : AppColors.dutyOnline,
+                  size: 64,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  isCancelled ? 'Order Cancelled' : 'Trip Completed Successfully!',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  textAlign: TextAlign.center,
+                ),
+                if (tripState.error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    tripState.error!,
+                    style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Return to Dashboard'),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -505,6 +529,18 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => _showUnreachableBottomSheet(context, trip),
+          icon: const Icon(Icons.person_off_rounded, size: 18, color: AppColors.error),
+          label: const Text('Customer Unreachable at Doorstep?'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.error,
+            side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
       ],
     );
   }
@@ -666,7 +702,170 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
                   ),
           ),
         ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => _showUnreachableBottomSheet(context, trip),
+          icon: const Icon(Icons.person_off_rounded, size: 18, color: AppColors.error),
+          label: const Text('Customer Unreachable / Payment Refused?'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.error,
+            side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
       ],
+    );
+  }
+
+  void _showUnreachableBottomSheet(BuildContext context, TripOrder trip) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (bottomSheetContext) {
+        int remainingSeconds = 300;
+        Timer? timer;
+
+        return StatefulBuilder(
+          builder: (dialogCtx, setModalState) {
+            void startTimer() {
+              if (timer != null) return;
+              timer = Timer.periodic(const Duration(seconds: 1), (t) {
+                if (remainingSeconds > 0) {
+                  setModalState(() => remainingSeconds--);
+                } else {
+                  t.cancel();
+                }
+              });
+            }
+
+            final minutes = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
+            final seconds = (remainingSeconds % 60).toString().padLeft(2, '0');
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(dialogCtx).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 24),
+                          SizedBox(width: 8),
+                          Text(
+                            'Customer Unreachable',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () {
+                          timer?.cancel();
+                          Navigator.of(dialogCtx).pop();
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Standard Operating Procedure:\n'
+                    '1. Call the customer at least twice.\n'
+                    '2. Ring the doorbell / knock at door.\n'
+                    '3. Wait minimum 5 minutes before reporting delivery failure.',
+                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.warningBackground,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'SOP Wait Timer:',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                        ),
+                        Text(
+                          '$minutes:$seconds',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primary,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      startTimer();
+                      makeDirectPhoneCall(trip.customer.phone);
+                    },
+                    icon: const Icon(Icons.phone_rounded, size: 18),
+                    label: const Text('Call Customer'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textPrimary,
+                      side: const BorderSide(color: AppColors.borderStrong),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      timer?.cancel();
+                      Navigator.of(dialogCtx).pop();
+                      final success = await ref.read(riderTripProvider.notifier).reportDeliveryIssue(
+                            reason: 'Customer unreachable at doorstep after 5 min wait',
+                          );
+                      if (mounted && success) {
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Delivery issue reported to dispatch HQ. Order released.'),
+                            backgroundColor: AppColors.warning,
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.report_problem_rounded, size: 18),
+                    label: const Text(
+                      'Report Unresponsive & Release Order',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.error,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

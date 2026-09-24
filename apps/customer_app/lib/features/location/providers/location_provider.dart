@@ -117,16 +117,16 @@ class LocationNotifier extends Notifier<LocationState> {
     ref.read(localStorageProvider).setSavedLocation(updated.toJson());
   }
 
-  Future<void> fetchNearbyVendors(double lat, double lng) async {
+  Future<void> fetchNearbyVendors(double lat, double lng, {String? vertical}) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final dio = ref.read(dioClientProvider);
       final response = await dio.get(
         ApiConstants.nearbyVendors,
         queryParameters: {
-          'latitude': lat,
-          'longitude': lng,
-          'radiusKm': 5.0,
+          'lat': lat,
+          'lng': lng,
+          if (vertical != null && vertical.isNotEmpty) 'vertical': vertical,
         },
       );
 

@@ -4,6 +4,7 @@ import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/localization/language_provider.dart';
+import '../../../core/utils/phone_call_launcher.dart';
 import '../../addresses/presentation/address_book_screen.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../orders/presentation/order_history_screen.dart';
@@ -321,6 +322,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             PopupMenuItem(value: 'ar', child: Text('العربية (Arabic RTL)')),
                           ],
                         ),
+                      ),
+                      const Divider(height: 1, color: AppColors.border),
+                      ListTile(
+                        leading: const Icon(Icons.support_agent_rounded, color: AppColors.primary),
+                        title: const Text('24/7 Customer Support', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                        subtitle: const Text('Call +880 1700-000000 for order inquiries & help', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        trailing: const Icon(Icons.phone_in_talk_rounded, color: AppColors.primary, size: 20),
+                        onTap: () => makeDirectPhoneCall('+8801700000000'),
                       ),
                     ],
                   ),

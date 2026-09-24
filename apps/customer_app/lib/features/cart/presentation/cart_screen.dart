@@ -447,6 +447,43 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             const SizedBox(height: 14),
           ],
 
+          // Store Closed / Busy Warning Banner
+          if (!cartState.isVendorActive || cartState.isVendorBusy) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: !cartState.isVendorActive ? const Color(0xFFFEF2F2) : const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: !cartState.isVendorActive ? const Color(0xFFFCA5A5) : const Color(0xFFFDE68A),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    !cartState.isVendorActive ? Icons.store_mall_directory_outlined : Icons.timer_outlined,
+                    color: !cartState.isVendorActive ? const Color(0xFFDC2626) : const Color(0xFFD97706),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      !cartState.isVendorActive
+                          ? '${cartState.vendorName ?? "Store"} is currently closed and not accepting orders.'
+                          : '${cartState.vendorName ?? "Store"} has temporarily paused orders due to rush hour.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: !cartState.isVendorActive ? const Color(0xFF991B1B) : const Color(0xFF92400E),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // 3. Cart Items Section
           const Text(
             'Order Items',
@@ -555,9 +592,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          !cartState.isWithinCoverage && cartState.deliveryMethod == DeliveryMethod.homeDelivery
-                              ? 'Address Out of Coverage'
-                              : 'Place Order (${cartState.totalItemCount} items)',
+                          !cartState.isVendorActive
+                              ? 'Store Currently Closed'
+                              : cartState.isVendorBusy
+                                  ? 'Store Paused (Rush Hour)'
+                                  : (!cartState.isWithinCoverage && cartState.deliveryMethod == DeliveryMethod.homeDelivery)
+                                      ? 'Address Out of Coverage'
+                                      : 'Place Order (${cartState.totalItemCount} items)',
                           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                         ),
                         Text(

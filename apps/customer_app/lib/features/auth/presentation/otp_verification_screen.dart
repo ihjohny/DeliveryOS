@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
@@ -176,21 +177,22 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
 
               const SizedBox(height: 16),
 
-              // Dev Mode Universal OTP Shortcut
-              Center(
-                child: TextButton.icon(
-                  onPressed: _fillDevOtp,
-                  icon: const Icon(Icons.auto_fix_high_rounded, size: 16, color: AppColors.primary),
-                  label: Text(
-                    l10n.translate('dev_otp_hint'),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+              // Dev Mode Universal OTP Shortcut (Gated for Debug Mode)
+              if (kDebugMode)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _fillDevOtp,
+                    icon: const Icon(Icons.auto_fix_high_rounded, size: 16, color: AppColors.primary),
+                    label: Text(
+                      l10n.translate('dev_otp_hint'),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
                 ),
-              ),
 
               if (authState.errorMessage != null) ...[
                 const SizedBox(height: 8),

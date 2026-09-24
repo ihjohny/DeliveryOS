@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -15,6 +16,8 @@ import { DeliveryFeeService } from '../promotions/pricing/delivery-fee.service';
 
 @Injectable()
 export class RiderService {
+  private readonly logger = new Logger(RiderService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly trackingGateway: TrackingGateway,
@@ -273,6 +276,89 @@ export class RiderService {
     return this.prisma.cashDeposit.findMany({
       where: { riderId: rider.id },
       orderBy: { depositedAt: 'desc' },
+    });
+  }
+
+  /**
+   * 6. Report Delivery Issue / Failed Delivery
+   */
+  async reportDeliveryIssue(userId: string, orderId: string, reason: string) {
+    const rider = await this.getRiderProfile(userId);
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { vendor: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    if (order.riderId !== rider.id) {
+      throw new ForbiddenException('You are not assigned to this order');
+    }
+
+    // Release rider active trip state in Redis
+    await this.orderFlowService.releaseRiderActiveTrip(rider.id);
+
+    // Notify realtime sockets and admin HQ
+    try {
+      if (this.trackingGateway?.server) {
+        this.trackingGateway.server.to('admin_hq').emit('order:delivery_failed', {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          riderId: rider.id,
+          riderName: rider.user?.fullName,
+          reason,
+          reportedAt: new Date().toISOString(),
+        });
+      }
+    } catch (err: unknown) {
+      this.logger.warn(`Failed to emit order:delivery_failed: ${err instanceof Error ? err.message : 'Unknown'}`);
+    }
+
+    return {
+      success: true,
+      message: 'Delivery issue recorded. Dispatcher alerted and courier released.',
+    };
+  }
+
+  /**
+   * 7. Get Rider Trip History & Real Earnings
+   */
+  async getRiderTrips(userId: string) {
+    const rider = await this.getRiderProfile(userId);
+    const orders = await this.prisma.order.findMany({
+      where: {
+        riderId: rider.id,
+      },
+      include: {
+        vendor: { select: { id: true, name: true, addressText: true } },
+        orderItems: { select: { productNameSnapshot: true, quantity: true } },
+        riderTrip: true,
+      },
+      orderBy: { placedAt: 'desc' },
+      take: 50,
+    });
+
+    return orders.map((order) => {
+      const address = (order.deliveryAddressSnapshot as any)?.addressLine || 'Customer Address';
+      const itemsSummary = order.orderItems.map((i) => `${i.quantity}x ${i.productNameSnapshot}`).join(', ');
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        vendorName: order.vendor.name,
+        customerAddress: address,
+        itemsSummary,
+        deliveryFee: Number(order.deliveryFee),
+        totalAmount: Number(order.totalAmount),
+        paymentMethod: order.paymentMethod,
+        isCod: order.paymentMethod === PaymentMethod.CASH_ON_DELIVERY,
+        payout: order.riderTrip ? Number(order.riderTrip.deliveryEarnings) : Number(order.deliveryFee) * 0.8,
+        codCollected: order.riderTrip ? Number(order.riderTrip.codCollected) : 0,
+        placedAt: order.placedAt,
+        deliveredAt: order.deliveredAt,
+      };
     });
   }
 }

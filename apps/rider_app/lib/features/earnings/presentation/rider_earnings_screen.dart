@@ -17,6 +17,12 @@ class _RiderEarningsScreenState extends ConsumerState<RiderEarningsScreen> {
   EarningsTimeframe _selectedTimeframe = EarningsTimeframe.today;
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref.read(riderDutyProvider.notifier).fetchDailyTrips());
+  }
+
+  @override
   Widget build(BuildContext context) {
     final dutyState = ref.watch(riderDutyProvider);
     final dutyNotifier = ref.read(riderDutyProvider.notifier);
@@ -50,48 +56,51 @@ class _RiderEarningsScreenState extends ConsumerState<RiderEarningsScreen> {
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          children: [
-            // Timeframe Segmented Switch
-            _buildTimeframeSelector(),
-            const SizedBox(height: 16),
+        child: RefreshIndicator(
+          onRefresh: () => ref.read(riderDutyProvider.notifier).fetchDailyTrips(),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            children: [
+              // Timeframe Segmented Switch
+              _buildTimeframeSelector(),
+              const SizedBox(height: 16),
 
-            // Top Earnings Summary Card
-            _buildSummaryCard(totalEarnings, totalTrips, avgPerTrip),
-            const SizedBox(height: 16),
+              // Top Earnings Summary Card
+              _buildSummaryCard(totalEarnings, totalTrips, avgPerTrip),
+              const SizedBox(height: 16),
 
-            // COD Cash in Hand & Safety Limit Card
-            _buildCodCashLimitCard(dutyState, dutyNotifier),
-            const SizedBox(height: 20),
+              // COD Cash in Hand & Safety Limit Card
+              _buildCodCashLimitCard(dutyState, dutyNotifier),
+              const SizedBox(height: 20),
 
-            // Section Header: Completed Trips
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  isToday ? 'TODAY\'S COMPLETED TRIPS' : 'THIS WEEK\'S COMPLETED TRIPS',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.6,
-                    color: AppColors.textSecondary,
+              // Section Header: Completed Trips
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    isToday ? 'TODAY\'S COMPLETED TRIPS' : 'THIS WEEK\'S COMPLETED TRIPS',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
-                Text(
-                  '${tripsToShow.length} Orders',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
+                  Text(
+                    '${tripsToShow.length} Orders',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
 
-            // Trip History List
-            if (tripsToShow.isEmpty)
-              _buildEmptyTripsState()
-            else
-              ...tripsToShow.map(_buildTripItemCard),
-          ],
+              // Trip History List
+              if (tripsToShow.isEmpty)
+                _buildEmptyTripsState()
+              else
+                ...tripsToShow.map(_buildTripItemCard),
+            ],
+          ),
         ),
       ),
     );

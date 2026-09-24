@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
@@ -685,7 +686,7 @@ class RiderDashboardScreen extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
           ),
-          if (isOnline && !tripState.hasActiveTrip) ...[
+          if (kDebugMode && isOnline && !tripState.hasActiveTrip) ...[
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: () {
