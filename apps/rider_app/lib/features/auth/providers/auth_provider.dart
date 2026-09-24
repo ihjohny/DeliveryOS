@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/dio_client.dart';
@@ -111,13 +110,18 @@ class RiderAuthNotifier extends Notifier<RiderAuthState> {
         state = state.copyWith(isLoading: false);
         return true;
       }
+    } on DioException catch (dioErr) {
+      final resData = dioErr.response?.data;
+      final msg = resData is Map ? (resData['message'] ?? 'Failed to send OTP') : 'Failed to send OTP';
+      state = state.copyWith(isLoading: false, error: msg.toString());
+      return false;
     } catch (e) {
-      // Mock / Dev fallback support
+      state = state.copyWith(isLoading: false, error: 'Network error. Please try again.');
+      return false;
     }
 
-    // Dev mode fallback
-    state = state.copyWith(isLoading: false);
-    return true;
+    state = state.copyWith(isLoading: false, error: 'Failed to send OTP');
+    return false;
   }
 
   Future<bool> verifyOtp({required String otp}) async {
@@ -158,7 +162,7 @@ class RiderAuthNotifier extends Notifier<RiderAuthState> {
       final message = responseData is Map ? (responseData['message'] ?? '') : '';
 
       // Check if server rejected due to PENDING_APPROVAL
-      if (statusCode == 403 || message.toString().contains('pending administrator approval')) {
+      if (statusCode == 403 || message.toString().toLowerCase().contains('approval')) {
         final pendingProfile = RiderProfileData.pilotPending(
           phone: phone,
           fullName: state.registrationFullName,
@@ -182,45 +186,18 @@ class RiderAuthNotifier extends Notifier<RiderAuthState> {
       );
       return false;
     } catch (_) {
-      // Proceed to dev mock handler
-    }
-
-    // Dev mock fallback logic:
-    // If phone contains 'pending' or '9988', simulate pending approval state
-    if (phone.contains('9988') || state.registrationFullName?.toLowerCase().contains('pending') == true) {
-      final pendingProfile = RiderProfileData.pilotPending(
-        phone: phone,
-        fullName: state.registrationFullName,
-        vehicleType: state.registrationVehicleType,
-      );
-      final storage = ref.read(localStorageProvider);
-      await storage.setRiderProfileJson(jsonEncode(pendingProfile.toJson()));
-
       state = state.copyWith(
         isLoading: false,
-        isAuthenticated: false,
-        isPendingApproval: true,
-        profile: pendingProfile,
+        error: 'Unable to connect to server. Please check your network connection.',
       );
       return false;
     }
 
-    // Default approved rider pilot login
-    final approvedProfile = RiderProfileData.pilotApproved(
-      phone: phone,
-      fullName: state.registrationFullName ?? 'Tanvir Hossain',
-    );
-    final storage = ref.read(localStorageProvider);
-    await storage.setAccessToken('mock-jwt-token-rider');
-    await storage.setRiderProfileJson(jsonEncode(approvedProfile.toJson()));
-
     state = state.copyWith(
       isLoading: false,
-      isAuthenticated: true,
-      isPendingApproval: false,
-      profile: approvedProfile,
+      error: 'Authentication failed. Please try again.',
     );
-    return true;
+    return false;
   }
 
   Future<bool> fetchProfile() async {
@@ -252,11 +229,15 @@ class RiderAuthNotifier extends Notifier<RiderAuthState> {
           return false;
         }
       }
-    } catch (_) {
-      // Dev mode fallback
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to retrieve rider profile.',
+      );
+      return false;
     }
 
-    return true;
+    return false;
   }
 
   Future<void> refreshApprovalStatus() async {

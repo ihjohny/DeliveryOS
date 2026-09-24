@@ -101,31 +101,18 @@ class AuthNotifier extends Notifier<AuthState> {
         errorMessage: 'Invalid OTP code',
       );
       return false;
-    } catch (e) {
-      // Universal dev mode fallback if OTP is 123456
-      if (otp == '123456') {
-        final mockUser = UserModel(
-          id: 'dev-customer-id',
-          phone: phone,
-          fullName: 'Customer',
-          role: 'CUSTOMER',
-        );
-        await storage.setAccessToken('mock-dev-token');
-        await storage.setUserProfile(mockUser.toJson());
-        await storage.setGuest(false);
-
-        state = AuthState(
-          status: AuthStatus.authenticated,
-          accessToken: 'mock-dev-token',
-          user: mockUser,
-          phoneNumber: phone,
-        );
-        return true;
-      }
-
+    } on DioException catch (dioErr) {
+      final resData = dioErr.response?.data;
+      final msg = resData is Map ? (resData['message'] ?? 'Invalid OTP code') : 'Invalid OTP code';
       state = state.copyWith(
         status: AuthStatus.error,
-        errorMessage: 'Verification failed. Please try again.',
+        errorMessage: msg.toString(),
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: 'Verification failed. Please check your connection.',
       );
       return false;
     }

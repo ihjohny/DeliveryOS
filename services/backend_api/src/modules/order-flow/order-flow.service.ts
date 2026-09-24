@@ -10,6 +10,8 @@ import { RedisService } from '../../common/redis/redis.service';
 import { TrackingGateway } from '../realtime/tracking.gateway';
 import { OrderFlowMode, UpdateOrderFlowDto } from './dto/update-order-flow.dto';
 import { OrderStatus } from '@prisma/client';
+import { assertClaimable, assertTransition } from '../orders/order-state.machine';
+import { DeliveryFeeService } from '../promotions/pricing/delivery-fee.service';
 
 interface OrderFlowSettingValue {
   mode?: OrderFlowMode;
@@ -29,6 +31,7 @@ export class OrderFlowService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly trackingGateway: TrackingGateway,
+    private readonly deliveryFeeService: DeliveryFeeService,
   ) {}
 
   /**
@@ -150,7 +153,9 @@ export class OrderFlowService {
       // Broadcast immediately to nearby riders in riders_pool.
       // Vendor chime is withheld until a delivery rider is secured!
       const deliveryAddress = (order.deliveryAddressSnapshot as AddressSnapshot | null)?.addressLine || 'Customer Address';
-      const riderEarnings = Math.round(Number(order.deliveryFee) * 0.8 * 100) / 100;
+      const economics = await this.deliveryFeeService.getEconomicsConfig();
+      const riderShare = (economics.rider_share_percent || 80) / 100;
+      const riderEarnings = Math.round(Number(order.deliveryFee) * riderShare * 100) / 100;
 
       this.trackingGateway.broadcastDispatch({
         orderId: order.id,
@@ -207,7 +212,9 @@ export class OrderFlowService {
       if (!order || order.riderId) return; // already assigned or not found
 
       const deliveryAddress = (order.deliveryAddressSnapshot as AddressSnapshot | null)?.addressLine || 'Customer Address';
-      const riderEarnings = Math.round(Number(order.deliveryFee) * 0.8 * 100) / 100;
+      const economics = await this.deliveryFeeService.getEconomicsConfig();
+      const riderShare = (economics.rider_share_percent || 80) / 100;
+      const riderEarnings = Math.round(Number(order.deliveryFee) * riderShare * 100) / 100;
 
       this.trackingGateway.broadcastDispatch({
         orderId: order.id,
@@ -272,11 +279,11 @@ export class OrderFlowService {
           throw new ConflictException('This order has already been secured by another delivery rider.');
         }
 
-        if (order.status === OrderStatus.CANCELLED || order.status === OrderStatus.DELIVERED) {
-          throw new BadRequestException(`Order cannot be claimed in status "${order.status}"`);
-        }
-
+        assertClaimable(mode, order.status);
         const newStatus = mode === OrderFlowMode.RIDER_FIRST ? OrderStatus.RIDER_ASSIGNED : order.status;
+        if (newStatus !== order.status) {
+          assertTransition(order.status, newStatus);
+        }
 
         const updated = await tx.order.update({
           where: { id: orderId },

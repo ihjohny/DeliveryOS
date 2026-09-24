@@ -177,7 +177,9 @@ async function runVendorRiderTest() {
     console.log('⏱️  4. Testing Order Acceptance with Default Prep Time...');
 
     // Create a customer order at Gulshan branch
-    const address = await prisma.customerAddress.findFirst({ where: { userId: customer.userId } });
+    const address = await prisma.customerAddress.findFirst({
+      where: { userId: customer.userId, isDefault: true },
+    });
     const orderRes = await fetch(`${baseUrl}/orders/checkout`, {
       method: 'POST',
       headers: {

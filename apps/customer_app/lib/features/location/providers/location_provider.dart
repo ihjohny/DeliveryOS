@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -52,7 +53,8 @@ class LocationNotifier extends Notifier<LocationState> {
   }
 
   Future<void> setCoordinates(double lat, double lng, {String? customAddress}) async {
-    final addressLine = customAddress ?? _reverseGeocode(lat, lng);
+    state = state.copyWith(isLoading: true, error: null);
+    final addressLine = customAddress ?? await reverseGeocode(lat, lng);
     final updated = state.location.copyWith(
       latitude: lat,
       longitude: lng,
@@ -63,6 +65,41 @@ class LocationNotifier extends Notifier<LocationState> {
     final storage = ref.read(localStorageProvider);
     await storage.setSavedLocation(updated.toJson());
     await fetchNearbyVendors(lat, lng);
+  }
+
+  Future<bool> useCurrentDeviceLocation() async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        state = state.copyWith(isLoading: false, error: 'Location services are disabled.');
+        return false;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          state = state.copyWith(isLoading: false, error: 'Location permissions are denied.');
+          return false;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        state = state.copyWith(isLoading: false, error: 'Location permissions are permanently denied.');
+        return false;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+
+      await setCoordinates(position.latitude, position.longitude);
+      return true;
+    } catch (_) {
+      state = state.copyWith(isLoading: false, error: 'Failed to acquire device location.');
+      return false;
+    }
   }
 
   void setAddressType(AddressType type) {
@@ -104,26 +141,32 @@ class LocationNotifier extends Notifier<LocationState> {
         return;
       }
     } catch (_) {
-      // Fallback in offline / test environments
+      // Offline or network error
     }
 
     state = state.copyWith(
       isLoading: false,
-      nearbyStoreCount: 3, // Mock fallback for pilot test
+      nearbyStoreCount: 0,
       nearbyVendors: [],
     );
   }
 
-  String _reverseGeocode(double lat, double lng) {
-    // Deterministic reverse geocoding for key Dhaka pilot neighborhoods
-    if (lat >= 23.785 && lat <= 23.805 && lng >= 90.400 && lng <= 90.415) {
-      return 'Road 11, Banani, Dhaka';
-    } else if (lat >= 23.770 && lat <= 23.790 && lng >= 90.410 && lng <= 90.425) {
-      return 'Gulshan 1 Circle, Dhaka';
-    } else if (lat >= 23.740 && lat <= 23.760 && lng >= 90.365 && lng <= 90.385) {
-      return 'Road 27, Dhanmondi, Dhaka';
-    }
-    return 'Lat: ${lat.toStringAsFixed(4)}, Lng: ${lng.toStringAsFixed(4)}, Dhaka';
+  Future<String> reverseGeocode(double lat, double lng) async {
+    try {
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.get(
+        '/geo/reverse-geocode',
+        queryParameters: {'lat': lat, 'lng': lng},
+      );
+      if (response.statusCode == 200) {
+        final data = response.data['data'] as Map<String, dynamic>? ?? {};
+        final addr = data['addressLine'] as String? ?? data['displayName'] as String?;
+        if (addr != null && addr.isNotEmpty) {
+          return addr;
+        }
+      }
+    } catch (_) {}
+    return 'Lat: ${lat.toStringAsFixed(4)}, Lng: ${lng.toStringAsFixed(4)}';
   }
 }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import {
   Navigation,
   Users,
@@ -12,6 +13,7 @@ import {
   Filter,
   ArrowRight,
   ShieldAlert,
+  Clock,
 } from 'lucide-react';
 import adminApi, { FleetRider } from '../../services/adminApi';
 import { getSocket } from '../../services/socket';
@@ -86,6 +88,11 @@ export const AdminDispatchPage: React.FC = () => {
   const onTripCount = fleet.filter((r) => r.status === 'ON_TRIP').length;
   const idleCount = fleet.filter((r) => r.status === 'ONLINE').length;
   const safetyWarningsCount = fleet.filter((r) => r.cashSafetyWarning).length;
+
+  const maxAgingMinutes = unassignedOrders.length > 0
+    ? Math.max(...unassignedOrders.map((o) => Math.max(0, Math.floor((Date.now() - new Date(o.placedAt).getTime()) / 60000))))
+    : 0;
+  const totalPoolVolume = unassignedOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -313,36 +320,42 @@ export const AdminDispatchPage: React.FC = () => {
                     </div>
                     <div className="text-slate-600 dark:text-slate-400 truncate mb-1">{order.vendorName}</div>
                     <div className="text-[11px] text-slate-500 truncate mb-2">To: {order.deliveryAddress}</div>
-                    <a
-                      href={`/admin/orders?orderNumber=${order.orderNumber}`}
+                    <Link
+                      to={`/orders?orderNumber=${order.orderNumber}`}
                       className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 hover:text-amber-800 dark:text-amber-400"
                     >
                       Assign Rider Now <ArrowRight className="h-3 w-3" />
-                    </a>
+                    </Link>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Fleet Geofence Health Card */}
+          {/* Unassigned Dispatch Radar Card */}
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4 text-primary-600" />
-              Pilot Geofence Status
+              <Clock className="h-4 w-4 text-amber-500" />
+              Unassigned Dispatch Radar
             </h3>
             <div className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
               <div className="flex justify-between">
-                <span>Active Pilot Zone:</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">Gulshan-Banani (5.0 km)</span>
+                <span>Waiting Orders:</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{unassignedOrders.length} orders</span>
               </div>
               <div className="flex justify-between">
-                <span>Fleet Density:</span>
-                <span className="font-semibold text-emerald-600">Optimal ({onlineCount} online)</span>
+                <span>Pool Volume:</span>
+                <span className="font-semibold text-primary-600 dark:text-primary-400">৳{totalPoolVolume.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Max Avg Dispatch:</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">&lt; 3.2 mins</span>
+                <span>Max Order Wait:</span>
+                <span className={`font-semibold ${maxAgingMinutes >= 15 ? 'text-rose-600 font-bold animate-pulse' : 'text-slate-900 dark:text-slate-100'}`}>
+                  {unassignedOrders.length > 0 ? `${maxAgingMinutes} mins` : '0 mins'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Available Couriers:</span>
+                <span className="font-semibold text-emerald-600">{idleCount} idle ({onlineCount} online)</span>
               </div>
             </div>
           </div>

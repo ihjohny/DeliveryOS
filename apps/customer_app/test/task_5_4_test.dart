@@ -8,8 +8,10 @@ import 'package:customer_app/core/localization/app_localizations.dart';
 import 'package:customer_app/core/localization/language_provider.dart';
 import 'package:customer_app/core/storage/local_storage.dart';
 import 'package:customer_app/core/utils/phone_call_launcher.dart';
+import 'package:customer_app/features/auth/providers/auth_provider.dart';
 import 'package:customer_app/features/cart/providers/cart_provider.dart';
 import 'package:customer_app/features/orders/domain/order_history_model.dart';
+import 'mock_dio_client.dart';
 import 'package:customer_app/features/orders/presentation/order_history_screen.dart';
 import 'package:customer_app/features/orders/providers/order_history_provider.dart';
 import 'package:customer_app/features/tracking/domain/tracking_models.dart';
@@ -154,7 +156,10 @@ void main() {
 
     test('Re-order validation repopulates cart provider successfully', () async {
       final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
+        overrides: [
+          localStorageProvider.overrideWithValue(storage),
+          dioClientProvider.overrideWithValue(createTestMockDioClient()),
+        ],
       );
 
       final orderNotifier = container.read(orderHistoryProvider.notifier);

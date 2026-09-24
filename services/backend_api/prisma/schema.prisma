@@ -180,6 +180,7 @@ model VendorStaff {
   brand  VendorBrand? @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@unique([userId, vendorId])
+  @@index([userId])
   @@map("vendor_staff")
 }
 
@@ -212,6 +213,7 @@ model Category {
   vendor   Vendor?   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   products Product[]
 
+  @@index([vendorId])
   @@map("categories")
 }
 
@@ -296,6 +298,7 @@ model Banner {
   endsAt    DateTime?      @map("ends_at") @db.Timestamptz
   createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz
 
+  @@index([isActive])
   @@map("banners")
 }
 
@@ -334,10 +337,12 @@ model Rider {
   longitude    Float?
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders Order[]
-  trips  RiderTripLedger[]
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders       Order[]
+  trips        RiderTripLedger[]
+  cashDeposits CashDeposit[]
 
+  @@index([isOnline])
   @@map("riders")
 }
 
@@ -401,6 +406,8 @@ model Order {
   @@index([vendorId])
   @@index([riderId])
   @@index([status])
+  @@index([vendorId, status])
+  @@index([placedAt])
   @@map("orders")
 }
 
@@ -419,6 +426,7 @@ model OrderItem {
   product Product @relation(fields: [productId], references: [id])
 
   @@index([orderId])
+  @@index([productId])
   @@map("order_items")
 }
 
@@ -456,4 +464,19 @@ model RiderTripLedger {
 
   @@index([riderId])
   @@map("rider_trip_ledgers")
+}
+
+model CashDeposit {
+  id          String   @id @default(uuid()) @db.Uuid
+  riderId     String   @map("rider_id") @db.Uuid
+  amount      Decimal  @db.Decimal(10, 2)
+  depositedAt DateTime @default(now()) @map("deposited_at") @db.Timestamptz
+  status      String   @default("COMPLETED") @db.VarChar(20)
+  referenceNo String   @unique @map("reference_no") @db.VarChar(50)
+  note        String?  @db.Text
+
+  rider Rider @relation(fields: [riderId], references: [id], onDelete: Cascade)
+
+  @@index([riderId])
+  @@map("cash_deposits")
 }

@@ -9,6 +9,7 @@ import { AcceptOrderDto } from './dto/accept-order.dto';
 import { OrderStatus, PermissionScope, User, UserRole } from '@prisma/client';
 import { TrackingGateway } from '../realtime/tracking.gateway';
 import { OrderFlowService } from '../order-flow/order-flow.service';
+import { assertTransition } from '../orders/order-state.machine';
 
 @Injectable()
 export class VendorStaffService {
@@ -167,14 +168,7 @@ export class VendorStaffService {
 
     await this.validateStaffOutletAccess(user, order.vendorId);
 
-    if (
-      order.status !== OrderStatus.PLACED &&
-      order.status !== OrderStatus.RIDER_ASSIGNED
-    ) {
-      throw new BadRequestException(
-        `Cannot accept order in status "${order.status}". Order must be PLACED or RIDER_ASSIGNED.`,
-      );
-    }
+    assertTransition(order.status, OrderStatus.PREPARING);
 
     const prepTimeMinutes = dto.prepTimeMinutes ?? order.vendor.defaultPrepTimeMinutes;
 
@@ -217,14 +211,7 @@ export class VendorStaffService {
 
     await this.validateStaffOutletAccess(user, order.vendorId);
 
-    if (
-      order.status !== OrderStatus.PREPARING &&
-      order.status !== OrderStatus.ACCEPTED
-    ) {
-      throw new BadRequestException(
-        `Cannot mark order as ready from status "${order.status}". Must be PREPARING or ACCEPTED.`,
-      );
-    }
+    assertTransition(order.status, OrderStatus.READY_FOR_PICKUP);
 
     const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
@@ -261,11 +248,7 @@ export class VendorStaffService {
 
     await this.validateStaffOutletAccess(user, order.vendorId);
 
-    if (order.status !== OrderStatus.READY_FOR_PICKUP) {
-      throw new BadRequestException(
-        `Cannot handover order from status "${order.status}". Must be READY_FOR_PICKUP.`,
-      );
-    }
+    assertTransition(order.status, OrderStatus.DISPATCHED);
 
     const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },

@@ -249,8 +249,18 @@ export class TrackingGateway
             dest.latitude,
             dest.longitude,
           );
-          // Average speed 25 km/h
-          estimatedMinutesRemaining = Math.max(1, Math.round((distanceKm / 25) * 60));
+          let avgSpeed = 25;
+          try {
+            const econSetting = await this.prisma.systemSetting.findUnique({
+              where: { key: 'delivery_economics' },
+            });
+            if (econSetting?.value && typeof econSetting.value === 'object') {
+              avgSpeed = (econSetting.value as Record<string, any>).eta_avg_speed_kmh || 25;
+            }
+          } catch {
+            avgSpeed = 25;
+          }
+          estimatedMinutesRemaining = Math.max(1, Math.round((distanceKm / avgSpeed) * 60));
         }
       }
 

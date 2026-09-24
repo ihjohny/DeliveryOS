@@ -54,6 +54,27 @@ async function main() {
   });
 
   await prisma.systemSetting.upsert({
+    where: { key: 'delivery_economics' },
+    update: {
+      value: {
+        rider_share_percent: 80,
+        eta_avg_speed_kmh: 25,
+        eta_fallback_minutes: 10
+      },
+      description: 'Platform delivery economics and speed configuration'
+    },
+    create: {
+      key: 'delivery_economics',
+      value: {
+        rider_share_percent: 80,
+        eta_avg_speed_kmh: 25,
+        eta_fallback_minutes: 10
+      },
+      description: 'Platform delivery economics and speed configuration'
+    }
+  });
+
+  await prisma.systemSetting.upsert({
     where: { key: 'region_config' },
     update: {
       value: {

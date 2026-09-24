@@ -9,6 +9,12 @@ export interface DeliveryFeeConfig {
   per_km_rate: number;
 }
 
+export interface DeliveryEconomicsConfig {
+  rider_share_percent: number;
+  eta_avg_speed_kmh: number;
+  eta_fallback_minutes: number;
+}
+
 @Injectable()
 export class DeliveryFeeService {
   private readonly logger = new Logger(DeliveryFeeService.name);
@@ -21,23 +27,86 @@ export class DeliveryFeeService {
     per_km_rate: 10.0,
   };
 
+  private readonly defaultEconomics: DeliveryEconomicsConfig = {
+    rider_share_percent: 80,
+    eta_avg_speed_kmh: 25,
+    eta_fallback_minutes: 10,
+  };
+
+  private cachedFeeConfig: { config: DeliveryFeeConfig; expiresAt: number } | null = null;
+  private cachedEconomics: { config: DeliveryEconomicsConfig; expiresAt: number } | null = null;
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Fetches the active delivery fee configuration from system_settings
+   * Pure calculation helper for delivery fee based on configuration and distance.
+   */
+  computeFee(config: DeliveryFeeConfig, distanceKm: number): number {
+    if (config.mode === 'FIXED_FLAT') {
+      return Number(config.flat_rate);
+    }
+
+    const baseKm = Number(config.base_km) || 2.0;
+    const baseFee = Number(config.base_fee) || 30.0;
+    const perKmRate = Number(config.per_km_rate) || 10.0;
+
+    let fee = baseFee;
+    if (distanceKm > baseKm) {
+      const extraKm = distanceKm - baseKm;
+      fee += extraKm * perKmRate;
+    }
+
+    return Math.round(fee * 100) / 100;
+  }
+
+  /**
+   * Fetches the active delivery fee configuration from system_settings with 60s cache.
    */
   async getConfig(): Promise<DeliveryFeeConfig> {
+    const now = Date.now();
+    if (this.cachedFeeConfig && this.cachedFeeConfig.expiresAt > now) {
+      return this.cachedFeeConfig.config;
+    }
+
     try {
       const setting = await this.prisma.systemSetting.findUnique({
         where: { key: 'delivery_fee_config' },
       });
       if (setting && setting.value) {
-        return setting.value as unknown as DeliveryFeeConfig;
+        const config = setting.value as unknown as DeliveryFeeConfig;
+        this.cachedFeeConfig = { config, expiresAt: now + 60000 };
+        return config;
       }
-    } catch (err) {
-      this.logger.warn(`Could not load delivery_fee_config from database, using defaults: ${err.message}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Could not load delivery_fee_config from database, using defaults: ${msg}`);
     }
     return this.defaultConfig;
+  }
+
+  /**
+   * Fetches the active delivery economics configuration with 60s cache.
+   */
+  async getEconomicsConfig(): Promise<DeliveryEconomicsConfig> {
+    const now = Date.now();
+    if (this.cachedEconomics && this.cachedEconomics.expiresAt > now) {
+      return this.cachedEconomics.config;
+    }
+
+    try {
+      const setting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'delivery_economics' },
+      });
+      if (setting && setting.value) {
+        const config = setting.value as unknown as DeliveryEconomicsConfig;
+        this.cachedEconomics = { config, expiresAt: now + 60000 };
+        return config;
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Could not load delivery_economics from database, using defaults: ${msg}`);
+    }
+    return this.defaultEconomics;
   }
 
   /**
@@ -49,30 +118,10 @@ export class DeliveryFeeService {
     distanceKm: number;
   }> {
     const config = await this.getConfig();
-
-    if (config.mode === 'FIXED_FLAT') {
-      return {
-        deliveryFee: Number(config.flat_rate),
-        mode: 'FIXED_FLAT',
-        distanceKm,
-      };
-    }
-
-    // DISTANCE_TIERED mode
-    const baseKm = Number(config.base_km) || 2.0;
-    const baseFee = Number(config.base_fee) || 30.0;
-    const perKmRate = Number(config.per_km_rate) || 10.0;
-
-    let fee = baseFee;
-    if (distanceKm > baseKm) {
-      const extraKm = distanceKm - baseKm;
-      fee += extraKm * perKmRate;
-    }
-
-    const roundedFee = Math.round(fee * 100) / 100;
+    const deliveryFee = this.computeFee(config, distanceKm);
     return {
-      deliveryFee: roundedFee,
-      mode: 'DISTANCE_TIERED',
+      deliveryFee,
+      mode: config.mode,
       distanceKm,
     };
   }

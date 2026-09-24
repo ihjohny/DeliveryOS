@@ -10,6 +10,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { GetNearbyVendorsDto } from './dto/get-nearby-vendors.dto';
 import { SearchVendorsDto } from './dto/search-vendors.dto';
 import { ValidateAddressCoverageDto } from './dto/validate-address-coverage.dto';
+import { DeliveryFeeService } from '../promotions/pricing/delivery-fee.service';
 
 export interface RawNearbyVendorRow {
   id: string;
@@ -58,7 +59,10 @@ export interface RawCoverageCheckRow {
 
 @Injectable()
 export class VendorService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly deliveryFeeService: DeliveryFeeService,
+  ) {}
 
   /**
    * 1. Get Nearby Outlets filtered by customer coordinate via PostGIS ST_DWithin
@@ -101,12 +105,17 @@ export class VendorService {
       ORDER BY "distanceKm" ASC;
     `;
 
-    return nearbyVendors.map((vendor) => ({
-      ...vendor,
-      distanceKm: Number(vendor.distanceKm),
-      deliveryRadiusKm: Number(vendor.deliveryRadiusKm),
-      deliveryFee: 50.0, // Fixed flat pilot fee default
-    }));
+    const feeConfig = await this.deliveryFeeService.getConfig();
+
+    return nearbyVendors.map((vendor) => {
+      const distanceKm = Number(vendor.distanceKm);
+      return {
+        ...vendor,
+        distanceKm,
+        deliveryRadiusKm: Number(vendor.deliveryRadiusKm),
+        deliveryFee: this.deliveryFeeService.computeFee(feeConfig, distanceKm),
+      };
+    });
   }
 
   /**
@@ -277,11 +286,14 @@ export class VendorService {
       );
     }
 
+    const feeConfig = await this.deliveryFeeService.getConfig();
+    const estimatedDeliveryFee = this.deliveryFeeService.computeFee(feeConfig, distanceKm);
+
     return {
       isWithinCoverage: true,
       distanceKm,
       deliveryRadiusKm: Number(vendor.deliveryRadiusKm),
-      estimatedDeliveryFee: 50.0,
+      estimatedDeliveryFee,
     };
   }
 }

@@ -150,7 +150,7 @@ async function runAdminConsoleVerification() {
     const vendor = product!.vendor;
     assert(!!vendor, `Active store outlet found: "${vendor?.name}"`);
     const customer = await prisma.user.findFirst({ where: { phone: '+8801700000005' } });
-    const address = await prisma.customerAddress.findFirst({ where: { userId: customer!.id } });
+    const address = await prisma.customerAddress.findFirst({ where: { userId: customer!.id, isDefault: true } });
 
     const checkoutRes = await axios.post(
       `${API_BASE}/orders/checkout`,

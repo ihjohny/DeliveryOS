@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+export 'package:dio/dio.dart';
 import '../constants/api_constants.dart';
 import '../storage/local_storage.dart';
 
@@ -6,34 +7,37 @@ class DioClient {
   final Dio _dio;
   final LocalStorage? _storage;
 
-  DioClient({LocalStorage? storage})
+  DioClient({LocalStorage? storage, Dio? dio})
       : _storage = storage,
-        _dio = Dio(
-          BaseOptions(
-            baseUrl: ApiConstants.baseUrl,
-            connectTimeout: const Duration(seconds: 10),
-            receiveTimeout: const Duration(seconds: 10),
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-          ),
-        ) {
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          final token = _storage?.getAccessToken();
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          return handler.next(options);
-        },
-        onError: (DioException error, handler) {
-          // Unify API error handling
-          return handler.next(error);
-        },
-      ),
-    );
+        _dio = dio ??
+            Dio(
+              BaseOptions(
+                baseUrl: ApiConstants.baseUrl,
+                connectTimeout: const Duration(seconds: 10),
+                receiveTimeout: const Duration(seconds: 10),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                },
+              ),
+            ) {
+    if (dio == null) {
+      _dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            final token = _storage?.getAccessToken();
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
+            return handler.next(options);
+          },
+          onError: (DioException error, handler) {
+            // Unify API error handling
+            return handler.next(error);
+          },
+        ),
+      );
+    }
   }
 
   Dio get dio => _dio;

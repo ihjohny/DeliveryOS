@@ -18,6 +18,7 @@ import { User, UserRole } from '@prisma/client';
 import { RiderService } from './rider.service';
 import { ToggleDutyDto } from './dto/toggle-duty.dto';
 import { DeliverOrderDto } from './dto/deliver-order.dto';
+import { DepositCashDto } from './dto/deposit-cash.dto';
 
 @ApiTags('Rider Operations')
 @Controller('rider')
@@ -96,6 +97,21 @@ export class RiderController {
     const result = await this.riderService.deliverOrder(user.id, orderId, dto);
     return {
       message: 'Order delivered successfully',
+      data: result,
+    };
+  }
+
+  @Post('cash/deposit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Deposit collected COD cash into platform custody' })
+  @ApiResponse({ status: 200, description: 'Cash successfully deposited and ledger updated' })
+  async depositCash(
+    @CurrentUser() user: User,
+    @Body() dto: DepositCashDto,
+  ) {
+    const result = await this.riderService.depositCash(user.id, dto);
+    return {
+      message: 'Cash deposited successfully',
       data: result,
     };
   }

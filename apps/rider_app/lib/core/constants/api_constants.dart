@@ -20,6 +20,7 @@ class ApiConstants {
   // Rider operations
   static const String riderProfile = '/rider/profile';
   static const String toggleDuty = '/rider/duty';
+  static const String depositCash = '/rider/cash/deposit';
   static const String claimOrder = '/rider/orders'; // + /:id/claim
   static const String pickupOrder = '/rider/orders'; // + /:id/pickup
   static const String deliverOrder = '/rider/orders'; // + /:id/deliver

@@ -79,15 +79,14 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
         return result;
       }
     } catch (_) {
-      // Dev mode fallback
+      // Return failed validation result rather than faking success
     }
 
-    // Dev fallback: Sultan's Dine order is valid; repopulate cart
-    _populateCartWithPastOrder(pastOrder);
-    return ReorderValidationResult(
-      isStoreOperational: true,
-      hasStockChanges: false,
-      validItems: pastOrder.items,
+    return const ReorderValidationResult(
+      isStoreOperational: false,
+      hasStockChanges: true,
+      validItems: [],
+      unavailableItems: ['Could not validate re-order with server.'],
     );
   }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Settings,
@@ -22,6 +22,10 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 export const AdminSettingsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [isExporting, setIsExporting] = useState(false);
+  const [flatFeeInput, setFlatFeeInput] = useState<string>('50');
+  const [baseFeeInput, setBaseFeeInput] = useState<string>('40');
+  const [perKmRateInput, setPerKmRateInput] = useState<string>('15');
+  const [feeModeInput, setFeeModeInput] = useState<'FIXED_FLAT' | 'DISTANCE_TIERED'>('FIXED_FLAT');
 
   // Queries
   const { data: settings, isLoading: isLoadingSettings } = useQuery({
@@ -34,6 +38,15 @@ export const AdminSettingsPage: React.FC = () => {
     queryFn: adminApi.getSettlementStatements,
   });
 
+  useEffect(() => {
+    if (settings?.deliveryFee) {
+      setFeeModeInput(settings.deliveryFee.mode);
+      setFlatFeeInput(String(settings.deliveryFee.flatFee ?? 50));
+      setBaseFeeInput(String(settings.deliveryFee.baseFee ?? 40));
+      setPerKmRateInput(String(settings.deliveryFee.perKmRate ?? 15));
+    }
+  }, [settings]);
+
   // Mutations
   const updateOrderFlowMutation = useMutation({
     mutationFn: ({ mode, timeout }: { mode: 'RIDER_FIRST' | 'VENDOR_FIRST'; timeout?: number }) =>
@@ -44,8 +57,12 @@ export const AdminSettingsPage: React.FC = () => {
   });
 
   const updateDeliveryFeeMutation = useMutation({
-    mutationFn: (data: { mode: 'FIXED_FLAT' | 'DISTANCE_TIERED'; flatFee?: number }) =>
-      adminApi.updateDeliveryFeeMode(data),
+    mutationFn: (data: {
+      mode: 'FIXED_FLAT' | 'DISTANCE_TIERED';
+      flatFee?: number;
+      baseFee?: number;
+      perKmRate?: number;
+    }) => adminApi.updateDeliveryFeeMode(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
     },
@@ -160,7 +177,122 @@ export const AdminSettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Section 2: Financial Settlements & CSV Statement Export */}
+      {/* Section 2: Delivery Fee Pricing Economics */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-primary-600" />
+              Delivery Fee Pricing Economics
+            </h2>
+            <p className="text-xs text-slate-500">
+              Configure dynamic customer delivery fee calculation algorithm and driver economics.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            isLoading={updateDeliveryFeeMutation.isPending}
+            onClick={() => {
+              updateDeliveryFeeMutation.mutate({
+                mode: feeModeInput,
+                flatFee: parseFloat(flatFeeInput) || 50,
+                baseFee: parseFloat(baseFeeInput) || 40,
+                perKmRate: parseFloat(perKmRateInput) || 15,
+              });
+            }}
+          >
+            Save Pricing Rules
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* FIXED_FLAT */}
+          <div
+            onClick={() => setFeeModeInput('FIXED_FLAT')}
+            className={`cursor-pointer rounded-xl border p-5 transition-all ${
+              feeModeInput === 'FIXED_FLAT'
+                ? 'border-primary-600 bg-primary-50/50 dark:border-primary-500 dark:bg-primary-950/20 ring-2 ring-primary-500/20'
+                : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="h-5 w-5 text-primary-600" />
+                <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                  Fixed Flat Fee Mode
+                </span>
+              </div>
+              {feeModeInput === 'FIXED_FLAT' && <Badge variant="success">Active</Badge>}
+            </div>
+            <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+              Every delivery charges a uniform flat delivery fee regardless of distance.
+            </p>
+            <div className="mt-4">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Uniform Flat Delivery Fee (৳)
+              </label>
+              <Input
+                type="number"
+                value={flatFeeInput}
+                onChange={(e) => setFlatFeeInput(e.target.value)}
+                placeholder="50"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+
+          {/* DISTANCE_TIERED */}
+          <div
+            onClick={() => setFeeModeInput('DISTANCE_TIERED')}
+            className={`cursor-pointer rounded-xl border p-5 transition-all ${
+              feeModeInput === 'DISTANCE_TIERED'
+                ? 'border-primary-600 bg-primary-50/50 dark:border-primary-500 dark:bg-primary-950/20 ring-2 ring-primary-500/20'
+                : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-emerald-600" />
+                <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                  Distance-Tiered Dynamic Mode
+                </span>
+              </div>
+              {feeModeInput === 'DISTANCE_TIERED' && <Badge variant="success">Active</Badge>}
+            </div>
+            <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+              Base fee for initial 1.5 km plus incremental per-kilometer charge computed via PostGIS / Haversine.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Base Fee (৳)
+                </label>
+                <Input
+                  type="number"
+                  value={baseFeeInput}
+                  onChange={(e) => setBaseFeeInput(e.target.value)}
+                  placeholder="40"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Rate / km (৳)
+                </label>
+                <Input
+                  type="number"
+                  value={perKmRateInput}
+                  onChange={(e) => setPerKmRateInput(e.target.value)}
+                  placeholder="15"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Section 3: Financial Settlements & CSV Statement Export */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

@@ -326,6 +326,31 @@ CREATE TABLE rider_trip_ledgers (
     status settlement_status NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 20. Rider Cash Hub Deposits
+CREATE TABLE cash_deposits (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    rider_id UUID NOT NULL REFERENCES riders(id) ON DELETE CASCADE,
+    amount NUMERIC(10, 2) NOT NULL,
+    reference VARCHAR(100),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_cash_deposits_rider_id ON cash_deposits(rider_id);
+
+-- Performance & Spatial Indexes
+CREATE INDEX idx_vendor_staff_user_id ON vendor_staff(user_id);
+CREATE INDEX idx_categories_vendor_id ON categories(vendor_id);
+CREATE INDEX idx_orders_vendor_status ON orders(vendor_id, status);
+CREATE INDEX idx_orders_placed_at ON orders(placed_at);
+CREATE INDEX idx_banners_is_active ON banners(is_active);
+CREATE INDEX idx_riders_is_online ON riders(is_online);
+CREATE INDEX idx_order_items_product_id ON order_items(product_id);
+
+-- PostGIS GiST Spatial Expression Indexes (Sub-millisecond KNN and DWithin lookups)
+CREATE INDEX idx_vendors_geo ON vendors USING GIST (ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography);
+CREATE INDEX idx_customer_addresses_geo ON customer_addresses USING GIST (ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography);
+CREATE INDEX idx_riders_geo ON riders USING GIST (ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography);
 ```
 
 ---

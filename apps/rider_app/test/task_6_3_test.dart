@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -141,11 +140,7 @@ void main() {
     });
 
     test('depositCashToHub decrements cashInHand and unblocks COD trips', () async {
-      final container = ProviderContainer(
-        overrides: [
-          localStorageProvider.overrideWithValue(storage),
-        ],
-      );
+      final container = createContainer();
       addTearDown(container.dispose);
 
       final notifier = container.read(riderDutyProvider.notifier);
@@ -250,11 +245,7 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      final container = ProviderContainer(
-        overrides: [
-          localStorageProvider.overrideWithValue(storage),
-        ],
-      );
+      final container = createContainer();
       addTearDown(container.dispose);
 
       await tester.pumpWidget(createTestWidget(

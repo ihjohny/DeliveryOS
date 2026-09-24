@@ -141,7 +141,7 @@ class ReorderValidationResult {
   final List<dynamic> validItems;
   final List<String> unavailableItems;
 
-  ReorderValidationResult({
+  const ReorderValidationResult({
     required this.isStoreOperational,
     required this.hasStockChanges,
     this.validItems = const [],

@@ -12,6 +12,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 import { OrderFlowModule } from './modules/order-flow/order-flow.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
+import { GeoModule } from './modules/geo/geo.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { HealthModule } from './modules/health/health.module';
     RealtimeModule,
     OrderFlowModule,
     AdminModule,
+    GeoModule,
   ],
 })
 export class AppModule {}

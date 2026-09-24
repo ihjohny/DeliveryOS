@@ -15,6 +15,7 @@ import 'package:customer_app/features/location/domain/user_location.dart';
 import 'package:customer_app/features/location/presentation/map_location_picker_screen.dart';
 import 'package:customer_app/features/location/providers/location_provider.dart';
 import 'package:customer_app/features/splash/presentation/splash_screen.dart';
+import 'mock_dio_client.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -58,6 +59,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           localStorageProvider.overrideWithValue(storage),
+          dioClientProvider.overrideWithValue(createTestMockDioClient()),
         ],
       );
 
@@ -122,6 +124,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           localStorageProvider.overrideWithValue(storage),
+          dioClientProvider.overrideWithValue(createTestMockDioClient()),
         ],
       );
 

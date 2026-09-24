@@ -224,6 +224,29 @@ This document specifies the RESTful API endpoints for the **DeliveryOS** backend
 }
 ```
 
+### 5.5 Deposit COD Cash at Hub / Settlement
+- **Endpoint**: `POST /rider/cash/deposit`
+- **Access**: Authenticated (`RIDER`)
+- **Request Body**:
+```json
+{
+  "amount": 2500.0,
+  "reference": "BANK-TXN-1234",
+  "notes": "End of shift cash deposit at Banani hub"
+}
+```
+- **Response**: Returns updated `cashInHand` and records `cash_deposits` transaction.
+
+---
+
+## 5.1 Geospatial Engine Module (`/geo`)
+
+### Reverse Geocode Coordinates
+- **Endpoint**: `GET /geo/reverse-geocode`
+- **Access**: Public / Authenticated
+- **Query Params**: `lat` (required), `lng` (required)
+- **Response**: Returns structured address object with `addressLine` and `displayName`, backed by OpenStreetMap Nominatim and 24-hour Redis caching.
+
 ---
 
 ## 6. Super Admin Master Governance Module (`/admin`)

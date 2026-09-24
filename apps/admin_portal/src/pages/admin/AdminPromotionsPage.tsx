@@ -83,6 +83,7 @@ export const AdminPromotionsPage: React.FC = () => {
       setCouponValue('20');
       setMinSpend('300');
       setMaxDiscount('100');
+      setUsageLimit('500');
     },
   });
 
@@ -435,10 +436,10 @@ export const AdminPromotionsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Min Subtotal Spend (৳)
+                Min Spend (৳)
               </label>
               <Input
                 type="number"
@@ -450,13 +451,25 @@ export const AdminPromotionsPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Max Discount Cap (৳)
+                Max Cap (৳)
               </label>
               <Input
                 type="number"
                 value={maxDiscount}
                 onChange={(e) => setMaxDiscount(e.target.value)}
                 placeholder="100"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Usage Limit
+              </label>
+              <Input
+                type="number"
+                value={usageLimit}
+                onChange={(e) => setUsageLimit(e.target.value)}
+                placeholder="500"
               />
             </div>
           </div>

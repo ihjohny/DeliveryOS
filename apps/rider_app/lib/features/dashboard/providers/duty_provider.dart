@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/storage/local_storage.dart';
@@ -9,6 +10,7 @@ import '../domain/duty_models.dart';
 
 class RiderDutyNotifier extends Notifier<RiderDutyState> {
   Timer? _beaconTimer;
+  StreamSubscription<Position>? _positionSubscription;
 
   @override
   RiderDutyState build() {
@@ -19,6 +21,7 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
 
     ref.onDispose(() {
       _beaconTimer?.cancel();
+      _positionSubscription?.cancel();
     });
 
     final sampleTrips = getPilotSampleTrips();
@@ -90,6 +93,8 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
   void stopBeaconing() {
     _beaconTimer?.cancel();
     _beaconTimer = null;
+    _positionSubscription?.cancel();
+    _positionSubscription = null;
     state = state.copyWith(isBeaconing: false);
   }
 
@@ -118,7 +123,7 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
         data: {'isOnline': targetState},
       );
     } catch (_) {
-      // Dev mode fallback
+      // Offline fallback handling
     }
 
     final storage = ref.read(localStorageProvider);
@@ -133,8 +138,7 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
         statusMessage: 'Online • GPS Radar Active • Ready for Trips',
       );
     } else {
-      _beaconTimer?.cancel();
-      _beaconTimer = null;
+      stopBeaconing();
       state = state.copyWith(
         isOnline: false,
         isBeaconing: false,
@@ -149,13 +153,44 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
 
   void _startGpsBeaconing() {
     _beaconTimer?.cancel();
+    _positionSubscription?.cancel();
+
+    try {
+      _positionSubscription = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 10,
+        ),
+      ).listen(
+        (position) {
+          if (!state.isOnline) return;
+          state = state.copyWith(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            speed: position.speed,
+            bearing: position.heading,
+            lastBeaconTimestamp: DateTime.now(),
+            isBeaconing: true,
+          );
+          _dispatchTelemetryToBackend(position.latitude, position.longitude, position.speed);
+        },
+        onError: (_) {
+          _startFallbackBeaconTimer();
+        },
+      );
+    } catch (_) {
+      _startFallbackBeaconTimer();
+    }
+  }
+
+  void _startFallbackBeaconTimer() {
+    _beaconTimer?.cancel();
     _beaconTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!state.isOnline) {
         _beaconTimer?.cancel();
         return;
       }
 
-      // Small realistic location jitter for live telemetry beaconing (e.g. Banani area)
       final newLat = 23.7925 + ((DateTime.now().second % 10) - 5) * 0.0001;
       final newLng = 90.4078 + ((DateTime.now().second % 8) - 4) * 0.0001;
       final speed = state.activeOrderId != null ? 28.0 : 0.0;
@@ -176,7 +211,6 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
   Future<void> _dispatchTelemetryToBackend(double lat, double lng, double speed) async {
     try {
       final dio = ref.read(dioClientProvider);
-      // Dispatches telemetry coordinates to backend radar
       await dio.patch(
         ApiConstants.toggleDuty,
         data: {
@@ -187,7 +221,7 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
         },
       );
     } catch (_) {
-      // Silent telemetry dispatch fallback
+      // Telemetry dispatch
     }
   }
 
@@ -219,24 +253,43 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
 
     try {
       final dio = ref.read(dioClientProvider);
-      await dio.post(
-        '/rider/cash-deposit',
+      final response = await dio.post(
+        ApiConstants.depositCash,
         data: {
           'amount': depositAmount,
-          'timestamp': DateTime.now().toIso8601String(),
+          'notes': 'Hub cash settlement via Rider App',
         },
       );
+
+      double newBalance = (state.codCashInHand - depositAmount).clamp(0.0, double.infinity);
+      if (response.data is Map && response.data['data'] is Map) {
+        final serverCash = response.data['data']['cashInHand'];
+        if (serverCash is num) {
+          newBalance = serverCash.toDouble();
+        }
+      }
+
+      state = state.copyWith(
+        codCashInHand: newBalance,
+        isDepositingCash: false,
+      );
+
+      return true;
+    } on DioException catch (dioErr) {
+      final resData = dioErr.response?.data;
+      final msg = resData is Map ? (resData['message'] ?? 'Cash deposit failed.') : 'Cash deposit failed.';
+      state = state.copyWith(
+        isDepositingCash: false,
+        error: msg.toString(),
+      );
+      return false;
     } catch (_) {
-      // Dev mode fallback
+      state = state.copyWith(
+        isDepositingCash: false,
+        error: 'Network connection error.',
+      );
+      return false;
     }
-
-    final newBalance = (state.codCashInHand - depositAmount).clamp(0.0, double.infinity);
-    state = state.copyWith(
-      codCashInHand: newBalance,
-      isDepositingCash: false,
-    );
-
-    return true;
   }
 }
 

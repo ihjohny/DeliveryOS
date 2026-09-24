@@ -284,6 +284,7 @@ async function runOrderCheckoutTest() {
     console.log(' 🎉 All Order Checkout & Ledger Tests Passed!');
     console.log('====================================================\n');
   } finally {
+    await prisma.customerAddress.deleteMany({ where: { label: 'Remote Far Away' } });
     await app.close();
   }
 }

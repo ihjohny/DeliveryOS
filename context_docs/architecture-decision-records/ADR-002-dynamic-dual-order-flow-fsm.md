@@ -68,7 +68,10 @@ flowchart TD
 ---
 
 ## Technical Implementation Details
-- Core state machine implemented in [`order-flow.service.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/order-flow/order-flow.service.ts).
+- Central state machine and transition table implemented in [`order-state.machine.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/src/modules/orders/order-state.machine.ts) with `assertTransition(from, to)` and `assertClaimable(order, mode)`.
+- Mode claimability rules: `RIDER_FIRST` claims from `PLACED`; `VENDOR_FIRST` claims from `READY_FOR_PICKUP`.
+- Invariant A3 Security Guard: Rider claiming and delivery strictly requires `order.riderId === rider.id`, completely eliminating unassigned order cash collection holes.
+- Rider trip ledger records exact `delivery_economics.rider_share_percent` (80%) of delivery fee, maintaining 100% financial consistency across ledger entries and WebSocket broadcasts.
 - Stored in `system_settings` table under `order_flow_config`:
   ```json
   {
@@ -81,5 +84,5 @@ flowchart TD
 ---
 
 ## Compliance & Verification
-- Unit & integration verification: [`test-admin-console.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/admin_portal/scripts/test-admin-console.ts) validates runtime switching.
-- KDS verification: [`test-kds-operations.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/vendor_portal/scripts/test-kds-operations.ts) validates 3-lane kitchen progression across both modes.
+- Integration verification: [`test-order-dispatch-fsm.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/scripts/test-order-dispatch-fsm.ts) validates runtime switching and concurrent claims.
+- Fulfillment verification: [`test-vendor-rider.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/scripts/test-vendor-rider.ts) and [`test-e2e-lifecycle.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/scripts/test-e2e-lifecycle.ts) validate full lifecycle progression and penny-perfect financial balancing.

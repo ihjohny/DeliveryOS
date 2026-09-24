@@ -93,6 +93,26 @@ class _MapLocationPickerScreenState
     } catch (_) {}
   }
 
+  Future<void> _handleUseCurrentLocation() async {
+    final success =
+        await ref.read(locationProvider.notifier).useCurrentDeviceLocation();
+    if (success && mounted) {
+      final loc = ref.read(locationProvider).location;
+      setState(() {
+        _currentLat = loc.latitude;
+        _currentLng = loc.longitude;
+        _currentAddress = loc.addressLine;
+      });
+      _animateCamera(_currentLat, _currentLng);
+    } else if (!success && mounted) {
+      final err = ref.read(locationProvider).error ??
+          'Could not determine current location';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   Future<void> _handleConfirm() async {
     final notifier = ref.read(locationProvider.notifier);
     await notifier.setCoordinates(
@@ -209,9 +229,7 @@ class _MapLocationPickerScreenState
                   right: 16,
                   child: FloatingActionButton.extended(
                     heroTag: 'fab_current_loc',
-                    onPressed: () {
-                      _onPresetSelected(_neighborhoodPresets[0]);
-                    },
+                    onPressed: _handleUseCurrentLocation,
                     backgroundColor: Colors.white,
                     foregroundColor: AppColors.primary,
                     elevation: 3,
@@ -429,11 +447,16 @@ class _MapLocationPickerScreenState
           zoom: 15,
         ),
         onMapCreated: (ctrl) => _mapController = ctrl,
-        onCameraIdle: () {
-          ref.read(locationProvider.notifier).setCoordinates(
+        onCameraIdle: () async {
+          await ref.read(locationProvider.notifier).setCoordinates(
                 _currentLat,
                 _currentLng,
               );
+          if (mounted) {
+            setState(() {
+              _currentAddress = ref.read(locationProvider).location.addressLine;
+            });
+          }
         },
         onCameraMove: (pos) {
           _currentLat = pos.target.latitude;

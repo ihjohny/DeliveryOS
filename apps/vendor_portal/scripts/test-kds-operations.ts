@@ -69,7 +69,7 @@ async function runKdsVerification() {
   console.log('\n🛎️  3. Creating Live Customer Order to Feed KDS Console...');
   const customerId = customerRes.data.data.user.id;
   const address = await prisma.customerAddress.findFirst({
-    where: { userId: customerId },
+    where: { userId: customerId, isDefault: true },
   });
   const addressId = address?.id;
   assert(!!addressId, `Customer delivery address found: ${address?.addressLine}`);

@@ -1,4 +1,5 @@
 import 'dart:math' show cos, sqrt, asin, pi;
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -224,36 +225,20 @@ class CartNotifier extends Notifier<CartState> {
         );
         return true;
       }
-    } catch (_) {
-      // Dev mode coupon validation fallback
-    }
-
-    // Dev mode validation: WELCOME50 provides ৳50 flat discount on min ৳250 spend
-    if (cleanCode == 'WELCOME50') {
-      if (state.grossSubtotal >= 250) {
-        state = state.copyWith(
-          isApplyingCoupon: false,
-          couponCode: 'WELCOME50',
-          couponDiscount: 50.0,
-          couponMessage: 'Promo WELCOME50 applied! (Saved ৳50)',
-        );
-        return true;
-      } else {
-        state = state.copyWith(
-          isApplyingCoupon: false,
-          couponMessage: 'Minimum subtotal of ৳250 required for WELCOME50',
-        );
-        return false;
-      }
-    } else if (cleanCode == 'BURGER20') {
-      final discount = (state.grossSubtotal * 0.20).clamp(0.0, 100.0);
+    } on DioException catch (dioErr) {
+      final resData = dioErr.response?.data;
+      final msg = resData is Map ? (resData['message'] ?? 'Coupon is not valid') : 'Coupon is not valid';
       state = state.copyWith(
         isApplyingCoupon: false,
-        couponCode: 'BURGER20',
-        couponDiscount: discount,
-        couponMessage: '20% OFF applied! (Saved ৳${discount.toStringAsFixed(0)})',
+        couponMessage: msg.toString(),
       );
-      return true;
+      return false;
+    } catch (_) {
+      state = state.copyWith(
+        isApplyingCoupon: false,
+        couponMessage: 'Could not validate coupon. Please check connection.',
+      );
+      return false;
     }
 
     state = state.copyWith(
@@ -295,8 +280,8 @@ class CartNotifier extends Notifier<CartState> {
       final response = await dio.post(ApiConstants.checkout, data: payload);
       if (response.statusCode == 200 || response.statusCode == 201) {
         final orderData = response.data['data'] as Map<String, dynamic>? ?? {};
-        final orderId = orderData['id'] as String? ?? 'ORD-${DateTime.now().millisecondsSinceEpoch}';
-        final orderNumber = orderData['orderNumber'] as String? ?? '#ORD-${DateTime.now().millisecondsSinceEpoch}';
+        final orderId = orderData['id'] as String? ?? '';
+        final orderNumber = orderData['orderNumber'] as String? ?? '';
         clearCart();
         return {
           'success': true,
@@ -304,18 +289,15 @@ class CartNotifier extends Notifier<CartState> {
           'orderNumber': orderNumber,
         };
       }
+      final errorMsg = response.data?['message'] ?? 'Checkout failed. Please try again.';
+      return {'success': false, 'message': errorMsg.toString()};
+    } on DioException catch (dioErr) {
+      final resData = dioErr.response?.data;
+      final msg = resData is Map ? (resData['message'] ?? dioErr.message) : (dioErr.message ?? 'Checkout failed');
+      return {'success': false, 'message': msg.toString()};
     } catch (_) {
-      // Mock dev checkout fallback
+      return {'success': false, 'message': 'Network error during checkout. Please check your connection.'};
     }
-
-    // Dev mode checkout success fallback
-    final mockOrderNum = '#ORD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
-    clearCart();
-    return {
-      'success': true,
-      'orderId': 'mock-order-uuid',
-      'orderNumber': mockOrderNum,
-    };
   }
 
   double _calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {

@@ -432,3 +432,40 @@ graph TD
 - **Validation Checklist**:
   - [ ] All 10 pilot stores successfully process and fulfill live test orders.
   - [ ] Zero food waste incidents reported during pilot test run.
+
+---
+
+## 📌 Production Readiness Track — Phase 1: Trust & Correctness (Completed)
+
+> Master reference: [`PHASE_1_IMPLEMENTATION_PLAN.md`](./PHASE_1_IMPLEMENTATION_PLAN.md) and [`PROJECT_REVIEW_AND_PLAN.md`](./PROJECT_REVIEW_AND_PLAN.md)
+
+### Phase 1 Milestones Summary
+- **Task 1.1: Central Order FSM Guard**:
+  - [x] Defined `ORDER_TRANSITIONS` and `CLAIMABLE_STATUSES` in `order-state.machine.ts`.
+  - [x] Eliminated ad-hoc scattered transition checks across `order-flow`, `vendor-staff`, and `rider` services.
+  - [x] Enforced Invariant A3 security guard (`order.riderId === rider.id`) in `deliverOrder` to eliminate null-rider cash theft.
+- **Task 1.2: Single Source of Truth for Money & ETA**:
+  - [x] Added `delivery_economics` setting (`rider_share_percent: 80`, `eta_avg_speed_kmh: 25`, `eta_fallback_minutes: 10`).
+  - [x] Fixed ledger discrepancy where 100% of delivery fee was recorded instead of configured 80% share.
+  - [x] Distance-tiered and flat delivery fee estimates unified across discovery, cart check, and checkout.
+- **Task 1.3: Deterministic Order Numbers**:
+  - [x] Implemented atomic Redis sequential generator `ORD-YYYYMMDD-0001` with 48h TTL and collision retry.
+- **Task 1.4: Database Indexes & Spatial Optimization**:
+  - [x] Added `CashDeposit` model and relational performance indexes in Prisma migration `20260924065308`.
+  - [x] Created PostGIS GiST spatial expression indexes on `vendors`, `customer_addresses`, and `riders`.
+  - [x] Verified `Index Scan using idx_vendors_geo` with `EXPLAIN ANALYZE`.
+- **Task 1.5 & 1.6: Backend Endpoints & Real GPS**:
+  - [x] Implemented `POST /rider/cash/deposit` with transaction and role guard.
+  - [x] Implemented `GET /geo/reverse-geocode` via Nominatim with 24h Redis caching.
+- **Task 1.7: Mobile App De-mocking & Platforms**:
+  - [x] Customer app: Removed offline OTP, fake checkout, fake re-order, local coupon calculation; integrated real reverse geocoding and `geolocator` GPS.
+  - [x] Rider app: Removed `mock-jwt-token-rider` and fake pilot profiles; integrated real `POST /rider/cash/deposit` and real `Geolocator.getPositionStream` stream listener.
+  - [x] Rebuilt native platform configs (`android/`, `ios/`) with required location & telephony permissions.
+  - [x] Verified `flutter analyze` (0 errors) and all 60 tests pass (Customer: 32/32, Rider: 28/28).
+- **Task 1.8: Web Portals Defect Fixes**:
+  - [x] Admin Portal: Fixed broken dispatch orders link; replaced fake geofence card with real unassigned dispatch radar card; bound coupon `usageLimit`; added Delivery Fee Pricing Economics settings card.
+  - [x] Both admin portal and vendor portal build cleanly (`npm run build` exits 0).
+- **Task 1.9: Documentation & Governance Synchronization**:
+  - [x] Updated `ADR-002`, `TID-02`, `TID-03`, `BRD-03`, and `WORK_BREAKDOWN.md`.
+  - [x] Verified all 11 backend test suites pass 100% with double-entry balance down to 0.0000 BDT.
+

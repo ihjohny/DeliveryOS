@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -68,6 +69,8 @@ export interface RiderTelemetryLocation {
 
 @Injectable()
 export class OrderService {
+  private readonly logger = new Logger(OrderService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly couponService: CouponService,
@@ -275,74 +278,85 @@ export class OrderService {
     const commissionAmount = Math.round((netSubtotal * (commissionRate / 100)) * 100) / 100;
     const netVendorPayable = Math.round((netSubtotal - commissionAmount) * 100) / 100;
 
-    // 8. Generate Order Number: ORD-YYYYMMDD-XXXX
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const randSuffix = Math.floor(1000 + Math.random() * 9000).toString();
-    const orderNumber = `ORD-${dateStr}-${randSuffix}`;
+    // 8. Execute Atomic ACID Transaction with deterministic sequential order number
+    let order: any;
+    let attempts = 0;
+    while (attempts < 3) {
+      attempts++;
+      const orderNumber = await this.generateOrderNumber();
+      try {
+        order = await this.prisma.$transaction(async (tx) => {
+          // Create Order
+          const newOrder = await tx.order.create({
+            data: {
+              orderNumber,
+              customerId,
+              vendorId: vendor.id,
+              couponId: appliedCouponId,
+              status: OrderStatus.PLACED,
+              subtotal: grossSubtotal,
+              couponDiscount,
+              deliveryFee,
+              taxAmount,
+              totalAmount,
+              paymentMethod: dto.paymentMethod || 'CASH_ON_DELIVERY',
+              paymentStatus: PaymentStatus.PENDING,
+              deliveryAddressSnapshot: addressSnapshot as unknown as Prisma.InputJsonObject,
+              customerPhoneSnapshot: customer.phone,
+              prepTimeMinutes: vendor.defaultPrepTimeMinutes,
+              customerNotes: dto.customerNotes,
+            },
+          });
 
-    // 9. Execute Atomic ACID Transaction
-    const order = await this.prisma.$transaction(async (tx) => {
-      // Create Order
-      const newOrder = await tx.order.create({
-        data: {
-          orderNumber,
-          customerId,
-          vendorId: vendor.id,
-          couponId: appliedCouponId,
-          status: OrderStatus.PLACED,
-          subtotal: grossSubtotal,
-          couponDiscount,
-          deliveryFee,
-          taxAmount,
-          totalAmount,
-          paymentMethod: dto.paymentMethod || 'CASH_ON_DELIVERY',
-          paymentStatus: PaymentStatus.PENDING,
-          deliveryAddressSnapshot: addressSnapshot as unknown as Prisma.InputJsonObject,
-          customerPhoneSnapshot: customer.phone,
-          prepTimeMinutes: vendor.defaultPrepTimeMinutes,
-          customerNotes: dto.customerNotes,
-        },
-      });
+          // Create Order Items
+          for (const item of itemsToCreate) {
+            await tx.orderItem.create({
+              data: {
+                orderId: newOrder.id,
+                productId: item.productId,
+                productNameSnapshot: item.productNameSnapshot,
+                unitPrice: item.unitPrice,
+                quantity: item.quantity,
+                totalPrice: item.totalPrice,
+                variantSnapshot: item.variantSnapshot ? (item.variantSnapshot as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+                addonsSnapshot: item.addonsSnapshot ? (item.addonsSnapshot as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+              },
+            });
+          }
 
-      // Create Order Items
-      for (const item of itemsToCreate) {
-        await tx.orderItem.create({
-          data: {
-            orderId: newOrder.id,
-            productId: item.productId,
-            productNameSnapshot: item.productNameSnapshot,
-            unitPrice: item.unitPrice,
-            quantity: item.quantity,
-            totalPrice: item.totalPrice,
-            variantSnapshot: item.variantSnapshot ? (item.variantSnapshot as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
-            addonsSnapshot: item.addonsSnapshot ? (item.addonsSnapshot as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
-          },
+          // Create Commission Ledger
+          await tx.commissionLedger.create({
+            data: {
+              orderId: newOrder.id,
+              vendorId: vendor.id,
+              grossAmount: netSubtotal,
+              commissionRate,
+              commissionAmount,
+              netVendorPayable,
+              settlementStatus: SettlementStatus.PENDING,
+            },
+          });
+
+          // Increment Coupon Usage if applied
+          if (appliedCouponId) {
+            await tx.coupon.update({
+              where: { id: appliedCouponId },
+              data: { currentUses: { increment: 1 } },
+            });
+          }
+
+          return newOrder;
         });
+        break;
+      } catch (err: unknown) {
+        const prismaErr = err as { code?: string; meta?: { target?: string[] } };
+        if (prismaErr.code === 'P2002' && prismaErr.meta?.target?.includes('order_number') && attempts < 3) {
+          this.logger.warn(`Order number collision on ${orderNumber}, retrying (attempt ${attempts + 1})...`);
+          continue;
+        }
+        throw err;
       }
-
-      // Create Commission Ledger
-      await tx.commissionLedger.create({
-        data: {
-          orderId: newOrder.id,
-          vendorId: vendor.id,
-          grossAmount: netSubtotal,
-          commissionRate,
-          commissionAmount,
-          netVendorPayable,
-          settlementStatus: SettlementStatus.PENDING,
-        },
-      });
-
-      // Increment Coupon Usage if applied
-      if (appliedCouponId) {
-        await tx.coupon.update({
-          where: { id: appliedCouponId },
-          data: { currentUses: { increment: 1 } },
-        });
-      }
-
-      return newOrder;
-    });
+    }
 
     // Trigger Dispatch FSM based on active mode (RIDER_FIRST vs VENDOR_FIRST)
     await this.orderFlowService.handleOrderPlaced(order.id);
@@ -546,8 +560,9 @@ export class OrderService {
     };
 
     // Retrieve latest rider telemetry: 1st from Redis live order, 2nd from Redis telemetry, 3rd from DB
+    const economics = await this.deliveryFeeService.getEconomicsConfig();
     let riderLocation: RiderTelemetryLocation | null = null;
-    let estimatedMinutesRemaining = 10;
+    let estimatedMinutesRemaining = economics.eta_fallback_minutes || 10;
 
     const liveLocRaw = await this.redis.get(`order:live_location:${orderId}`);
     if (liveLocRaw) {
@@ -563,8 +578,11 @@ export class OrderService {
           speed: live.speed ?? 0,
           updatedAt: live.updatedAt,
         };
-        estimatedMinutesRemaining = live.estimatedMinutesRemaining ?? 10;
-      } catch {}
+        estimatedMinutesRemaining = live.estimatedMinutesRemaining ?? estimatedMinutesRemaining;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Failed to parse live order telemetry for order ${orderId}: ${msg}`);
+      }
     }
 
     if (!riderLocation && order.rider) {
@@ -582,7 +600,10 @@ export class OrderService {
             speed: telem.speed ?? 0,
             updatedAt: telem.updatedAt,
           };
-        } catch {}
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.warn(`Failed to parse rider telemetry for rider ${order.rider.id}: ${msg}`);
+        }
       }
 
       if (!riderLocation && order.rider.latitude && order.rider.longitude) {
@@ -627,5 +648,20 @@ export class OrderService {
       pickedUpAt: order.pickedUpAt,
       deliveredAt: order.deliveredAt,
     };
+  }
+
+  /**
+   * Generates a deterministic sequential order number: ORD-YYYYMMDD-0001
+   * Uses Redis atomic INCR counter per day with 48h TTL.
+   */
+  private async generateOrderNumber(): Promise<string> {
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const key = `order:seq:${dateStr}`;
+    const seq = await this.redis.incr(key);
+    if (seq === 1) {
+      await this.redis.expire(key, 172800); // 48h TTL
+    }
+    const paddedSeq = seq.toString().padStart(4, '0');
+    return `ORD-${dateStr}-${paddedSeq}`;
   }
 }

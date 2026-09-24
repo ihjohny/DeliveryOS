@@ -7,10 +7,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:customer_app/core/localization/app_localizations.dart';
 import 'package:customer_app/core/localization/language_provider.dart';
 import 'package:customer_app/core/storage/local_storage.dart';
+import 'package:customer_app/features/auth/providers/auth_provider.dart';
 import 'package:customer_app/features/cart/domain/cart_item_model.dart';
 import 'package:customer_app/features/cart/presentation/cart_screen.dart';
 import 'package:customer_app/features/cart/providers/cart_provider.dart';
 import 'package:customer_app/features/store/domain/store_catalog_model.dart';
+import 'mock_dio_client.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -198,7 +200,10 @@ void main() {
   group('Task 5.3 - Coupon Deduction Tests', () {
     test('Applying coupon WELCOME50 deducts ৳50 from gross subtotal', () async {
       final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
+        overrides: [
+          localStorageProvider.overrideWithValue(storage),
+          dioClientProvider.overrideWithValue(createTestMockDioClient()),
+        ],
       );
       final notifier = container.read(cartProvider.notifier);
 

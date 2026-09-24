@@ -6,9 +6,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { DeliverOrderDto } from './dto/deliver-order.dto';
+import { DepositCashDto } from './dto/deposit-cash.dto';
 import { OrderStatus, PaymentMethod, PaymentStatus, SettlementStatus } from '@prisma/client';
 import { TrackingGateway } from '../realtime/tracking.gateway';
 import { OrderFlowService } from '../order-flow/order-flow.service';
+import { assertTransition } from '../orders/order-state.machine';
+import { DeliveryFeeService } from '../promotions/pricing/delivery-fee.service';
 
 @Injectable()
 export class RiderService {
@@ -16,6 +19,7 @@ export class RiderService {
     private readonly prisma: PrismaService,
     private readonly trackingGateway: TrackingGateway,
     private readonly orderFlowService: OrderFlowService,
+    private readonly deliveryFeeService: DeliveryFeeService,
   ) {}
 
   /**
@@ -82,16 +86,7 @@ export class RiderService {
       throw new ForbiddenException('This order is assigned to another delivery rider');
     }
 
-    if (
-      order.status !== OrderStatus.READY_FOR_PICKUP &&
-      order.status !== OrderStatus.PREPARING &&
-      order.status !== OrderStatus.ACCEPTED &&
-      order.status !== OrderStatus.RIDER_ASSIGNED
-    ) {
-      throw new BadRequestException(
-        `Order cannot be picked up in status "${order.status}". Must be ready or in prep.`,
-      );
-    }
+    assertTransition(order.status, OrderStatus.DISPATCHED);
 
     const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
@@ -130,17 +125,17 @@ export class RiderService {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.riderId && order.riderId !== rider.id) {
+    if (!order.riderId || order.riderId !== rider.id) {
       throw new ForbiddenException('You are not the assigned rider for this order');
     }
 
-    if (order.status !== OrderStatus.DISPATCHED) {
-      throw new BadRequestException(
-        `Cannot deliver order in status "${order.status}". Order must be DISPATCHED.`,
-      );
-    }
+    assertTransition(order.status, OrderStatus.DELIVERED);
 
     const codCollected = dto.amountCollected ?? (dto.codCashCollected ? Number(order.totalAmount) : 0);
+
+    const economics = await this.deliveryFeeService.getEconomicsConfig();
+    const riderShare = (economics.rider_share_percent || 80) / 100;
+    const deliveryEarnings = Math.round(Number(order.deliveryFee) * riderShare * 100) / 100;
 
     const result = await this.prisma.$transaction(async (tx) => {
       // 1. Update Order Status
@@ -173,12 +168,12 @@ export class RiderService {
         create: {
           orderId,
           riderId: rider.id,
-          deliveryEarnings: order.deliveryFee,
+          deliveryEarnings,
           codCollected,
           status: SettlementStatus.PENDING,
         },
         update: {
-          deliveryEarnings: order.deliveryFee,
+          deliveryEarnings,
           codCollected,
         },
       });
@@ -202,5 +197,54 @@ export class RiderService {
     await this.orderFlowService.releaseRiderActiveTrip(rider.id);
 
     return result;
+  }
+
+  /**
+   * 4. Deposit Collected COD Cash to Platform Account
+   */
+  async depositCash(userId: string, dto: DepositCashDto) {
+    const rider = await this.getRiderProfile(userId);
+    const depositAmount = Number(dto.amount);
+
+    if (depositAmount <= 0) {
+      throw new BadRequestException('Deposit amount must be greater than zero');
+    }
+
+    const currentCashInHand = Number(rider.cashInHand || 0);
+    if (depositAmount > currentCashInHand) {
+      throw new BadRequestException(
+        `Cannot deposit ${depositAmount} BDT. Current cash in hand is only ${currentCashInHand} BDT.`,
+      );
+    }
+
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const randSuffix = Math.floor(1000 + Math.random() * 9000).toString();
+    const referenceNo = dto.referenceNo || `DEP-${dateStr}-${randSuffix}`;
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const deposit = await tx.cashDeposit.create({
+        data: {
+          riderId: rider.id,
+          amount: depositAmount,
+          referenceNo,
+          note: dto.note,
+          status: 'COMPLETED',
+        },
+      });
+
+      const updatedRider = await tx.rider.update({
+        where: { id: rider.id },
+        data: {
+          cashInHand: { decrement: depositAmount },
+        },
+      });
+
+      return { deposit, updatedRider };
+    });
+
+    return {
+      deposit: result.deposit,
+      remainingCashInHand: Number(result.updatedRider.cashInHand),
+    };
   }
 }

@@ -34,6 +34,10 @@ This document defines the mathematical equations, financial ledgers, order state
      - `customer_address` is still within `vendor.delivery_radius_km`.
      - `product.is_in_stock == TRUE` for all items and variants.
      - Updates cart items to current active prices.
+6. **Deterministic Order Numbering**:
+   - Sequence Format: `ORD-YYYYMMDD-XXXX` (e.g. `ORD-20260924-0001`).
+   - Generated via atomic Redis daily counter (`INCR order:seq:YYYYMMDD` with 48h TTL).
+   - Backed by an automated 3-attempt database unique constraint collision retry loop.
 
 ---
 
