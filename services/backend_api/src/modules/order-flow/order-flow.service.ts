@@ -11,7 +11,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { TrackingGateway } from '../realtime/tracking.gateway';
 import { OrderFlowMode, UpdateOrderFlowDto } from './dto/update-order-flow.dto';
-import { OrderStatus, UserRole } from '@prisma/client';
+import { OrderStatus, PaymentMethod, PaymentStatus, UserRole } from '@prisma/client';
 import { assertClaimable, assertTransition } from '../orders/order-state.machine';
 import { DeliveryFeeService } from '../promotions/pricing/delivery-fee.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -169,6 +169,15 @@ export class OrderFlowService implements OnModuleInit, OnModuleDestroy {
 
     if (!order) return;
 
+    // Online Gateway Payment Invariant:
+    // When customer chooses ONLINE_GATEWAY, do not broadcast to riders or alert kitchen until payment is verified!
+    if (order.paymentMethod === PaymentMethod.ONLINE_GATEWAY && order.paymentStatus !== PaymentStatus.PAID) {
+      this.logger.log(
+        `[Online Payment Guard] Order ${order.orderNumber} placed via ONLINE_GATEWAY. Withholding dispatch broadcast until webhook payment confirmation.`,
+      );
+      return;
+    }
+
     const { mode, riderSearchTimeoutSeconds } = await this.getOrderFlowConfig();
 
     if (mode === OrderFlowMode.RIDER_FIRST) {
@@ -229,6 +238,14 @@ export class OrderFlowService implements OnModuleInit, OnModuleDestroy {
 
       this.logger.log(`[VENDOR_FIRST] Order ${order.orderNumber} sent directly to vendor kitchen console.`);
     }
+  }
+
+  /**
+   * 5b. Payment Verified Trigger: Activated once online gateway payment webhook succeeds
+   */
+  async handleOrderPaid(orderId: string) {
+    this.logger.log(`[Payment Verified] Online payment confirmed for Order ID: ${orderId}. Re-evaluating fulfillment broadcast.`);
+    await this.handleOrderPlaced(orderId);
   }
 
   /**
@@ -427,6 +444,10 @@ export class OrderFlowService implements OnModuleInit, OnModuleDestroy {
       where: {
         riderId: null,
         status: mode === OrderFlowMode.RIDER_FIRST ? OrderStatus.PLACED : OrderStatus.READY_FOR_PICKUP,
+        OR: [
+          { paymentMethod: PaymentMethod.CASH_ON_DELIVERY },
+          { paymentMethod: PaymentMethod.ONLINE_GATEWAY, paymentStatus: PaymentStatus.PAID },
+        ],
       },
       include: {
         vendor: { select: { id: true, name: true, addressText: true } },

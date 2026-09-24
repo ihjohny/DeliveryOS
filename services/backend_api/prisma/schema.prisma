@@ -333,6 +333,7 @@ model Rider {
   userId       String    @unique @map("user_id") @db.Uuid
   vehicleType  String    @default("motorcycle") @map("vehicle_type") @db.VarChar(50)
   isOnline     Boolean   @default(false) @map("is_online")
+  isApproved   Boolean   @default(true) @map("is_approved")
   cashInHand   Decimal   @default(0.00) @map("cash_in_hand") @db.Decimal(10, 2)
   maxCashLimit Decimal   @default(5000.00) @map("max_cash_limit") @db.Decimal(10, 2)
   latitude     Float?
@@ -345,6 +346,7 @@ model Rider {
   cashDeposits CashDeposit[]
 
   @@index([isOnline])
+  @@index([isApproved])
   @@map("riders")
 }
 
@@ -403,6 +405,7 @@ model Order {
   orderItems OrderItem[]
   commission CommissionLedger?
   riderTrip  RiderTripLedger?
+  payments   Payment[]
 
   @@index([customerId])
   @@index([vendorId])
@@ -433,38 +436,44 @@ model OrderItem {
 }
 
 model CommissionLedger {
-  id               String           @id @default(uuid()) @db.Uuid
-  orderId          String           @unique @map("order_id") @db.Uuid
-  vendorId         String           @map("vendor_id") @db.Uuid
-  grossAmount      Decimal          @map("gross_amount") @db.Decimal(10, 2)
-  commissionRate   Decimal          @map("commission_rate") @db.Decimal(5, 2)
-  commissionAmount Decimal          @map("commission_amount") @db.Decimal(10, 2)
-  netVendorPayable Decimal          @map("net_vendor_payable") @db.Decimal(10, 2)
-  settlementStatus SettlementStatus @default(PENDING) @map("settlement_status")
-  settledAt        DateTime?        @map("settled_at") @db.Timestamptz
-  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  id                String           @id @default(uuid()) @db.Uuid
+  orderId           String           @unique @map("order_id") @db.Uuid
+  vendorId          String           @map("vendor_id") @db.Uuid
+  grossAmount       Decimal          @map("gross_amount") @db.Decimal(10, 2)
+  commissionRate    Decimal          @map("commission_rate") @db.Decimal(5, 2)
+  commissionAmount  Decimal          @map("commission_amount") @db.Decimal(10, 2)
+  netVendorPayable  Decimal          @map("net_vendor_payable") @db.Decimal(10, 2)
+  settlementStatus  SettlementStatus @default(PENDING) @map("settlement_status")
+  settlementBatchId String?          @map("settlement_batch_id") @db.Uuid
+  settledAt         DateTime?        @map("settled_at") @db.Timestamptz
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz
 
-  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  vendor Vendor @relation(fields: [vendorId], references: [id])
+  order           Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendor          Vendor           @relation(fields: [vendorId], references: [id])
+  settlementBatch SettlementBatch? @relation(fields: [settlementBatchId], references: [id])
 
   @@index([vendorId])
   @@index([settlementStatus])
+  @@index([settlementBatchId])
   @@map("commission_ledgers")
 }
 
 model RiderTripLedger {
-  id               String           @id @default(uuid()) @db.Uuid
-  orderId          String           @unique @map("order_id") @db.Uuid
-  riderId          String           @map("rider_id") @db.Uuid
-  deliveryEarnings Decimal          @map("delivery_earnings") @db.Decimal(10, 2)
-  codCollected     Decimal          @default(0.00) @map("cod_collected") @db.Decimal(10, 2)
-  status           SettlementStatus @default(PENDING)
-  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  id                String           @id @default(uuid()) @db.Uuid
+  orderId           String           @unique @map("order_id") @db.Uuid
+  riderId           String           @map("rider_id") @db.Uuid
+  deliveryEarnings  Decimal          @map("delivery_earnings") @db.Decimal(10, 2)
+  codCollected      Decimal          @default(0.00) @map("cod_collected") @db.Decimal(10, 2)
+  status            SettlementStatus @default(PENDING)
+  settlementBatchId String?          @map("settlement_batch_id") @db.Uuid
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz
 
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  rider Rider @relation(fields: [riderId], references: [id])
+  order           Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  rider           Rider            @relation(fields: [riderId], references: [id])
+  settlementBatch SettlementBatch? @relation(fields: [settlementBatchId], references: [id])
 
   @@index([riderId])
+  @@index([settlementBatchId])
   @@map("rider_trip_ledgers")
 }
 
@@ -481,4 +490,45 @@ model CashDeposit {
 
   @@index([riderId])
   @@map("cash_deposits")
+}
+
+model Payment {
+  id              String        @id @default(uuid()) @db.Uuid
+  orderId         String        @map("order_id") @db.Uuid
+  gateway         String        @db.VarChar(50)
+  transactionId   String?       @unique @map("transaction_id") @db.VarChar(100)
+  sessionKey      String?       @map("session_key") @db.VarChar(150)
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("BDT") @db.VarChar(10)
+  status          PaymentStatus @default(PENDING)
+  gatewayResponse Json?         @map("gateway_response")
+  paidAt          DateTime?     @map("paid_at") @db.Timestamptz
+  failedAt        DateTime?     @map("failed_at") @db.Timestamptz
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+  @@map("payments")
+}
+
+model SettlementBatch {
+  id                  String           @id @default(uuid()) @db.Uuid
+  batchNumber         String           @unique @map("batch_number") @db.VarChar(30)
+  startDate           DateTime         @map("start_date") @db.Timestamptz
+  endDate             DateTime         @map("end_date") @db.Timestamptz
+  totalOrders         Int              @map("total_orders")
+  totalVendorPayout   Decimal          @map("total_vendor_payout") @db.Decimal(12, 2)
+  totalRiderPayout    Decimal          @map("total_rider_payout") @db.Decimal(12, 2)
+  totalPlatformMargin Decimal          @map("total_platform_margin") @db.Decimal(12, 2)
+  status              SettlementStatus @default(SETTLED)
+  executedByUserId    String?          @map("executed_by_user_id") @db.Uuid
+  executedAt          DateTime         @default(now()) @map("executed_at") @db.Timestamptz
+
+  commissions CommissionLedger[]
+  riderTrips  RiderTripLedger[]
+
+  @@map("settlement_batches")
 }

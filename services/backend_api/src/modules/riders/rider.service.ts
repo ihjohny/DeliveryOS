@@ -55,6 +55,12 @@ export class RiderService {
   async toggleDuty(userId: string, isOnline: boolean) {
     const rider = await this.getRiderProfile(userId);
 
+    if (isOnline && (rider.isApproved === false || rider.user?.status !== 'ACTIVE')) {
+      throw new ForbiddenException(
+        'Courier account is pending approval or suspended by platform administrator. Cannot go online.',
+      );
+    }
+
     return this.prisma.rider.update({
       where: { id: rider.id },
       data: { isOnline },

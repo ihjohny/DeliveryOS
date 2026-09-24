@@ -29,9 +29,12 @@ erDiagram
     COUPONS ||--o{ ORDERS : applies_to
     ORDERS ||--o{ ORDER_ITEMS : contains
     ORDER_ITEMS ||--o{ ORDER_ITEM_ADDONS : has
+    ORDERS ||--o{ PAYMENTS : initiates
 
     ORDERS ||--o| COMMISSION_LEDGERS : generates
     ORDERS ||--o| RIDER_TRIP_LEDGERS : tracks
+    SETTLEMENT_BATCHES ||--o{ COMMISSION_LEDGERS : groups
+    SETTLEMENT_BATCHES ||--o{ RIDER_TRIP_LEDGERS : groups
 
     BANNERS }o--o| VENDORS : links_to
     BANNERS }o--o| CATEGORIES : links_to

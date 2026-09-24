@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../addresses/domain/address_model.dart';
+import '../../addresses/presentation/address_book_screen.dart';
+import '../../addresses/providers/address_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/presentation/phone_input_screen.dart';
 import '../../location/providers/location_provider.dart';
@@ -68,25 +71,63 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       return;
     }
 
+    // Home Delivery requires saved address
+    String? deliveryAddressId;
+    final cart = ref.read(cartProvider);
+    if (cart.deliveryMethod == DeliveryMethod.homeDelivery) {
+      final addrState = ref.read(addressProvider);
+      if (addrState.selectedAddress == null) {
+        final picked = await Navigator.of(context).push<CustomerAddressModel>(
+          MaterialPageRoute(builder: (_) => const AddressBookScreen(isSelectionMode: true)),
+        );
+        if (picked == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select or add a delivery address to proceed.')),
+            );
+          }
+          return;
+        }
+        ref.read(addressProvider.notifier).selectAddress(picked);
+        ref.read(cartProvider.notifier).validateCoverage(customLat: picked.latitude, customLng: picked.longitude);
+        deliveryAddressId = picked.id;
+      } else {
+        deliveryAddressId = addrState.selectedAddress!.id;
+      }
+    }
+
     setState(() => _isSubmitting = true);
     final result = await ref.read(cartProvider.notifier).checkout(
           customerNotes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          deliveryAddressId: deliveryAddressId,
         );
     setState(() => _isSubmitting = false);
 
     if (!mounted) return;
 
     if (result['success'] == true) {
+      final orderId = result['orderId'] as String? ?? '';
+      final orderNumber = result['orderNumber'] as String? ?? '#ORD-001';
+      final isOnline = result['paymentMethod'] == 'ONLINE_GATEWAY';
+      final paymentSession = result['paymentSession'] as Map<String, dynamic>?;
+
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.check_circle_rounded, color: AppColors.secondary, size: 28),
-              SizedBox(width: 8),
-              Text('Order Confirmed!', style: TextStyle(fontWeight: FontWeight.w900)),
+              Icon(
+                isOnline ? Icons.payment_rounded : Icons.check_circle_rounded,
+                color: isOnline ? AppColors.primary : AppColors.secondary,
+                size: 28,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isOnline ? 'Online Payment Session' : 'Order Confirmed!',
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
             ],
           ),
           content: Column(
@@ -94,14 +135,58 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Your order ${result['orderNumber']} has been placed successfully!',
+                'Order $orderNumber has been placed successfully!',
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'We have dispatched the order to the kitchen and our rider fleet.',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
+              const SizedBox(height: 10),
+              if (isOnline) ...[
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Gateway:', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          Text(paymentSession?['gateway']?.toString() ?? 'SANDBOX', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Txn ID:', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          Text(paymentSession?['transactionId']?.toString() ?? 'PENDING', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, fontFamily: 'monospace')),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Amount:', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          Text('৳${paymentSession?['amount']?.toString() ?? ''}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.primary)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  '⚡ Business Rule: Courier & Kitchen dispatch will activate immediately upon online payment verification webhook confirmation.',
+                  style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontStyle: FontStyle.italic),
+                ),
+              ] else ...[
+                const Text(
+                  'We have dispatched the order to the kitchen and courier fleet.',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ],
             ],
           ),
           actions: [
@@ -118,8 +203,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
                     builder: (_) => OrderTrackingScreen(
-                      orderId: result['orderId'] as String? ?? 'mock-order-uuid',
-                      orderNumber: result['orderNumber'] as String? ?? '#ORD-001',
+                      orderId: orderId,
+                      orderNumber: orderNumber,
                     ),
                   ),
                 );
@@ -130,7 +215,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               icon: const Icon(Icons.navigation_rounded, size: 16),
-              label: const Text('Track Order', style: TextStyle(fontWeight: FontWeight.w700)),
+              label: Text(isOnline ? 'Go to Tracking' : 'Track Order', style: const TextStyle(fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -138,7 +223,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['message'] as String? ?? 'Checkout failed. Please try again.'),
+          content: Text(result['message'] as String? ?? 'Order placement failed.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -149,6 +234,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   Widget build(BuildContext context) {
     final cartState = ref.watch(cartProvider);
     final userLocation = ref.watch(locationProvider).location;
+    final addressState = ref.watch(addressProvider);
 
     if (cartState.isEmpty) {
       return Scaffold(
@@ -265,17 +351,101 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           ),
           const SizedBox(height: 12),
 
-          // 2. Address Geofence Guard Banner
-          if (cartState.deliveryMethod == DeliveryMethod.homeDelivery)
+          // 2. Delivery Address Card & Geofence Banner
+          if (cartState.deliveryMethod == DeliveryMethod.homeDelivery) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            addressState.selectedAddress != null
+                                ? (addressState.selectedAddress!.label.toLowerCase() == 'home'
+                                    ? Icons.home_rounded
+                                    : (addressState.selectedAddress!.label.toLowerCase() == 'work'
+                                        ? Icons.work_rounded
+                                        : Icons.location_on_rounded))
+                                : Icons.my_location_rounded,
+                            color: AppColors.primary,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            addressState.selectedAddress != null
+                                ? 'Deliver to: ${addressState.selectedAddress!.label}'
+                                : 'Deliver to Current Location',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          final picked = await Navigator.of(context).push<CustomerAddressModel>(
+                            MaterialPageRoute(
+                              builder: (_) => const AddressBookScreen(isSelectionMode: true),
+                            ),
+                          );
+                          if (picked != null) {
+                            ref.read(addressProvider.notifier).selectAddress(picked);
+                            ref.read(cartProvider.notifier).validateCoverage(
+                                  customLat: picked.latitude,
+                                  customLng: picked.longitude,
+                                );
+                          }
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text(
+                          'Change',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    addressState.selectedAddress?.addressLine ?? userLocation.addressLine,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
             AddressGeofenceBanner(
               isWithinCoverage: cartState.isWithinCoverage,
-              currentAddress: userLocation.addressLine,
+              currentAddress: addressState.selectedAddress?.addressLine ?? userLocation.addressLine,
               coverageError: cartState.coverageError,
               onAddressChanged: () {
-                ref.read(cartProvider.notifier).validateCoverage();
+                final lat = addressState.selectedAddress?.latitude;
+                final lng = addressState.selectedAddress?.longitude;
+                ref.read(cartProvider.notifier).validateCoverage(customLat: lat, customLng: lng);
               },
             ),
-          const SizedBox(height: 14),
+            const SizedBox(height: 14),
+          ],
 
           // 3. Cart Items Section
           const Text(

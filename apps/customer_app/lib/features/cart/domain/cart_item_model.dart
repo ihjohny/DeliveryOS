@@ -21,7 +21,7 @@ enum PaymentMethod {
 extension PaymentMethodExtension on PaymentMethod {
   String get apiKey => this == PaymentMethod.cashOnDelivery
       ? 'CASH_ON_DELIVERY'
-      : 'ONLINE_CARD';
+      : 'ONLINE_GATEWAY';
   String get label => this == PaymentMethod.cashOnDelivery
       ? 'Cash on Delivery (COD)'
       : 'Online Card / Mobile Wallet';

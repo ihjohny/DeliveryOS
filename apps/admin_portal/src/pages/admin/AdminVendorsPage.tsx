@@ -10,6 +10,9 @@ import {
   Phone,
   Clock,
   Percent,
+  Edit2,
+  Power,
+  MapPin,
 } from 'lucide-react';
 import adminApi, { AdminVendor } from '../../services/adminApi';
 import { Badge } from '../../components/ui/Badge';
@@ -30,6 +33,14 @@ export const AdminVendorsPage: React.FC = () => {
   const [defaultPrepTime, setDefaultPrepTime] = useState('20');
   const [latitude, setLatitude] = useState('23.7925');
   const [longitude, setLongitude] = useState('90.4078');
+
+  // Edit Vendor State
+  const [editingVendor, setEditingVendor] = useState<AdminVendor | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editContactPhone, setEditContactPhone] = useState('');
+  const [editCommissionRate, setEditCommissionRate] = useState('15');
+  const [editDefaultPrepTime, setEditDefaultPrepTime] = useState('20');
+  const [editDeliveryRadius, setEditDeliveryRadius] = useState('5');
 
   // Assign Staff State
   const [isAssignStaffModalOpen, setIsAssignStaffModalOpen] = useState(false);
@@ -52,6 +63,34 @@ export const AdminVendorsPage: React.FC = () => {
       setVendorName('');
       setAddressText('');
       setContactPhone('');
+    },
+  });
+
+  const updateVendorMutation = useMutation({
+    mutationFn: ({
+      vendorId,
+      data,
+    }: {
+      vendorId: string;
+      data: {
+        name?: string;
+        contactPhone?: string;
+        commissionRate?: number;
+        defaultPrepTimeMinutes?: number;
+        deliveryRadiusKm?: number;
+      };
+    }) => adminApi.updateVendor(vendorId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
+      setEditingVendor(null);
+    },
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ vendorId, isActive }: { vendorId: string; isActive: boolean }) =>
+      adminApi.toggleVendorStatus(vendorId, isActive),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
     },
   });
 
@@ -191,9 +230,49 @@ export const AdminVendorsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex justify-between dark:border-slate-800">
-                <span>Phone: {vendor.contactPhone}</span>
-                <span>{vendor.totalProducts} Catalog Dishes</span>
+              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 dark:border-slate-800">
+                <div className="text-[11px] text-slate-400">
+                  <span>Phone: {vendor.contactPhone}</span>
+                  <span className="mx-2">•</span>
+                  <span>{vendor.totalProducts} Catalog Dishes</span>
+                </div>
+                <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs gap-1"
+                    onClick={() => {
+                      setEditingVendor(vendor);
+                      setEditName(vendor.name);
+                      setEditContactPhone(vendor.contactPhone);
+                      setEditCommissionRate(String(vendor.commissionRate));
+                      setEditDefaultPrepTime(String(vendor.defaultPrepTimeMinutes));
+                      setEditDeliveryRadius(String((vendor as any).deliveryRadiusKm || 5));
+                    }}
+                  >
+                    <Edit2 className="h-3 w-3" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant={vendor.isActive ? 'outline' : 'primary'}
+                    size="sm"
+                    className={`h-7 px-2 text-xs gap-1 ${
+                      vendor.isActive
+                        ? 'border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    }`}
+                    isLoading={toggleStatusMutation.isPending && (toggleStatusMutation.variables as any)?.vendorId === vendor.id}
+                    onClick={() =>
+                      toggleStatusMutation.mutate({
+                        vendorId: vendor.id,
+                        isActive: !vendor.isActive,
+                      })
+                    }
+                  >
+                    <Power className="h-3 w-3" />
+                    {vendor.isActive ? 'Suspend' : 'Activate'}
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
@@ -397,6 +476,99 @@ export const AdminVendorsPage: React.FC = () => {
                 }
               >
                 Assign Staff Scope
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Edit Merchant Outlet */}
+      {editingVendor && (
+        <Modal
+          isOpen={Boolean(editingVendor)}
+          onClose={() => setEditingVendor(null)}
+          title={`Edit Outlet: ${editingVendor.name}`}
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Store / Branch Name
+              </label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Store Name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Store Phone
+              </label>
+              <Input
+                value={editContactPhone}
+                onChange={(e) => setEditContactPhone(e.target.value)}
+                placeholder="+8801700000000"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Commission (%)
+                </label>
+                <Input
+                  type="number"
+                  value={editCommissionRate}
+                  onChange={(e) => setEditCommissionRate(e.target.value)}
+                  placeholder="15"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Avg Prep (mins)
+                </label>
+                <Input
+                  type="number"
+                  value={editDefaultPrepTime}
+                  onChange={(e) => setEditDefaultPrepTime(e.target.value)}
+                  placeholder="20"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Radius (km)
+                </label>
+                <Input
+                  type="number"
+                  value={editDeliveryRadius}
+                  onChange={(e) => setEditDeliveryRadius(e.target.value)}
+                  placeholder="5"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button variant="outline" size="sm" onClick={() => setEditingVendor(null)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                isLoading={updateVendorMutation.isPending}
+                onClick={() =>
+                  updateVendorMutation.mutate({
+                    vendorId: editingVendor.id,
+                    data: {
+                      name: editName,
+                      contactPhone: editContactPhone,
+                      commissionRate: parseFloat(editCommissionRate),
+                      defaultPrepTimeMinutes: parseInt(editDefaultPrepTime, 10),
+                      deliveryRadiusKm: parseFloat(editDeliveryRadius),
+                    },
+                  })
+                }
+              >
+                Save Changes
               </Button>
             </div>
           </div>

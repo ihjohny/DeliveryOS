@@ -144,7 +144,11 @@ class RiderProfileData {
 
   factory RiderProfileData.fromJson(Map<String, dynamic> json) {
     final user = json['user'] as Map<String, dynamic>? ?? {};
-    final statusStr = json['status'] as String? ?? user['status'] as String? ?? 'PENDING_APPROVAL';
+    final isApprovedFlag = json['isApproved'] as bool?;
+    String statusStr = json['status'] as String? ?? user['status'] as String? ?? 'ACTIVE';
+    if (isApprovedFlag == false) {
+      statusStr = 'PENDING_APPROVAL';
+    }
     final vehicleStr = json['vehicleType'] as String? ?? 'motorcycle';
 
     return RiderProfileData(

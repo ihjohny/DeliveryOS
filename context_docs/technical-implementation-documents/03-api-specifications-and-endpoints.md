@@ -293,3 +293,60 @@ This document specifies the RESTful API endpoints for the **DeliveryOS** backend
 - **Update Order Flow**: `PATCH /admin/settings/order-flow` (`RIDER_FIRST` vs `VENDOR_FIRST`)
 - **Update Delivery Fee Mode**: `PATCH /admin/settings/delivery-fee` (`FIXED_FLAT` vs `DISTANCE_TIERED`)
 - **Export Settlements**: `GET /admin/finance/settlement-export`
+
+### 6.8 Automated Settlement Cycles & Batches
+- **Execute Batch Settlement**: `POST /admin/finance/settle-cycle`
+- **List Historical Settlement Batches**: `GET /admin/finance/settlement-batches`
+
+---
+
+## 7. Online Payment Gateway Module (`/payments`)
+
+### 7.1 Initiate Payment Session
+- **Endpoint**: `POST /payments/initiate`
+- **Guards**: `JwtAuthGuard`
+- **Payload**:
+```json
+{
+  "orderId": "order-uuid",
+  "gateway": "BKASH" // "BKASH" | "SSLCOMMERZ" | "SANDBOX"
+}
+```
+- **Response**: `{ "paymentUrl": "...", "transactionId": "...", "amount": 450 }`
+
+### 7.2 Webhook Ingress (Cryptographic IPN)
+- **Endpoint**: `POST /payments/webhook/:gateway`
+- **Guards**: Public IPN with HMAC signature verification (`x-webhook-signature`)
+- **Payload**: Gateway specific payload with transaction status and reference
+- **Invariants**: Idempotent replay, triggers `handleOrderPaid(orderId)` upon verification confirming `PAID`.
+
+### 7.3 Payment Status Check
+- **Endpoint**: `GET /payments/status/:orderId`
+- **Guards**: `JwtAuthGuard`
+
+---
+
+## 8. Customer Address Book & Profile Management (`/customers`)
+
+### 8.1 Address Book CRUD
+- **List Addresses**: `GET /customers/addresses` (sorted with default address first)
+- **Create Address**: `POST /customers/addresses`
+```json
+{
+  "label": "Home",
+  "addressLine": "House 12, Road 4, Block B, Banani, Dhaka",
+  "buildingFloor": "Flat 4A, 4th Floor",
+  "deliveryNote": "Ring bell twice",
+  "latitude": 23.7925,
+  "longitude": 90.4078,
+  "isDefault": true
+}
+```
+- **Update Address**: `PUT /customers/addresses/:id`
+- **Delete Address**: `DELETE /customers/addresses/:id`
+- **Promote Default**: `PATCH /customers/addresses/:id/default` (Atomic default reassignment)
+
+### 8.2 Customer Profile
+- **Get Profile**: `GET /customers/profile` (returns name, email, phone, order count, address count)
+- **Update Profile**: `PATCH /customers/profile` (update `fullName`, `email`)
+

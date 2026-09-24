@@ -256,7 +256,10 @@ class CartNotifier extends Notifier<CartState> {
     state = CartState();
   }
 
-  Future<Map<String, dynamic>> checkout({String? customerNotes}) async {
+  Future<Map<String, dynamic>> checkout({
+    String? customerNotes,
+    String? deliveryAddressId,
+  }) async {
     if (!state.canCheckout) {
       return {'success': false, 'message': 'Cannot checkout: please resolve cart errors.'};
     }
@@ -272,6 +275,7 @@ class CartNotifier extends Notifier<CartState> {
         'vendorId': state.vendorId,
         'deliveryMethod': state.deliveryMethod.apiKey,
         'paymentMethod': state.paymentMethod.apiKey,
+        if (deliveryAddressId != null) 'deliveryAddressId': deliveryAddressId,
         if (state.couponCode != null) 'couponCode': state.couponCode,
         if (customerNotes != null && customerNotes.isNotEmpty) 'customerNotes': customerNotes,
         'items': state.items.map((i) => i.toCheckoutJson()).toList(),
@@ -280,13 +284,32 @@ class CartNotifier extends Notifier<CartState> {
       final response = await dio.post(ApiConstants.checkout, data: payload);
       if (response.statusCode == 200 || response.statusCode == 201) {
         final orderData = response.data['data'] as Map<String, dynamic>? ?? {};
-        final orderId = orderData['id'] as String? ?? '';
+        final orderId = orderData['orderId'] as String? ?? orderData['id'] as String? ?? '';
         final orderNumber = orderData['orderNumber'] as String? ?? '';
+
+        Map<String, dynamic>? paymentSession;
+        if (state.paymentMethod == PaymentMethod.onlineCard && orderId.isNotEmpty) {
+          try {
+            final payRes = await dio.post(
+              ApiConstants.initiatePayment,
+              data: {
+                'orderId': orderId,
+                'gateway': 'SANDBOX',
+              },
+            );
+            if (payRes.statusCode == 200 || payRes.statusCode == 201) {
+              paymentSession = payRes.data['data'] as Map<String, dynamic>?;
+            }
+          } catch (_) {}
+        }
+
         clearCart();
         return {
           'success': true,
           'orderId': orderId,
           'orderNumber': orderNumber,
+          'paymentMethod': state.paymentMethod.apiKey,
+          'paymentSession': paymentSession,
         };
       }
       final errorMsg = response.data?['message'] ?? 'Checkout failed. Please try again.';

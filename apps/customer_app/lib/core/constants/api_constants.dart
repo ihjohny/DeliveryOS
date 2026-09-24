@@ -38,7 +38,10 @@ class ApiConstants {
   static const String cartValidateCoverage = '/cart/validate-address-coverage';
 
   // Order & Customer Endpoints
-  static const String customerAddresses = '/customer/addresses';
+  static const String customerAddresses = '/customers/addresses';
+  static const String customerProfile = '/customers/profile';
+  static const String initiatePayment = '/payments/initiate';
+  static const String paymentStatus = '/payments/status';
   static const String checkout = '/orders/checkout';
   static const String orderHistory = '/orders/history';
   static const String orderDetails = '/orders';

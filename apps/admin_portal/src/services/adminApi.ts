@@ -33,6 +33,7 @@ export interface FleetRider {
   phone: string;
   vehicleType: string;
   isOnline: boolean;
+  isApproved?: boolean;
   status: 'ONLINE' | 'ON_TRIP' | 'OFFLINE';
   cashInHand: number;
   maxCashLimit: number;
@@ -153,6 +154,36 @@ export interface SettlementStatement {
   settlementStatus: string;
 }
 
+export interface SettlementBatchItem {
+  id: string;
+  batchNumber: string;
+  startDate: string;
+  endDate: string;
+  totalOrders: number;
+  totalVendorPayout: number;
+  totalRiderPayout: number;
+  totalPlatformMargin: number;
+  status: string;
+  executedByUserId: string;
+  executedAt: string;
+}
+
+export interface AdminRiderDetail {
+  id: string;
+  userId: string;
+  phone: string;
+  fullName: string;
+  vehicleType: string;
+  isOnline: boolean;
+  isApproved: boolean;
+  maxCashLimit: number;
+  cashInHand: number;
+  rating: number;
+  completedDeliveries: number;
+  totalOrders: number;
+  createdAt: string;
+}
+
 export const adminApi = {
   // 1. Overview
   async getOverview(): Promise<AdminOverview> {
@@ -163,6 +194,17 @@ export const adminApi = {
   // 2. Fleet Radar
   async getFleet(): Promise<FleetRider[]> {
     const res = await apiClient.get('/api/v1/admin/fleet');
+    return res.data?.data || res.data;
+  },
+
+  async getRiders(params?: { approvalStatus?: 'ALL' | 'PENDING' | 'APPROVED'; isOnline?: boolean }): Promise<AdminRiderDetail[]> {
+    const res = await apiClient.get('/api/v1/admin/riders', { params });
+    const payload = res.data?.data || res.data;
+    return Array.isArray(payload) ? payload : (payload.data || []);
+  },
+
+  async setRiderApproval(riderId: string, isApproved: boolean): Promise<any> {
+    const res = await apiClient.patch(`/api/v1/admin/riders/${riderId}/approval`, { isApproved });
     return res.data?.data || res.data;
   },
 
@@ -242,6 +284,28 @@ export const adminApi = {
     return res.data?.data || res.data;
   },
 
+  async updateVendor(
+    vendorId: string,
+    data: {
+      name?: string;
+      contactPhone?: string;
+      commissionRate?: number;
+      deliveryRadiusKm?: number;
+      defaultPrepTimeMinutes?: number;
+      isActive?: boolean;
+    },
+  ): Promise<AdminVendor> {
+    const res = await apiClient.patch(`/api/v1/admin/vendors/${vendorId}`, data);
+    const payload = res.data?.data || res.data;
+    return payload?.data || payload;
+  },
+
+  async toggleVendorStatus(vendorId: string, isActive: boolean): Promise<AdminVendor> {
+    const res = await apiClient.patch(`/api/v1/admin/vendors/${vendorId}/status`, { isActive });
+    const payload = res.data?.data || res.data;
+    return payload?.data || payload;
+  },
+
   async assignVendorStaff(
     vendorId: string,
     data: {
@@ -292,6 +356,18 @@ export const adminApi = {
       responseType: 'blob',
     });
     return res.data;
+  },
+
+  async executeSettlementCycle(notes?: string): Promise<{ message: string; batch: SettlementBatchItem; settledOrdersCount: number }> {
+    const res = await apiClient.post('/api/v1/admin/finance/settle-cycle', { notes });
+    const payload = res.data?.data || res.data;
+    return payload;
+  },
+
+  async getSettlementBatches(): Promise<SettlementBatchItem[]> {
+    const res = await apiClient.get('/api/v1/admin/finance/settlement-batches');
+    const payload = res.data?.data || res.data;
+    return Array.isArray(payload) ? payload : (payload.data || []);
   },
 };
 

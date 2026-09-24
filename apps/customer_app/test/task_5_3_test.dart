@@ -261,7 +261,7 @@ void main() {
 
       expect(find.text('Bill Summary'), findsOneWidget);
       expect(find.text('Item Subtotal'), findsOneWidget);
-      expect(find.text('৳840'), findsOneWidget); // 420 * 2
+      expect(find.text('৳840'), findsWidgets); // 420 * 2 in item card and summary
       expect(find.text('Delivery Fee'), findsOneWidget);
       expect(find.text('৳60'), findsOneWidget);
       expect(find.text('Total Payable'), findsOneWidget);

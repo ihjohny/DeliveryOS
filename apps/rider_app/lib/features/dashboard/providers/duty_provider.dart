@@ -123,6 +123,17 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
         ApiConstants.toggleDuty,
         data: {'isOnline': targetState},
       );
+    } on DioException catch (dioErr) {
+      if (dioErr.response?.statusCode == 403) {
+        final resData = dioErr.response?.data;
+        final msg = resData is Map ? (resData['message'] ?? dioErr.message) : (dioErr.message ?? 'Duty switch failed');
+        state = state.copyWith(
+          isToggling: false,
+          error: msg.toString(),
+        );
+        return false;
+      }
+      // Offline fallback handling
     } catch (_) {
       // Offline fallback handling
     }

@@ -23,7 +23,10 @@
     "tracking:test": "ts-node scripts/test-live-tracking.ts",
     "e2e:test": "ts-node scripts/test-e2e-lifecycle.ts",
     "health:test": "ts-node scripts/test-health.ts",
-    "escalation:test": "ts-node scripts/test-fcm-notifications.ts"
+    "escalation:test": "ts-node scripts/test-fcm-notifications.ts",
+    "payment:test": "ts-node scripts/test-online-payments.ts",
+    "address:test": "ts-node scripts/test-address-profile.ts",
+    "settlement:test": "ts-node scripts/test-settlement-cycles.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

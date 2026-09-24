@@ -12,11 +12,12 @@ import {
   Store,
   Layers,
 } from 'lucide-react';
-import adminApi, { SettlementStatement } from '../../services/adminApi';
+import adminApi, { SettlementStatement, SettlementBatchItem } from '../../services/adminApi';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Alert } from '../../components/ui/Alert';
+import { Modal } from '../../components/ui/Modal';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 export const AdminSettingsPage: React.FC = () => {
@@ -26,6 +27,10 @@ export const AdminSettingsPage: React.FC = () => {
   const [baseFeeInput, setBaseFeeInput] = useState<string>('40');
   const [perKmRateInput, setPerKmRateInput] = useState<string>('15');
   const [feeModeInput, setFeeModeInput] = useState<'FIXED_FLAT' | 'DISTANCE_TIERED'>('FIXED_FLAT');
+
+  const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
+  const [settleNotes, setSettleNotes] = useState('');
+  const [settleSuccessMessage, setSettleSuccessMessage] = useState<string | null>(null);
 
   // Queries
   const { data: settings, isLoading: isLoadingSettings } = useQuery({
@@ -38,6 +43,11 @@ export const AdminSettingsPage: React.FC = () => {
     queryFn: adminApi.getSettlementStatements,
   });
 
+  const { data: batches = [], isLoading: isLoadingBatches } = useQuery({
+    queryKey: ['admin-settlement-batches'],
+    queryFn: adminApi.getSettlementBatches,
+  });
+
   useEffect(() => {
     if (settings?.deliveryFee) {
       setFeeModeInput(settings.deliveryFee.mode);
@@ -48,6 +58,15 @@ export const AdminSettingsPage: React.FC = () => {
   }, [settings]);
 
   // Mutations
+  const executeSettlementMutation = useMutation({
+    mutationFn: (notes?: string) => adminApi.executeSettlementCycle(notes),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-settlement-batches'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-settlements'] });
+      setSettleSuccessMessage(data?.message || 'Settlement cycle closed successfully.');
+    },
+  });
+
   const updateOrderFlowMutation = useMutation({
     mutationFn: ({ mode, timeout }: { mode: 'RIDER_FIRST' | 'VENDOR_FIRST'; timeout?: number }) =>
       adminApi.updateOrderFlow(mode, timeout),
@@ -304,15 +323,30 @@ export const AdminSettingsPage: React.FC = () => {
               Platform commission ledger reconciliations (15% rate) and net payable calculations
             </p>
           </div>
-          <Button
-            size="sm"
-            className="gap-2"
-            isLoading={isExporting}
-            onClick={handleExportCsv}
-          >
-            <Download className="h-4 w-4" />
-            Export Settlement CSV
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              isLoading={isExporting}
+              onClick={handleExportCsv}
+            >
+              <Download className="h-4 w-4" />
+              Export Statement CSV
+            </Button>
+            <Button
+              size="sm"
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => {
+                setSettleSuccessMessage(null);
+                setSettleNotes('');
+                setIsSettleModalOpen(true);
+              }}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Run Settlement Cycle
+            </Button>
+          </div>
         </div>
 
         {/* Financial KPI Cards */}
@@ -386,7 +420,119 @@ export const AdminSettingsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Historical Settlement Batches */}
+        <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Layers className="h-4 w-4 text-primary-600" />
+              Settlement Batch Audit Trail ({batches.length})
+            </h3>
+            <p className="text-xs text-slate-500">
+              Immutable settlement cycles closing pending vendor commission ledgers and courier trip disbursements
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-100 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
+                <tr>
+                  <th className="py-2.5 px-3 font-semibold">Batch Number</th>
+                  <th className="py-2.5 px-3 font-semibold text-center">Orders</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">Vendor Payout</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">Rider Payout</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">Platform Margin</th>
+                  <th className="py-2.5 px-3 font-semibold text-center">Status</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">Executed At</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {batches.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-6 text-center text-slate-400 italic">
+                      No settlement batches executed yet.
+                    </td>
+                  </tr>
+                ) : (
+                  batches.map((batch) => (
+                    <tr key={batch.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                      <td className="py-3 px-3 font-mono font-semibold text-primary-600 dark:text-primary-400">
+                        {batch.batchNumber}
+                      </td>
+                      <td className="py-3 px-3 text-center font-medium">
+                        {batch.totalOrders}
+                      </td>
+                      <td className="py-3 px-3 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                        ৳{Number(batch.totalVendorPayout).toFixed(2)}
+                      </td>
+                      <td className="py-3 px-3 text-right font-medium text-blue-600 dark:text-blue-400">
+                        ৳{Number(batch.totalRiderPayout).toFixed(2)}
+                      </td>
+                      <td className="py-3 px-3 text-right font-bold text-slate-900 dark:text-slate-100">
+                        ৳{Number(batch.totalPlatformMargin).toFixed(2)}
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <Badge variant="success">{batch.status}</Badge>
+                      </td>
+                      <td className="py-3 px-3 text-right text-slate-500">
+                        {new Date(batch.executedAt).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
+
+      {/* Modal: Run Settlement Cycle */}
+      <Modal
+        isOpen={isSettleModalOpen}
+        onClose={() => setIsSettleModalOpen(false)}
+        title="Execute Financial Settlement Cycle"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-600 dark:text-slate-300">
+            This operation aggregates all delivered orders with pending commission and courier trip ledgers, validates double-entry balance, creates an immutable Settlement Batch, and transitions ledgers to SETTLED.
+          </p>
+
+          {settleSuccessMessage && (
+            <Alert
+              type="success"
+              title="Settlement Cycle Complete"
+              message={settleSuccessMessage}
+            />
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Audit Notes (Optional)
+            </label>
+            <Input
+              value={settleNotes}
+              onChange={(e) => setSettleNotes(e.target.value)}
+              placeholder="e.g. Weekly vendor payout cycle for Sep 24"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <Button variant="outline" size="sm" onClick={() => setIsSettleModalOpen(false)}>
+              {settleSuccessMessage ? 'Close' : 'Cancel'}
+            </Button>
+            {!settleSuccessMessage && (
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                isLoading={executeSettlementMutation.isPending}
+                onClick={() => executeSettlementMutation.mutate(settleNotes)}
+              >
+                Confirm & Run Cycle
+              </Button>
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -12,7 +12,7 @@ import '../../discovery/presentation/search_screen.dart';
 import '../../location/providers/location_provider.dart';
 import '../../location/presentation/map_location_picker_screen.dart';
 import '../../orders/presentation/order_history_screen.dart';
-import '../../splash/presentation/splash_screen.dart';
+import '../../profile/presentation/profile_screen.dart';
 import '../../store/presentation/outlet_detail_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -135,18 +135,14 @@ class HomeScreen extends ConsumerWidget {
                             ),
                             const SizedBox(width: 2),
 
-                            // Profile / Logout
+                            // Profile
                             IconButton(
-                              icon: const Icon(Icons.logout_rounded, size: 20, color: AppColors.textSecondary),
-                              tooltip: l10n.translate('logout'),
-                              onPressed: () async {
-                                await ref.read(authProvider.notifier).logout();
-                                if (context.mounted) {
-                                  Navigator.of(context).pushAndRemoveUntil(
-                                    MaterialPageRoute(builder: (_) => const SplashScreen()),
-                                    (route) => false,
-                                  );
-                                }
+                              icon: const Icon(Icons.person_outline_rounded, size: 22, color: AppColors.textPrimary),
+                              tooltip: 'My Profile',
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                                );
                               },
                             ),
                           ],

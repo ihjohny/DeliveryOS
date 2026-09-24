@@ -10,10 +10,11 @@ import {
   Post,
   Put,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request as ExpressRequest, Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -256,6 +257,42 @@ export class AdminController {
     };
   }
 
+  @Patch('vendors/:id')
+  @ApiOperation({ summary: 'Update vendor outlet parameters (commission, radius, prep time, contact)' })
+  async updateVendor(
+    @Param('id') vendorId: string,
+    @Body()
+    dto: {
+      name?: string;
+      brandId?: string;
+      addressText?: string;
+      contactPhone?: string;
+      commissionRate?: number;
+      deliveryRadiusKm?: number;
+      defaultPrepTimeMinutes?: number;
+      isActive?: boolean;
+    },
+  ) {
+    const updated = await this.adminService.updateVendor(vendorId, dto);
+    return {
+      message: 'Vendor outlet updated successfully',
+      data: updated,
+    };
+  }
+
+  @Patch('vendors/:id/status')
+  @ApiOperation({ summary: 'Toggle vendor outlet active/suspended status' })
+  async toggleVendorStatus(
+    @Param('id') vendorId: string,
+    @Body('isActive') isActive: boolean,
+  ) {
+    const updated = await this.adminService.toggleVendorStatus(vendorId, isActive);
+    return {
+      message: `Vendor outlet ${isActive ? 'activated' : 'suspended'} successfully`,
+      data: updated,
+    };
+  }
+
   @Post('vendors/:id/staff')
   @ApiOperation({ summary: 'Assign staff user to vendor outlet with scope (Particular vs Brand Owner)' })
   async assignStaff(
@@ -410,4 +447,65 @@ export class AdminController {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     return res.status(200).send(csvContent);
   }
+
+  // 10. Rider Fleet Approval & Governance
+  @Get('riders')
+  @ApiOperation({ summary: 'List all courier partners with optional approval and online status filters' })
+  async getRiders(
+    @Query('approvalStatus') approvalStatus?: 'PENDING' | 'APPROVED' | 'ALL',
+    @Query('isOnline') isOnlineStr?: string,
+  ) {
+    const isOnline = isOnlineStr !== undefined ? isOnlineStr === 'true' : undefined;
+    const data = await this.adminService.getAllRiders({ approvalStatus, isOnline });
+    return {
+      message: `Retrieved ${data.length} delivery couriers`,
+      data,
+    };
+  }
+
+  @Patch('riders/:id/approval')
+  @ApiOperation({ summary: 'Approve or suspend a delivery courier' })
+  async setRiderApproval(
+    @Param('id') riderId: string,
+    @Body('isApproved') isApproved: boolean,
+  ) {
+    const updated = await this.adminService.setRiderApproval(riderId, isApproved);
+    return {
+      message: `Courier approval status set to ${isApproved ? 'APPROVED' : 'SUSPENDED'}`,
+      data: updated,
+    };
+  }
+
+  @Patch('riders/:id/cash-limit')
+  @ApiOperation({ summary: 'Update courier maximum allowed COD cash in hand threshold' })
+  async setRiderCashLimit(
+    @Param('id') riderId: string,
+    @Body('maxCashLimit') maxCashLimit: number,
+  ) {
+    const updated = await this.adminService.setRiderCashLimit(riderId, maxCashLimit);
+    return {
+      message: `Courier cash limit updated to ${maxCashLimit} BDT`,
+      data: updated,
+    };
+  }
+
+  // 11. Automated Financial Settlement Cycle Engine
+  @Post('finance/settle-cycle')
+  @ApiOperation({ summary: 'Execute financial settlement cycle closing pending commission and trip ledgers' })
+  async executeSettlementCycle(@Req() req: ExpressRequest & { user?: { id?: string; sub?: string } }) {
+    const userId = req.user?.id || req.user?.sub;
+    const result = await this.adminService.executeSettlementCycle(userId);
+    return result;
+  }
+
+  @Get('finance/settlement-batches')
+  @ApiOperation({ summary: 'List historical settlement batches and reconciliation logs' })
+  async getSettlementBatches() {
+    const batches = await this.adminService.getSettlementBatches();
+    return {
+      message: `Retrieved ${batches.length} settlement batches`,
+      data: batches,
+    };
+  }
 }
+

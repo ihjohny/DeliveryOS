@@ -28,6 +28,7 @@ import { LiveFleetMap } from '../../components/dispatch/LiveFleetMap';
 export const AdminDispatchPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ONLINE' | 'ON_TRIP' | 'OFFLINE'>('ALL');
+  const [approvalFilter, setApprovalFilter] = useState<'ALL' | 'APPROVED' | 'PENDING'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRider, setSelectedRider] = useState<FleetRider | null>(null);
   const [newCashLimit, setNewCashLimit] = useState<string>('5000');
@@ -82,7 +83,6 @@ export const AdminDispatchPage: React.FC = () => {
     };
   }, [queryClient]);
 
-
   const updateCashLimitMutation = useMutation({
     mutationFn: ({ id, limit }: { id: string; limit: number }) =>
       adminApi.updateRiderCashLimit(id, limit),
@@ -93,13 +93,25 @@ export const AdminDispatchPage: React.FC = () => {
     },
   });
 
+  const toggleApprovalMutation = useMutation({
+    mutationFn: ({ id, isApproved }: { id: string; isApproved: boolean }) =>
+      adminApi.setRiderApproval(id, isApproved),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-fleet'] });
+    },
+  });
+
   const filteredFleet = fleet.filter((r) => {
     const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter;
+    const matchesApproval =
+      approvalFilter === 'ALL' ||
+      (approvalFilter === 'APPROVED' && r.isApproved !== false) ||
+      (approvalFilter === 'PENDING' && r.isApproved === false);
     const matchesSearch =
       r.riderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.phone.includes(searchQuery) ||
       r.vehicleType.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesApproval && matchesSearch;
   });
 
   const onlineCount = fleet.filter((r) => r.isOnline).length;
@@ -229,18 +241,34 @@ export const AdminDispatchPage: React.FC = () => {
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             {/* Filter Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              <div className="flex flex-wrap items-center gap-1.5 pb-1 sm:pb-0">
                 {(['ALL', 'ONLINE', 'ON_TRIP', 'OFFLINE'] as const).map((s) => (
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                       statusFilter === s
                         ? 'bg-primary-600 text-white font-semibold'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
                     }`}
                   >
-                    {s === 'ALL' ? 'All Couriers' : s.replace('_', ' ')}
+                    {s === 'ALL' ? 'All Activity' : s.replace('_', ' ')}
+                  </button>
+                ))}
+
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+
+                {(['ALL', 'APPROVED', 'PENDING'] as const).map((a) => (
+                  <button
+                    key={a}
+                    onClick={() => setApprovalFilter(a)}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                      approvalFilter === a
+                        ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'
+                    }`}
+                  >
+                    {a === 'ALL' ? 'All Approvals' : a === 'APPROVED' ? 'Approved' : 'Suspended'}
                   </button>
                 ))}
               </div>
@@ -273,6 +301,7 @@ export const AdminDispatchPage: React.FC = () => {
                     <tr>
                       <th className="py-2.5 px-3 font-semibold">Courier</th>
                       <th className="py-2.5 px-3 font-semibold">Vehicle</th>
+                      <th className="py-2.5 px-3 font-semibold">Approval</th>
                       <th className="py-2.5 px-3 font-semibold">Status</th>
                       <th className="py-2.5 px-3 font-semibold">Active Trip</th>
                       <th className="py-2.5 px-3 font-semibold">Cash in Hand</th>
@@ -291,6 +320,13 @@ export const AdminDispatchPage: React.FC = () => {
                             <Bike className="h-3.5 w-3.5 text-slate-400" />
                             <span>{rider.vehicleType}</span>
                           </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          {rider.isApproved !== false ? (
+                            <Badge variant="success">Approved</Badge>
+                          ) : (
+                            <Badge variant="warning">Suspended</Badge>
+                          )}
                         </td>
                         <td className="py-3 px-3">
                           {rider.status === 'ONLINE' && (
@@ -327,18 +363,41 @@ export const AdminDispatchPage: React.FC = () => {
                           )}
                         </td>
                         <td className="py-3 px-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs h-7 px-2"
-                            onClick={() => {
-                              setSelectedRider(rider);
-                              setNewCashLimit(rider.maxCashLimit.toString());
-                              setIsCashModalOpen(true);
-                            }}
-                          >
-                            Set Limit
-                          </Button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs h-7 px-2"
+                              onClick={() => {
+                                setSelectedRider(rider);
+                                setNewCashLimit(rider.maxCashLimit.toString());
+                                setIsCashModalOpen(true);
+                              }}
+                            >
+                              Set Limit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={`text-xs h-7 px-2 ${
+                                rider.isApproved !== false
+                                  ? 'border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400'
+                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                              }`}
+                              isLoading={
+                                toggleApprovalMutation.isPending &&
+                                (toggleApprovalMutation.variables as any)?.id === rider.id
+                              }
+                              onClick={() =>
+                                toggleApprovalMutation.mutate({
+                                  id: rider.id,
+                                  isApproved: rider.isApproved === false ? true : false,
+                                })
+                              }
+                            >
+                              {rider.isApproved !== false ? 'Suspend' : 'Approve'}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}

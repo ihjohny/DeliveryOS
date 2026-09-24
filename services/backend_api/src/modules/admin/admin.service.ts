@@ -15,6 +15,7 @@ import {
   DiscountType,
   OrderStatus,
   PermissionScope,
+  SettlementStatus,
   UserRole,
 } from '@prisma/client';
 
@@ -167,6 +168,7 @@ export class AdminService {
           phone: r.user.phone,
           vehicleType: r.vehicleType,
           isOnline: r.isOnline,
+          isApproved: r.isApproved ?? true,
           status,
           cashInHand: Number(r.cashInHand),
           maxCashLimit: Number(r.maxCashLimit),
@@ -538,6 +540,47 @@ export class AdminService {
     });
   }
 
+  async updateVendor(
+    vendorId: string,
+    data: {
+      name?: string;
+      brandId?: string;
+      addressText?: string;
+      contactPhone?: string;
+      commissionRate?: number;
+      deliveryRadiusKm?: number;
+      defaultPrepTimeMinutes?: number;
+      isActive?: boolean;
+    },
+  ) {
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
+    if (!vendor) throw new NotFoundException('Vendor outlet not found');
+
+    return this.prisma.vendor.update({
+      where: { id: vendorId },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.brandId !== undefined && { brandId: data.brandId }),
+        ...(data.addressText !== undefined && { addressText: data.addressText }),
+        ...(data.contactPhone !== undefined && { contactPhone: data.contactPhone }),
+        ...(data.commissionRate !== undefined && { commissionRate: data.commissionRate }),
+        ...(data.deliveryRadiusKm !== undefined && { deliveryRadiusKm: data.deliveryRadiusKm }),
+        ...(data.defaultPrepTimeMinutes !== undefined && { defaultPrepTimeMinutes: data.defaultPrepTimeMinutes }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+      },
+    });
+  }
+
+  async toggleVendorStatus(vendorId: string, isActive: boolean) {
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
+    if (!vendor) throw new NotFoundException('Vendor outlet not found');
+
+    return this.prisma.vendor.update({
+      where: { id: vendorId },
+      data: { isActive },
+    });
+  }
+
   async assignVendorStaff(
     vendorId: string,
     data: {
@@ -787,5 +830,191 @@ export class AdminService {
     );
 
     return [header, ...rows].join('\n');
+  }
+
+  // ===========================================================================
+  // 10. Rider Fleet Approval & Governance
+  // ===========================================================================
+  async getAllRiders(filters?: { approvalStatus?: 'PENDING' | 'APPROVED' | 'ALL'; isOnline?: boolean }) {
+    const where: any = {};
+    if (filters?.approvalStatus === 'PENDING') {
+      where.isApproved = false;
+    } else if (filters?.approvalStatus === 'APPROVED') {
+      where.isApproved = true;
+    }
+    if (filters?.isOnline !== undefined) {
+      where.isOnline = filters.isOnline;
+    }
+
+    const riders = await this.prisma.rider.findMany({
+      where,
+      include: {
+        user: { select: { id: true, fullName: true, phone: true, email: true, createdAt: true } },
+        _count: { select: { orders: true, trips: true } },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    return riders.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      fullName: r.user.fullName || 'Courier Partner',
+      phone: r.user.phone,
+      email: r.user.email,
+      vehicleType: r.vehicleType,
+      isOnline: r.isOnline,
+      isApproved: r.isApproved,
+      cashInHand: Number(r.cashInHand),
+      maxCashLimit: Number(r.maxCashLimit),
+      latitude: r.latitude,
+      longitude: r.longitude,
+      totalOrders: r._count.orders,
+      totalTrips: r._count.trips,
+      joinedAt: r.user.createdAt,
+    }));
+  }
+
+  async setRiderApproval(riderId: string, isApproved: boolean) {
+    const rider = await this.prisma.rider.findUnique({ where: { id: riderId } });
+    if (!rider) throw new NotFoundException(`Rider with ID "${riderId}" not found`);
+
+    const updated = await this.prisma.rider.update({
+      where: { id: riderId },
+      data: {
+        isApproved,
+        ...(!isApproved && { isOnline: false }),
+      },
+      include: { user: { select: { fullName: true, phone: true } } },
+    });
+
+    this.logger.log(`Rider ${riderId} (${updated.user.fullName}) approval set to: ${isApproved}`);
+    return updated;
+  }
+
+  async setRiderCashLimit(riderId: string, maxCashLimit: number) {
+    const rider = await this.prisma.rider.findUnique({ where: { id: riderId } });
+    if (!rider) throw new NotFoundException(`Rider with ID "${riderId}" not found`);
+
+    return this.prisma.rider.update({
+      where: { id: riderId },
+      data: { maxCashLimit },
+    });
+  }
+
+  // ===========================================================================
+  // 11. Automated Financial Settlement Cycle Engine
+  // ===========================================================================
+  async executeSettlementCycle(executedByUserId?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Fetch pending commission ledgers for delivered orders
+      const pendingCommissions = await tx.commissionLedger.findMany({
+        where: {
+          settlementStatus: SettlementStatus.PENDING,
+          order: { status: OrderStatus.DELIVERED },
+        },
+      });
+
+      // 2. Fetch pending rider trip ledgers
+      const pendingTrips = await tx.riderTripLedger.findMany({
+        where: {
+          status: SettlementStatus.PENDING,
+          order: { status: OrderStatus.DELIVERED },
+        },
+      });
+
+      if (pendingCommissions.length === 0 && pendingTrips.length === 0) {
+        return {
+          message: 'No pending orders eligible for settlement cycle at this time.',
+          batch: null,
+          settledOrdersCount: 0,
+        };
+      }
+
+      // Compute aggregates
+      let totalVendorPayout = 0;
+      let totalPlatformMargin = 0;
+      let totalRiderPayout = 0;
+
+      for (const c of pendingCommissions) {
+        totalVendorPayout += Number(c.netVendorPayable);
+        totalPlatformMargin += Number(c.commissionAmount);
+      }
+
+      for (const t of pendingTrips) {
+        totalRiderPayout += Number(t.deliveryEarnings);
+      }
+
+      totalVendorPayout = Math.round(totalVendorPayout * 100) / 100;
+      totalPlatformMargin = Math.round(totalPlatformMargin * 100) / 100;
+      totalRiderPayout = Math.round(totalRiderPayout * 100) / 100;
+
+      const orderIds = Array.from(
+        new Set([...pendingCommissions.map((c) => c.orderId), ...pendingTrips.map((t) => t.orderId)]),
+      );
+
+      const batchNumber = `SETTLE-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
+      const now = new Date();
+      const oldestDate = pendingCommissions[0]?.createdAt || now;
+
+      // Create SettlementBatch
+      const batch = await tx.settlementBatch.create({
+        data: {
+          batchNumber,
+          startDate: oldestDate,
+          endDate: now,
+          totalOrders: orderIds.length,
+          totalVendorPayout,
+          totalRiderPayout,
+          totalPlatformMargin,
+          status: SettlementStatus.SETTLED,
+          executedByUserId: executedByUserId || null,
+          executedAt: now,
+        },
+      });
+
+      // Mark CommissionLedgers as SETTLED
+      if (pendingCommissions.length > 0) {
+        await tx.commissionLedger.updateMany({
+          where: { id: { in: pendingCommissions.map((c) => c.id) } },
+          data: {
+            settlementStatus: SettlementStatus.SETTLED,
+            settledAt: now,
+            settlementBatchId: batch.id,
+          },
+        });
+      }
+
+      // Mark RiderTripLedgers as SETTLED
+      if (pendingTrips.length > 0) {
+        await tx.riderTripLedger.updateMany({
+          where: { id: { in: pendingTrips.map((t) => t.id) } },
+          data: {
+            status: SettlementStatus.SETTLED,
+            settlementBatchId: batch.id,
+          },
+        });
+      }
+
+      this.logger.log(
+        `[Settlement Engine] Closed Batch ${batchNumber}: ${orderIds.length} orders settled (Vendors: ${totalVendorPayout} BDT, Riders: ${totalRiderPayout} BDT, Platform: ${totalPlatformMargin} BDT)`,
+      );
+
+      return {
+        message: `Settlement cycle successfully closed in Batch ${batchNumber}`,
+        batch,
+        settledOrdersCount: orderIds.length,
+      };
+    });
+  }
+
+  async getSettlementBatches() {
+    return this.prisma.settlementBatch.findMany({
+      orderBy: { executedAt: 'desc' },
+      include: {
+        _count: {
+          select: { commissions: true, riderTrips: true },
+        },
+      },
+    });
   }
 }
