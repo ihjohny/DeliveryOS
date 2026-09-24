@@ -26,7 +26,8 @@
     "escalation:test": "ts-node scripts/test-fcm-notifications.ts",
     "payment:test": "ts-node scripts/test-online-payments.ts",
     "address:test": "ts-node scripts/test-address-profile.ts",
-    "settlement:test": "ts-node scripts/test-settlement-cycles.ts"
+    "settlement:test": "ts-node scripts/test-settlement-cycles.ts",
+    "cancel:test": "ts-node scripts/test-order-cancellation.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

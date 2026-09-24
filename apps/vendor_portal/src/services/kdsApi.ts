@@ -151,6 +151,22 @@ export const kdsApi = {
   },
 
   /**
+   * Reject incoming order with structured reason code and optional notes
+   */
+  async rejectOrder(
+    orderId: string,
+    reasonCode: string,
+    reasonNotes?: string,
+  ): Promise<KDSOrder> {
+    const response = await apiClient.post(`/api/v1/vendor/orders/${orderId}/reject`, {
+      reasonCode,
+      reasonNotes,
+    });
+    const payload = response.data?.data || response.data;
+    return normalizeKDSOrder(payload);
+  },
+
+  /**
    * Mark order as packaged and ready for rider pickup
    */
   async markOrderReady(orderId: string): Promise<KDSOrder> {

@@ -6,10 +6,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AcceptOrderDto } from './dto/accept-order.dto';
+import { RejectOrderDto } from './dto/reject-order.dto';
 import { OrderStatus, PermissionScope, User, UserRole } from '@prisma/client';
 import { TrackingGateway } from '../realtime/tracking.gateway';
 import { OrderFlowService } from '../order-flow/order-flow.service';
 import { assertTransition } from '../orders/order-state.machine';
+import { OrderService } from '../orders/order.service';
 
 @Injectable()
 export class VendorStaffService {
@@ -17,6 +19,7 @@ export class VendorStaffService {
     private readonly prisma: PrismaService,
     private readonly trackingGateway: TrackingGateway,
     private readonly orderFlowService: OrderFlowService,
+    private readonly orderService: OrderService,
   ) {}
 
   /**
@@ -195,6 +198,52 @@ export class VendorStaffService {
     );
 
     return updatedOrder;
+  }
+
+  /**
+   * 2b. Reject Incoming Order
+   * Vendors can reject an incoming order in PLACED or RIDER_ASSIGNED state
+   * (e.g. out of stock, kitchen overload). Automatically cancels pending ledgers,
+   * releases couriers, and refunds online payments.
+   */
+  async rejectOrder(user: User, orderId: string, dto: RejectOrderDto) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        vendor: true,
+        rider: { include: { user: true } },
+        payments: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID "${orderId}" not found`);
+    }
+
+    await this.validateStaffOutletAccess(user, order.vendorId);
+
+    if (order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException('Order is already cancelled');
+    }
+
+    if (
+      order.status !== OrderStatus.PLACED &&
+      order.status !== OrderStatus.RIDER_ASSIGNED
+    ) {
+      throw new BadRequestException(
+        `Cannot reject order in "${order.status}" status. Only new incoming orders prior to preparation can be rejected.`,
+      );
+    }
+
+    const structuredReason = dto.reasonNotes
+      ? `[${dto.reasonCode}] ${dto.reasonNotes}`
+      : `[${dto.reasonCode}] Order rejected by store kitchen`;
+
+    return this.orderService.executeOrderCancellation(
+      order,
+      structuredReason,
+      UserRole.VENDOR_ADMIN,
+    );
   }
 
   /**

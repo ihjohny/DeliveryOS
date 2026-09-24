@@ -268,6 +268,49 @@ void main() {
       container.read(trackingProvider('mock-order-uuid').notifier).stopSimulation();
     });
 
+    testWidgets('OrderStepperWidget renders cancelled banner when order is cancelled', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const Scaffold(
+            body: OrderStepperWidget(currentStage: OrderStage.cancelled),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Order Cancelled'), findsWidgets);
+      expect(find.text('Cancelled'), findsOneWidget);
+      expect(find.textContaining('This order has been cancelled and will not be prepared'), findsOneWidget);
+    });
+
+    testWidgets('OrderTrackingScreen displays Cancel Order button for placed order', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final container = ProviderContainer(
+        overrides: [localStorageProvider.overrideWithValue(storage)],
+      );
+      addTearDown(container.dispose);
+
+      // Set stage to placed
+      container.read(trackingProvider('mock-cancel-order').notifier).setStage(OrderStage.placed);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          container: container,
+          child: const OrderTrackingScreen(
+            orderId: 'mock-cancel-order',
+            orderNumber: '#ORD-CANCEL-1',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cancel Order'), findsOneWidget);
+      container.read(trackingProvider('mock-cancel-order').notifier).stopSimulation();
+    });
+
     testWidgets('OrderHistoryScreen renders past orders and reorder button', (tester) async {
       await tester.pumpWidget(
         createTestWidget(

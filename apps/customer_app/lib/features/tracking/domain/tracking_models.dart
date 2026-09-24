@@ -210,6 +210,9 @@ class OrderTrackingState {
   final double totalAmount;
   final bool isLoading;
   final String? error;
+  final String? cancellationReason;
+  final String? paymentStatus;
+  final String? paymentMethod;
 
   OrderTrackingState({
     required this.orderId,
@@ -223,9 +226,14 @@ class OrderTrackingState {
     this.totalAmount = 480.0,
     this.isLoading = false,
     this.error,
+    this.cancellationReason,
+    this.paymentStatus,
+    this.paymentMethod,
   });
 
   bool get isCompleted => stage == OrderStage.delivered;
+  bool get isCancelled => stage == OrderStage.cancelled;
+  bool get canCancel => stage == OrderStage.placed || stage == OrderStage.riderAssigned;
   bool isStageCompleted(OrderStage s) => stage.stepperIndex > s.stepperIndex;
   bool isStageActive(OrderStage s) => stage == s;
 
@@ -240,6 +248,9 @@ class OrderTrackingState {
     double? totalAmount,
     bool? isLoading,
     String? error,
+    String? cancellationReason,
+    String? paymentStatus,
+    String? paymentMethod,
   }) {
     return OrderTrackingState(
       orderId: orderId,
@@ -253,6 +264,9 @@ class OrderTrackingState {
       totalAmount: totalAmount ?? this.totalAmount,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
     );
   }
 }

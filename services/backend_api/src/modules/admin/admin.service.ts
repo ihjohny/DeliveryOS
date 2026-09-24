@@ -18,6 +18,8 @@ import {
   SettlementStatus,
   UserRole,
 } from '@prisma/client';
+import { OrderService } from '../orders/order.service';
+import { AdminCancelOrderDto } from './dto/admin-cancel-order.dto';
 
 @Injectable()
 export class AdminService {
@@ -28,6 +30,7 @@ export class AdminService {
     private readonly redis: RedisService,
     private readonly trackingGateway: TrackingGateway,
     private readonly orderFlowService: OrderFlowService,
+    private readonly orderService: OrderService,
   ) {}
 
   // ===========================================================================
@@ -1016,5 +1019,42 @@ export class AdminService {
         },
       },
     });
+  }
+
+  /**
+   * 12. Super Admin Force-Cancel Order
+   * Allows administrative cancellation of any order prior to DISPATCHED or DELIVERED.
+   * Full atomic ledger cleanup, online payment refunding, courier release, and audit trail.
+   */
+  async cancelOrder(adminUserId: string, orderId: string, dto: AdminCancelOrderDto) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        vendor: true,
+        rider: { include: { user: true } },
+        payments: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID "${orderId}" not found`);
+    }
+
+    if (order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException('Order is already cancelled');
+    }
+
+    if (order.status === OrderStatus.DELIVERED) {
+      throw new BadRequestException('Cannot cancel an order that has already been delivered');
+    }
+
+    if (order.status === OrderStatus.DISPATCHED) {
+      throw new BadRequestException(
+        'Cannot cancel order while courier is on the road (DISPATCHED). Please coordinate direct return with the assigned rider.',
+      );
+    }
+
+    const auditReason = `[ADMIN_FORCE_CANCEL by ${adminUserId}] ${dto.reason.trim()}`;
+    return this.orderService.executeOrderCancellation(order, auditReason, UserRole.SUPER_ADMIN);
   }
 }

@@ -36,9 +36,11 @@ export const VendorDashboardPage: React.FC = () => {
     inPreparationOrders,
     readyOrders,
     acceptOrder,
+    rejectOrder,
     markOrderReady,
     handoverOrder,
     isAccepting,
+    isRejecting,
     isMarkingReady,
     isHandingOver,
   } = useKDSOrders(targetVendorId);
@@ -128,7 +130,9 @@ export const VendorDashboardPage: React.FC = () => {
                     key={order.id}
                     order={order}
                     onAccept={acceptOrder}
+                    onReject={rejectOrder}
                     isActionLoading={isAccepting}
+                    isRejecting={isRejecting}
                   />
                 ))
               )}

@@ -83,6 +83,25 @@ flowchart TD
 
 ---
 
+## Order Cancellation, Vendor Rejection & Refund Flow
+
+### Cancellation State Transitions
+- **Customer Cancellation**: Permitted strictly while status is `PLACED` or `RIDER_ASSIGNED`. Once an order enters `PREPARING` or later, customer self-cancellation is strictly forbidden (throws HTTP 400 Bad Request) to protect vendor cooking investments.
+- **Vendor Rejection**: Permitted prior to cooking initiation with structured reason codes (`OUT_OF_STOCK`, `KITCHEN_OVERLOAD`, `STORE_CLOSING_SOON`, `OTHER`).
+- **Super Admin Force-Cancellation**: Permitted prior to `DISPATCHED` with mandatory audit reason.
+
+### Atomic Rollback & Financial Reversal Invariants
+When an order is cancelled:
+1. **FSM Transition**: Status transitions to `CANCELLED` and `cancelledAt` / `rejectionReason` are recorded.
+2. **Payment Reversal**: If `paymentStatus === PAID`, payment status updates to `REFUNDED`; if `PENDING`, updates to `FAILED`.
+3. **Coupon Restoral**: If `couponId` is present, `Coupon.currentUses` is atomically decremented by 1.
+4. **Ledger Purge**: Pending `CommissionLedger` and `RiderTripLedger` records are atomically deleted to eliminate accidental settlement payouts.
+5. **Courier Lock Release**: Active Redis keys `rider:active_order:${riderId}` and `lock:order_claim:${orderId}` are removed to restore courier availability.
+6. **Real-time Push**: Emits `order:cancelled` and `order:status:changed` (newStatus `CANCELLED`) to rooms and dispatches FCM notifications.
+
+---
+
 ## Compliance & Verification
 - Integration verification: [`test-order-dispatch-fsm.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/scripts/test-order-dispatch-fsm.ts) validates runtime switching and concurrent claims.
 - Fulfillment verification: [`test-vendor-rider.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/scripts/test-vendor-rider.ts) and [`test-e2e-lifecycle.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/scripts/test-e2e-lifecycle.ts) validate full lifecycle progression and penny-perfect financial balancing.
+- Cancellation verification: [`test-order-cancellation.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/services/backend_api/scripts/test-order-cancellation.ts) validates all 4 boundary conditions: customer cancel, pre-prep boundary guard, vendor rejection, and admin force-cancel with refund.

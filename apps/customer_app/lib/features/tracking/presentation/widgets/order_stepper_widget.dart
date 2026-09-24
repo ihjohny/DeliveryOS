@@ -21,6 +21,7 @@ class OrderStepperWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCancelled = currentStage == OrderStage.cancelled;
     final activeIndex = currentStage.stepperIndex;
 
     return Container(
@@ -28,7 +29,7 @@ class OrderStepperWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: isCancelled ? const Color(0xFFFECACA) : AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,24 +39,24 @@ class OrderStepperWidget extends StatelessWidget {
             children: [
               Text(
                 currentStage.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.textPrimary,
+                  color: isCancelled ? const Color(0xFFDC2626) : AppColors.textPrimary,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
+                  color: isCancelled ? const Color(0xFFFEE2E2) : AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  'Stage ${activeIndex + 1} of 6',
-                  style: const TextStyle(
+                  isCancelled ? 'Cancelled' : 'Stage ${activeIndex + 1} of 6',
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.primaryDark,
+                    color: isCancelled ? const Color(0xFFDC2626) : AppColors.primaryDark,
                   ),
                 ),
               ),
@@ -68,8 +69,34 @@ class OrderStepperWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Horizontal Progress Timeline
-          Row(
+          if (isCancelled)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.cancel_outlined, color: Color(0xFFDC2626), size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This order has been cancelled and will not be prepared or delivered.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF991B1B),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            // Horizontal Progress Timeline
+            Row(
             children: List.generate(_steps.length * 2 - 1, (index) {
               if (index.isOdd) {
                 final stepBefore = index ~/ 2;

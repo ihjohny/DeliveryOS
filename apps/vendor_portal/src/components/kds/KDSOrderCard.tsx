@@ -8,6 +8,7 @@ import {
   ArrowRight,
   UserCheck,
   ChevronDown,
+  XCircle,
 } from 'lucide-react';
 import { KDSOrder } from '../../types/kds';
 import { CountdownTimer } from './CountdownTimer';
@@ -19,21 +20,28 @@ interface KDSOrderCardProps {
   order: KDSOrder;
   defaultPrepTimeMinutes?: number;
   onAccept?: (orderId: string, prepTimeMinutes?: number) => void;
+  onReject?: (orderId: string, reasonCode: string, reasonNotes?: string) => void;
   onMarkReady?: (orderId: string) => void;
   onHandover?: (orderId: string) => void;
   isActionLoading?: boolean;
+  isRejecting?: boolean;
 }
 
 export const KDSOrderCard: React.FC<KDSOrderCardProps> = ({
   order,
   defaultPrepTimeMinutes = 20,
   onAccept,
+  onReject,
   onMarkReady,
   onHandover,
   isActionLoading = false,
+  isRejecting = false,
 }) => {
   const [selectedCustomTime, setSelectedCustomTime] = useState<number>(defaultPrepTimeMinutes);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReasonCode, setRejectReasonCode] = useState<string>('OUT_OF_STOCK');
+  const [rejectNotes, setRejectNotes] = useState<string>('');
 
   // Time elapsed since creation
   const getElapsedMins = () => {
@@ -194,6 +202,17 @@ export const KDSOrderCard: React.FC<KDSOrderCardProps> = ({
               >
                 <ChevronDown className="h-4 w-4" />
               </button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-rose-300 text-rose-600 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/50"
+                onClick={() => setShowRejectModal(true)}
+                title="Reject incoming order"
+                leftIcon={<XCircle className="h-4 w-4" />}
+              >
+                Reject
+              </Button>
             </div>
 
             {/* Custom Prep Time Dropdown */}
@@ -219,6 +238,87 @@ export const KDSOrderCard: React.FC<KDSOrderCardProps> = ({
                       {mins}m
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Structured Reject Modal */}
+            {showRejectModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-left">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <XCircle className="h-5 w-5 text-rose-500" /> Reject Order #{order.orderNumber}
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Rejecting will cancel the order, release couriers, refund online payments, and notify the customer.
+                  </p>
+
+                  <div className="mt-4 space-y-2">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Reason
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { code: 'OUT_OF_STOCK', label: 'Out of Stock' },
+                        { code: 'KITCHEN_OVERLOAD', label: 'Kitchen Busy' },
+                        { code: 'STORE_CLOSING_SOON', label: 'Closing Soon' },
+                        { code: 'OTHER', label: 'Other' },
+                      ].map((item) => (
+                        <button
+                          key={item.code}
+                          type="button"
+                          onClick={() => setRejectReasonCode(item.code)}
+                          className={cn(
+                            'rounded-lg border px-2.5 py-1.5 text-xs font-semibold text-left transition-colors',
+                            rejectReasonCode === item.code
+                              ? 'border-rose-500 bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                              : 'border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300'
+                          )}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Additional Notes (Optional)
+                    </label>
+                    <textarea
+                      value={rejectNotes}
+                      onChange={(e) => setRejectNotes(e.target.value)}
+                      placeholder="e.g. Beef patty unavailable tonight"
+                      rows={2}
+                      className="mt-1 w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-900 focus:border-rose-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    />
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setShowRejectModal(false)}
+                      disabled={isRejecting}
+                    >
+                      Keep Order
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold"
+                      isLoading={isRejecting}
+                      onClick={async () => {
+                        if (onReject) {
+                          await onReject(order.id, rejectReasonCode, rejectNotes);
+                          setShowRejectModal(false);
+                        }
+                      }}
+                    >
+                      Confirm Reject
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

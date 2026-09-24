@@ -70,6 +70,18 @@ class RiderSocketService {
     }
   }
 
+  void joinOrder(String orderId) {
+    if (_socket?.connected == true) {
+      _socket!.emit('order:join', {'orderId': orderId});
+    }
+  }
+
+  void leaveOrder(String orderId) {
+    if (_socket?.connected == true) {
+      _socket!.emit('order:leave', {'orderId': orderId});
+    }
+  }
+
   void on(String event, Function(dynamic) handler) {
     _socket?.on(event, handler);
   }

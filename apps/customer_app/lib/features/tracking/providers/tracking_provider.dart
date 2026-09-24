@@ -46,6 +46,8 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
             : payload;
         final newStatusStr = data['newStatus'] as String? ?? '';
         final newStage = OrderStageExtension.fromString(newStatusStr);
+        final reason = data['reason'] as String?;
+        final refundStatus = data['refundStatus'] as String?;
 
         RiderMeta? updatedRider = state.rider;
         if (data['riderName'] != null) {
@@ -64,11 +66,29 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
         state = state.copyWith(
           stage: newStage,
           rider: updatedRider,
+          cancellationReason: reason ?? state.cancellationReason,
+          paymentStatus: refundStatus ?? state.paymentStatus,
         );
       }
     }
 
-    // 3. Listen to order:rider:moved from backend telemetry stream
+    // 3. Listen to order:cancelled event
+    void handleOrderCancelled(dynamic payload) {
+      if (payload is Map<String, dynamic>) {
+        final data = payload['data'] is Map<String, dynamic>
+            ? payload['data'] as Map<String, dynamic>
+            : payload;
+        final reason = data['reason'] as String?;
+        final refundStatus = data['refundStatus'] as String?;
+        state = state.copyWith(
+          stage: OrderStage.cancelled,
+          cancellationReason: reason ?? state.cancellationReason,
+          paymentStatus: refundStatus ?? state.paymentStatus,
+        );
+      }
+    }
+
+    // 4. Listen to order:rider:moved from backend telemetry stream
     void handleRiderMoved(dynamic payload) {
       if (payload is Map<String, dynamic>) {
         final data = payload['data'] is Map<String, dynamic>
@@ -96,12 +116,14 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
 
     socket.on('order:status:changed', handleStatusChanged);
     socket.on('order:status_changed', handleStatusChanged);
+    socket.on('order:cancelled', handleOrderCancelled);
     socket.on('order:rider:moved', handleRiderMoved);
 
     ref.onDispose(() {
       socket.leaveOrder(orderId);
       socket.off('order:status:changed');
       socket.off('order:status_changed');
+      socket.off('order:cancelled');
       socket.off('order:rider:moved');
       _telemetryTimer?.cancel();
     });
@@ -120,6 +142,35 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
     state = state.copyWith(stage: newStage);
   }
 
+  Future<bool> cancelOrder(String reason) async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+      final dio = ref.read(dioClientProvider);
+      final response = await dio.post(
+        '${ApiConstants.orderDetails}/$orderId/cancel',
+        data: {'reason': reason},
+      );
+      if (response.statusCode == 200) {
+        final resData = response.data['data'] as Map<String, dynamic>? ?? {};
+        final refundStatus = resData['refundStatus'] as String?;
+        state = state.copyWith(
+          stage: OrderStage.cancelled,
+          cancellationReason: reason,
+          paymentStatus: refundStatus ?? state.paymentStatus,
+          isLoading: false,
+        );
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error cancelling order: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to cancel order: ${e.toString()}',
+      );
+    }
+    return false;
+  }
+
   Future<void> refreshDetails() async {
     try {
       final dio = ref.read(dioClientProvider);
@@ -129,6 +180,9 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
         final statusStr = data['status'] as String? ?? 'PLACED';
         final vendor = data['vendor'] as Map<String, dynamic>? ?? {};
         final items = (data['orderItems'] as List<dynamic>?) ?? [];
+        final rejectionReason = data['rejectionReason'] as String?;
+        final paymentStatus = data['paymentStatus'] as String?;
+        final paymentMethod = data['paymentMethod'] as String?;
 
         final storeMeta = StoreMeta(
           id: vendor['id'] as String? ?? state.store.id,
@@ -162,6 +216,9 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
           rider: riderMeta ?? state.rider,
           itemsCount: items.isNotEmpty ? items.length : state.itemsCount,
           totalAmount: (data['totalAmount'] as num?)?.toDouble() ?? state.totalAmount,
+          cancellationReason: rejectionReason ?? state.cancellationReason,
+          paymentStatus: paymentStatus ?? state.paymentStatus,
+          paymentMethod: paymentMethod ?? state.paymentMethod,
         );
       }
     } catch (e) {

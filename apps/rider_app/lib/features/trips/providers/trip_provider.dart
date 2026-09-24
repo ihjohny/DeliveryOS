@@ -92,10 +92,34 @@ class RiderTripNotifier extends Notifier<RiderTripState> {
       }
     }
 
+    void handleOrderCancelled(dynamic payload) {
+      if (payload is Map<String, dynamic>) {
+        final data = payload['data'] is Map<String, dynamic>
+            ? payload['data'] as Map<String, dynamic>
+            : payload;
+        final orderId = data['orderId']?.toString();
+        final reason = data['reason']?.toString() ?? 'Order was cancelled.';
+
+        if (state.incomingTrip?.id == orderId) {
+          dismissIncomingAlert();
+        }
+        if (state.activeTrip?.id == orderId) {
+          final orderNum = state.activeTrip?.orderNumber;
+          socket.leaveOrder(orderId!);
+          state = state.copyWith(
+            clearActiveTrip: true,
+            error: 'Order $orderNum was cancelled ($reason)',
+          );
+        }
+      }
+    }
+
     socket.on('dispatch:broadcast', handleBroadcast);
+    socket.on('order:cancelled', handleOrderCancelled);
 
     ref.onDispose(() {
       socket.off('dispatch:broadcast');
+      socket.off('order:cancelled');
       _countdownTimer?.cancel();
     });
     return RiderTripState();
@@ -167,6 +191,9 @@ class RiderTripNotifier extends Notifier<RiderTripState> {
       currentStep: TripStep.pickup,
       status: 'RIDER_ASSIGNED',
     );
+
+    // Join order room for real-time lifecycle and cancellation events
+    ref.read(riderSocketServiceProvider).joinOrder(trip.id);
 
     state = state.copyWith(
       isClaiming: false,
@@ -282,6 +309,9 @@ class RiderTripNotifier extends Notifier<RiderTripState> {
           codCollected: trip.isCod ? amountCollected : 0.0,
           tripRecord: completedRecord,
         );
+
+    // Leave order socket room
+    ref.read(riderSocketServiceProvider).leaveOrder(trip.id);
 
     state = state.copyWith(
       isUpdating: false,

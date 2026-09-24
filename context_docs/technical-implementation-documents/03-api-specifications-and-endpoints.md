@@ -350,3 +350,42 @@ This document specifies the RESTful API endpoints for the **DeliveryOS** backend
 - **Get Profile**: `GET /customers/profile` (returns name, email, phone, order count, address count)
 - **Update Profile**: `PATCH /customers/profile` (update `fullName`, `email`)
 
+---
+
+## 9. Order Cancellation, Vendor Rejection & Refunds (`/orders`, `/vendor`, `/admin`)
+
+### 9.1 Customer Order Self-Cancellation
+- **Endpoint**: `POST /orders/:id/cancel`
+- **Guards**: `JwtAuthGuard` (Customer role, ownership enforced)
+- **Payload**:
+```json
+{
+  "reason": "Changed my mind"
+}
+```
+- **Invariants**: Allowed only in `PLACED` or `RIDER_ASSIGNED`. Forbidden (400 Bad Request) once `PREPARING` or later. Deletes pending ledgers, restores coupon quota, triggers refund if paid online.
+
+### 9.2 Vendor Order Rejection
+- **Endpoint**: `POST /vendor/orders/:id/reject`
+- **Guards**: `JwtAuthGuard`, `RolesGuard(VENDOR_STAFF)`
+- **Payload**:
+```json
+{
+  "reasonCode": "OUT_OF_STOCK",
+  "reasonNotes": "Ran out of ingredients"
+}
+```
+- **Invariants**: Allowed prior to `PREPARING`. Cancels order, unlocks courier, refunds customer.
+
+### 9.3 Admin Force-Cancellation
+- **Endpoint**: `POST /admin/orders/:id/cancel`
+- **Guards**: `JwtAuthGuard`, `RolesGuard(SUPER_ADMIN)`
+- **Payload**:
+```json
+{
+  "reason": "Fraudulent order detected by security ops"
+}
+```
+- **Invariants**: Allowed prior to `DISPATCHED`. Requires min-5-character audit reason. Releases courier Redis lock and initiates refund.
+
+

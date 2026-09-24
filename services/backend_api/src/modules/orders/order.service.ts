@@ -12,11 +12,14 @@ import { CouponService } from '../promotions/coupons/coupon.service';
 import { DeliveryFeeService } from '../promotions/pricing/delivery-fee.service';
 import { CheckoutDto, DeliveryMethod } from './dto/checkout.dto';
 import { ValidateReorderDto } from './dto/validate-reorder.dto';
-import { OrderStatus, PaymentStatus, Prisma, SettlementStatus, UserRole } from '@prisma/client';
+import { CancelOrderDto } from './dto/cancel-order.dto';
+import { assertTransition } from './order-state.machine';
+import { OrderStatus, PaymentMethod, PaymentStatus, Prisma, SettlementStatus, UserRole } from '@prisma/client';
 
 import { TrackingGateway } from '../realtime/tracking.gateway';
 import { OrderFlowService } from '../order-flow/order-flow.service';
 import { RedisService } from '../../common/redis/redis.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface OrderAddressSnapshot {
   type: string;
@@ -78,6 +81,7 @@ export class OrderService {
     private readonly trackingGateway: TrackingGateway,
     private readonly orderFlowService: OrderFlowService,
     private readonly redis: RedisService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -663,5 +667,211 @@ export class OrderService {
     }
     const paddedSeq = seq.toString().padStart(4, '0');
     return `ORD-${dateStr}-${paddedSeq}`;
+  }
+
+  /**
+   * 6. Cancel Customer Order
+   * Customers can cancel their own orders ONLY while status is PLACED or RIDER_ASSIGNED (pre-prep).
+   */
+  async cancelCustomerOrder(customerId: string, orderId: string, dto: CancelOrderDto) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        vendor: true,
+        rider: { include: { user: true } },
+        payments: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID "${orderId}" not found`);
+    }
+
+    if (order.customerId !== customerId) {
+      throw new ForbiddenException('You do not have permission to cancel this order');
+    }
+
+    if (order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException('Order is already cancelled');
+    }
+
+    if (
+      order.status !== OrderStatus.PLACED &&
+      order.status !== OrderStatus.RIDER_ASSIGNED
+    ) {
+      throw new BadRequestException(
+        `Cannot cancel order in "${order.status}" status. Customer self-cancellation is only permitted prior to kitchen preparation.`,
+      );
+    }
+
+    const reason = dto.reason?.trim() || 'Cancelled by customer';
+    return this.executeOrderCancellation(order, reason, UserRole.CUSTOMER);
+  }
+
+  /**
+   * 7. Centralized Atomic Order Cancellation Engine
+   * Enforces ADR-002 FSM transition, ADR-009 double-entry ledger removal, coupon quota restoration,
+   * payment refund reconciliation, Redis courier mutex release, and realtime WebSocket event broadcast.
+   */
+  async executeOrderCancellation(
+    order: {
+      id: string;
+      orderNumber: string;
+      customerId: string;
+      vendorId: string;
+      riderId: string | null;
+      couponId: string | null;
+      status: OrderStatus;
+      paymentMethod: PaymentMethod;
+      paymentStatus: PaymentStatus;
+      rider?: { id: string; userId: string } | null;
+    },
+    reason: string,
+    cancelledByRole: UserRole,
+  ) {
+    // 1. Assert state machine transition legality
+    assertTransition(order.status, OrderStatus.CANCELLED);
+
+    const riderIdToRelease = order.riderId;
+    const riderUserId = order.rider?.userId;
+
+    // 2. Execute DB transaction
+    const updatedOrder = await this.prisma.$transaction(async (tx) => {
+      // Reconcile Payment state
+      let nextPaymentStatus = order.paymentStatus;
+      if (order.paymentStatus === PaymentStatus.PAID) {
+        nextPaymentStatus = PaymentStatus.REFUNDED;
+        await tx.payment.updateMany({
+          where: { orderId: order.id, status: PaymentStatus.PAID },
+          data: {
+            status: PaymentStatus.REFUNDED,
+            updatedAt: new Date(),
+          },
+        });
+      } else if (order.paymentStatus === PaymentStatus.PENDING) {
+        nextPaymentStatus = PaymentStatus.FAILED;
+        await tx.payment.updateMany({
+          where: { orderId: order.id, status: PaymentStatus.PENDING },
+          data: {
+            status: PaymentStatus.FAILED,
+            failedAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+      }
+
+      // Reconcile Coupon usage
+      if (order.couponId) {
+        await tx.coupon.update({
+          where: { id: order.couponId },
+          data: {
+            currentUses: { decrement: 1 },
+          },
+        });
+      }
+
+      // Delete pending commission ledgers to prevent settlement payout
+      await tx.commissionLedger.deleteMany({
+        where: { orderId: order.id, settlementStatus: SettlementStatus.PENDING },
+      });
+
+      // Delete pending rider trip ledgers
+      await tx.riderTripLedger.deleteMany({
+        where: { orderId: order.id, status: SettlementStatus.PENDING },
+      });
+
+      // Update Order to CANCELLED
+      return tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: OrderStatus.CANCELLED,
+          cancelledAt: new Date(),
+          rejectionReason: reason,
+          paymentStatus: nextPaymentStatus,
+          riderId: null,
+        },
+        include: {
+          orderItems: true,
+          vendor: true,
+          customer: { select: { id: true, fullName: true, phone: true } },
+        },
+      });
+    });
+
+    // 3. Post-transaction Side Effects: Release Rider Mutex in Redis
+    if (riderIdToRelease) {
+      try {
+        await this.orderFlowService.releaseRiderActiveTrip(riderIdToRelease);
+        await this.redis.del(`lock:order_claim:${order.id}`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        this.logger.error(`Failed to release rider mutex on cancel: ${msg}`);
+      }
+    }
+
+    // 4. Realtime WebSockets: Broadcast cancellation
+    try {
+      this.trackingGateway.notifyOrderStatusChanged(
+        order.id,
+        order.customerId,
+        order.status,
+        OrderStatus.CANCELLED,
+        {
+          reason,
+          cancelledBy: cancelledByRole,
+          paymentStatus: updatedOrder.paymentStatus,
+        },
+      );
+
+      if (this.trackingGateway?.server) {
+        const payload = {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          previousStatus: order.status,
+          status: OrderStatus.CANCELLED,
+          reason,
+          cancelledBy: cancelledByRole,
+          paymentStatus: updatedOrder.paymentStatus,
+          cancelledAt: updatedOrder.cancelledAt,
+        };
+        this.trackingGateway.server.to(`order_${order.id}`).emit('order:cancelled', payload);
+        this.trackingGateway.server.to(`user_${order.customerId}`).emit('order:cancelled', payload);
+        this.trackingGateway.server.to(`vendor_${order.vendorId}`).emit('order:cancelled', payload);
+        this.trackingGateway.server.to('admin_hq').emit('order:cancelled', payload);
+        if (riderUserId) {
+          this.trackingGateway.server.to(`user_${riderUserId}`).emit('order:cancelled', payload);
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.warn(`Failed to broadcast cancel socket event: ${msg}`);
+    }
+
+    // 5. Push Notifications
+    if (cancelledByRole !== UserRole.CUSTOMER) {
+      this.notificationsService
+        .sendToUser(order.customerId, {
+          title: 'Order Cancelled',
+          body: `Order ${order.orderNumber} was cancelled. Reason: ${reason}`,
+          data: { orderId: order.id, type: 'ORDER_CANCELLED' },
+        })
+        .catch((err: unknown) => {
+          this.logger.warn(`Push notify customer failed: ${err instanceof Error ? err.message : 'Unknown'}`);
+        });
+    }
+
+    if (riderUserId) {
+      this.notificationsService
+        .sendToUser(riderUserId, {
+          title: 'Delivery Trip Cancelled',
+          body: `Order ${order.orderNumber} has been cancelled.`,
+          data: { orderId: order.id, type: 'TRIP_CANCELLED' },
+        })
+        .catch((err: unknown) => {
+          this.logger.warn(`Push notify rider failed: ${err instanceof Error ? err.message : 'Unknown'}`);
+        });
+    }
+
+    return updatedOrder;
   }
 }

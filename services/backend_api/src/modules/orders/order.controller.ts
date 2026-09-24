@@ -15,6 +15,7 @@ import { User } from '@prisma/client';
 import { OrderService } from './order.service';
 import { CheckoutDto } from './dto/checkout.dto';
 import { ValidateReorderDto } from './dto/validate-reorder.dto';
+import { CancelOrderDto } from './dto/cancel-order.dto';
 
 @ApiTags('Orders & Ledger')
 @Controller('orders')
@@ -90,6 +91,27 @@ export class OrderController {
     const order = await this.orderService.getOrderById(id, user.id, user.role);
     return {
       message: 'Order details retrieved successfully',
+      data: order,
+    };
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancel order by customer prior to kitchen preparation (PLACED / RIDER_ASSIGNED)' })
+  @ApiResponse({ status: 200, description: 'Order successfully cancelled and refunded if paid online' })
+  @ApiResponse({ status: 400, description: 'Cannot cancel after kitchen preparation has started' })
+  @ApiResponse({ status: 403, description: 'Forbidden if not order owner' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  async cancelOrder(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+    @Body() dto: CancelOrderDto,
+  ) {
+    const order = await this.orderService.cancelCustomerOrder(user.id, id, dto);
+    return {
+      message: 'Order cancelled successfully',
       data: order,
     };
   }

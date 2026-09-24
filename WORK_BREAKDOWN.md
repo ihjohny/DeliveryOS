@@ -437,8 +437,6 @@ graph TD
 
 ## 📌 Production Readiness Track — Phase 1: Trust & Correctness (Completed)
 
-> Master reference: [`PHASE_1_IMPLEMENTATION_PLAN.md`](./PHASE_1_IMPLEMENTATION_PLAN.md) and [`PROJECT_REVIEW_AND_PLAN.md`](./PROJECT_REVIEW_AND_PLAN.md)
-
 ### Phase 1 Milestones Summary
 - **Task 1.1: Central Order FSM Guard**:
   - [x] Defined `ORDER_TRANSITIONS` and `CLAIMABLE_STATUSES` in `order-state.machine.ts`.
@@ -473,8 +471,6 @@ graph TD
 
 ## 📌 Production Readiness Track — Phase 2: Realtime & Maps Truth-Telling (Completed)
 
-> Master reference: [`PHASE_2_IMPLEMENTATION_PLAN.md`](./PHASE_2_IMPLEMENTATION_PLAN.md) and [`PROJECT_REVIEW_AND_PLAN.md`](./PROJECT_REVIEW_AND_PLAN.md) §5 Phase 2
-
 ### Phase 2 Milestones Summary
 - **Task 2.1: Flutter Socket Client Infrastructure**:
   - [x] Integrated `socket_io_client: ^3.1.6` into `apps/customer_app` and `apps/rider_app`.
@@ -501,6 +497,65 @@ graph TD
   - [x] Customer app passed `flutter test` (32/32 tests, 100%) and `flutter analyze` (0 issues).
   - [x] Rider app passed `flutter test` (28/28 tests, 100%) and `flutter analyze` (0 issues).
   - [x] Both web portals build cleanly (`npm run build` exits 0).
-  - [x] Synchronized `ADR-004`, `TID-04`, `TID-05`, `PHASE_2_IMPLEMENTATION_PLAN.md`, and `WORK_BREAKDOWN.md`.
+  - [x] Synchronized `ADR-004`, `TID-04`, `TID-05`, and `WORK_BREAKDOWN.md`.
+
+---
+
+## 📌 Production Readiness Track — Phase 3: Online Payments, Financial Ledger Settlement & Admin Governance (Completed)
+
+> Master reference: [`ADR-011`](./context_docs/architecture-decision-records/ADR-011-multi-gateway-online-payment-and-webhook-idempotency.md)
+
+### Phase 3 Milestones Summary
+- **Task 3.1: Online Payment Gateway & Webhook Security**:
+  - [x] Multi-gateway architecture: bKash, SSLCommerz, and Sandbox with HMAC-SHA256 signature verification.
+  - [x] Idempotent IPN webhook processing with strict payment reconciliation.
+  - [x] User Feedback Invariant Guard: Pre-payment suppression of rider dispatch and vendor KDS broadcast for online orders until payment is cryptographically verified.
+- **Task 3.2: Financial Settlement Cycle Engine**:
+  - [x] Automated batch settlement cycle engine (`POST /admin/finance/settle-cycle`).
+  - [x] Atomic transition of pending commission and trip ledgers to `SETTLED`.
+  - [x] Double-entry balancing with historical batch ledger tracking.
+- **Task 3.3: Admin Fleet & Vendor Governance**:
+  - [x] Admin vendor management: status toggle (suspend/activate), commission rate configuration.
+  - [x] Admin rider governance: approval workflow and customizable COD cash safety limits.
+- **Task 3.4: Automated Test Verification**:
+  - [x] `npm run payment:test` passed 100%.
+  - [x] `npm run settlement:test` passed 100%.
+
+---
+
+## 📌 Production Readiness Track — Order Cancellation, Vendor Rejection & Refunds (Completed)
+
+> Master reference: [`ADR-002`](./context_docs/architecture-decision-records/ADR-002-dynamic-dual-order-flow-fsm.md) and [`TID-03`](./context_docs/technical-implementation-documents/03-api-specifications-and-endpoints.md)
+
+### Milestones Summary
+- **Task C.1: Backend Cancellation Engine & Domain Endpoints**:
+  - [x] Customer self-cancellation endpoint (`POST /orders/:id/cancel`) with pre-prep boundary guard (`PLACED` and `RIDER_ASSIGNED` only; throws 400 once `PREPARING`).
+  - [x] Vendor order rejection endpoint (`POST /vendor/orders/:id/reject`) with structured reason codes (`OUT_OF_STOCK`, `KITCHEN_OVERLOAD`, `STORE_CLOSING_SOON`, `OTHER`).
+  - [x] Admin force-cancellation endpoint (`POST /admin/orders/:id/cancel`) for pre-dispatch orders with mandatory audit trail reason.
+  - [x] Financial & ledger rollback invariants: Atomic transaction deletes pending commission and trip ledgers, restores coupon quota (`currentUses: { decrement: 1 }`), transitions payment to `REFUNDED` (or `FAILED`), and releases Redis courier locks (`rider:active_order:${riderId}` and `lock:order_claim:${orderId}`).
+  - [x] Real-time event broadcasting: Dispatches `order:cancelled` and `order:status:changed` (newStatus `CANCELLED`) to rooms and sends push alerts.
+- **Task C.2: Automated Integration Tests**:
+  - [x] Created `services/backend_api/scripts/test-order-cancellation.ts` (`npm run cancel:test`).
+  - [x] 4/4 test suites passed 100%: Customer cancel COD + coupon restore; Pre-prep boundary guard 400 Bad Request; Vendor rejection with reason; Admin force-cancel of online paid order with payment refund and courier release.
+- **Task C.3: Vendor Portal Integration**:
+  - [x] Added `rejectOrder` API service and mutation to `useKDSOrders`.
+  - [x] Added Reject button and reason modal in `KDSOrderCard.tsx` (Lane 1).
+  - [x] Clean compilation (`npm run build` exits 0).
+- **Task C.4: Admin Portal Integration**:
+  - [x] Added `cancelOrder` API service and audit modal to `AdminOrdersPage.tsx`.
+  - [x] Clean compilation (`npm run build` exits 0).
+- **Task C.5: Customer App Integration**:
+  - [x] Added `cancellationReason`, `paymentStatus`, `canCancel`, `isCancelled` to `OrderTrackingState`.
+  - [x] Added `order:cancelled` socket listener and `cancelOrder` method to `TrackingNotifier`.
+  - [x] Added Cancel Order button, confirmation dialog with reason selection, and refund status banner to `OrderTrackingScreen.dart`.
+  - [x] Added cancelled state handling to `OrderStepperWidget.dart`.
+  - [x] All 34 Flutter tests passed (`flutter test`, 100%) and 0 analyzer issues (`flutter analyze`).
+- **Task C.6: Rider App Resilience**:
+  - [x] Added `order:cancelled` socket listener to `RiderTripNotifier` to automatically dismiss incoming alerts and clear active trip with notification if cancelled.
+  - [x] Joined and left order socket room on trip claim and completion.
+  - [x] All 28 Flutter tests passed (`flutter test`, 100%) and 0 analyzer issues (`flutter analyze`).
+- **Task C.7: Documentation Synchronization**:
+  - [x] Updated `ADR-002`, `TID-03`, and `WORK_BREAKDOWN.md`.
+
 
 

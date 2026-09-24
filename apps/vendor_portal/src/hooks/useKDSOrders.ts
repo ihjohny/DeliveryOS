@@ -47,20 +47,27 @@ export const useKDSOrders = (vendorId?: string) => {
 
       if (!orderId) return;
 
-      queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) => {
-        const safeOld = Array.isArray(old) ? old : [];
-        return safeOld.map((o) => {
-          if (o.id === orderId) {
-            return {
-              ...o,
-              status: (newStatus || o.status) as KDSOrder['status'],
-              prepTimeMinutes: prepTime ?? o.prepTimeMinutes,
-              acceptedAt: newStatus === 'PREPARING' ? new Date().toISOString() : o.acceptedAt,
-            };
-          }
-          return o;
+      if (newStatus === 'CANCELLED') {
+        queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) => {
+          const safeOld = Array.isArray(old) ? old : [];
+          return safeOld.filter((o) => o.id !== orderId);
         });
-      });
+      } else {
+        queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) => {
+          const safeOld = Array.isArray(old) ? old : [];
+          return safeOld.map((o) => {
+            if (o.id === orderId) {
+              return {
+                ...o,
+                status: (newStatus || o.status) as KDSOrder['status'],
+                prepTimeMinutes: prepTime ?? o.prepTimeMinutes,
+                acceptedAt: newStatus === 'PREPARING' ? new Date().toISOString() : o.acceptedAt,
+              };
+            }
+            return o;
+          });
+        });
+      }
 
       // Check if any unaccepted new orders remain; if none, silence alarm
       const currentOrders = queryClient.getQueryData<KDSOrder[]>(queryKey) || [];
@@ -72,12 +79,33 @@ export const useKDSOrders = (vendorId?: string) => {
       }
     };
 
+    const handleOrderCancelled = (payload: any) => {
+      const data = payload?.data || payload;
+      const orderId = data?.orderId || data?.id;
+      if (!orderId) return;
+
+      queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) => {
+        const safeOld = Array.isArray(old) ? old : [];
+        return safeOld.filter((o) => o.id !== orderId);
+      });
+
+      const currentOrders = queryClient.getQueryData<KDSOrder[]>(queryKey) || [];
+      const hasUnaccepted = Array.isArray(currentOrders) && currentOrders.some(
+        (o) => (o.status === 'PLACED' || o.status === 'RIDER_ASSIGNED') && o.id !== orderId
+      );
+      if (!hasUnaccepted) {
+        soundEngine.stopOrderAlarm();
+      }
+    };
+
     socket.on('order:new', handleNewOrder);
     socket.on('order:status:changed', handleStatusChanged);
+    socket.on('order:cancelled', handleOrderCancelled);
 
     return () => {
       socket.off('order:new', handleNewOrder);
       socket.off('order:status:changed', handleStatusChanged);
+      socket.off('order:cancelled', handleOrderCancelled);
     };
   }, [queryClient, queryKey]);
 
@@ -89,6 +117,24 @@ export const useKDSOrders = (vendorId?: string) => {
       soundEngine.stopOrderAlarm();
       queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) =>
         old.map((o) => (o.id === updatedOrder.id ? { ...o, ...updatedOrder, status: 'PREPARING' } : o))
+      );
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: ({
+      orderId,
+      reasonCode,
+      reasonNotes,
+    }: {
+      orderId: string;
+      reasonCode: string;
+      reasonNotes?: string;
+    }) => kdsApi.rejectOrder(orderId, reasonCode, reasonNotes),
+    onSuccess: (updatedOrder) => {
+      soundEngine.stopOrderAlarm();
+      queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) =>
+        old.filter((o) => o.id !== updatedOrder.id)
       );
     },
   });
@@ -138,9 +184,12 @@ export const useKDSOrders = (vendorId?: string) => {
     readyOrders,
     acceptOrder: (orderId: string, prepTimeMinutes?: number) =>
       acceptMutation.mutateAsync({ orderId, prepTimeMinutes }),
+    rejectOrder: (orderId: string, reasonCode: string, reasonNotes?: string) =>
+      rejectMutation.mutateAsync({ orderId, reasonCode, reasonNotes }),
     markOrderReady: (orderId: string) => readyMutation.mutateAsync(orderId),
     handoverOrder: (orderId: string) => handoverMutation.mutateAsync(orderId),
     isAccepting: acceptMutation.isPending,
+    isRejecting: rejectMutation.isPending,
     isMarkingReady: readyMutation.isPending,
     isHandingOver: handoverMutation.isPending,
   };

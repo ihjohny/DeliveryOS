@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   Put,
   Query,
   UseGuards,
@@ -18,6 +19,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User, UserRole } from '@prisma/client';
 import { VendorStaffService } from './vendor-staff.service';
 import { AcceptOrderDto } from './dto/accept-order.dto';
+import { RejectOrderDto } from './dto/reject-order.dto';
 import { ToggleStockDto } from './dto/toggle-stock.dto';
 
 @ApiTags('Vendor Kitchen Operations')
@@ -160,6 +162,24 @@ export class VendorStaffController {
     const order = await this.vendorStaffService.acceptOrder(user, orderId, dto);
     return {
       message: `Order accepted with ${order.prepTimeMinutes} mins prep time`,
+      data: order,
+    };
+  }
+
+  @Post('orders/:id/reject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reject incoming order with reason (e.g. out of stock, kitchen overload)' })
+  @ApiResponse({ status: 200, description: 'Order rejected and transitioned to CANCELLED' })
+  @ApiResponse({ status: 400, description: 'Cannot reject order once preparation has started' })
+  @ApiResponse({ status: 403, description: 'Forbidden if not authorized for this outlet' })
+  async rejectOrder(
+    @CurrentUser() user: User,
+    @Param('id') orderId: string,
+    @Body() dto: RejectOrderDto,
+  ) {
+    const order = await this.vendorStaffService.rejectOrder(user, orderId, dto);
+    return {
+      message: 'Order rejected successfully',
       data: order,
     };
   }

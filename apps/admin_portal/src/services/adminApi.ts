@@ -224,6 +224,11 @@ export const adminApi = {
     return res.data?.data || res.data;
   },
 
+  async cancelOrder(orderId: string, reason: string): Promise<any> {
+    const res = await apiClient.post(`/api/v1/admin/orders/${orderId}/cancel`, { reason });
+    return res.data?.data || res.data;
+  },
+
   // 4. Banners
   async getBanners(): Promise<AdminBanner[]> {
     const res = await apiClient.get('/api/v1/admin/banners');

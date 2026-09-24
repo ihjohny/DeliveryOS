@@ -12,6 +12,7 @@ import {
   Phone,
   CheckCircle2,
   AlertCircle,
+  XCircle,
 } from 'lucide-react';
 import adminApi, { AdminOrder, FleetRider } from '../../services/adminApi';
 import { getSocket } from '../../services/socket';
@@ -30,6 +31,9 @@ export const AdminOrdersPage: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedRiderId, setSelectedRiderId] = useState<string>('');
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelTargetOrder, setCancelTargetOrder] = useState<AdminOrder | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   const { data: orders = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-orders', selectedStatus],
@@ -69,6 +73,17 @@ export const AdminOrdersPage: React.FC = () => {
       setIsAssignModalOpen(false);
       setSelectedOrder(null);
       setSelectedRiderId('');
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: ({ orderId, reason }: { orderId: string; reason: string }) =>
+      adminApi.cancelOrder(orderId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      setIsCancelModalOpen(false);
+      setCancelTargetOrder(null);
+      setCancelReason('');
     },
   });
 
@@ -153,21 +168,39 @@ export const AdminOrdersPage: React.FC = () => {
       key: 'id',
       header: 'Action',
       render: (order) => (
-        <div className="text-right">
+        <div className="flex items-center justify-end gap-1.5">
           {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs h-7 px-2.5 gap-1"
-              onClick={() => {
-                setSelectedOrder(order);
-                setSelectedRiderId(order.riderId || (availableRiders[0]?.id ?? ''));
-                setIsAssignModalOpen(true);
-              }}
-            >
-              <UserCheck className="h-3.5 w-3.5 text-primary-600" />
-              {order.riderId ? 'Reassign' : 'Force Assign'}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 px-2.5 gap-1"
+                onClick={() => {
+                  setSelectedOrder(order);
+                  setSelectedRiderId(order.riderId || (availableRiders[0]?.id ?? ''));
+                  setIsAssignModalOpen(true);
+                }}
+              >
+                <UserCheck className="h-3.5 w-3.5 text-primary-600" />
+                {order.riderId ? 'Reassign' : 'Force Assign'}
+              </Button>
+              {order.status !== 'DISPATCHED' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-7 px-2 gap-1 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                  onClick={() => {
+                    setCancelTargetOrder(order);
+                    setCancelReason('');
+                    setIsCancelModalOpen(true);
+                  }}
+                  title="Force cancel this order"
+                >
+                  <XCircle className="h-3.5 w-3.5 text-rose-500" />
+                  Cancel
+                </Button>
+              )}
+            </>
           ) : (
             <span className="text-slate-400 text-xs">—</span>
           )}
@@ -352,6 +385,74 @@ export const AdminOrdersPage: React.FC = () => {
                 }}
               >
                 Confirm Dispatch Override
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Force Cancel Modal */}
+      {isCancelModalOpen && cancelTargetOrder && (
+        <Modal
+          isOpen={isCancelModalOpen}
+          onClose={() => setIsCancelModalOpen(false)}
+          title={`Force Cancel Order #${cancelTargetOrder.orderNumber}`}
+        >
+          <div className="space-y-4">
+            <Alert
+              type="error"
+              message="Force-cancelling an order reverses pending commission ledgers, releases assigned couriers, and refunds online payments. This action is permanently logged in audit trails."
+            />
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/50 space-y-1">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Customer:</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">{cancelTargetOrder.customerName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Store Outlet:</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">{cancelTargetOrder.vendorName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Total Amount:</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">
+                  ৳{cancelTargetOrder.totalAmount} ({cancelTargetOrder.paymentMethod})
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Mandatory Cancellation Audit Reason (min 5 chars)
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="e.g. Customer requested emergency cancellation via hotline"
+                rows={3}
+                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:border-rose-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button variant="outline" size="sm" onClick={() => setIsCancelModalOpen(false)}>
+                Dismiss
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                disabled={cancelReason.trim().length < 5}
+                isLoading={cancelMutation.isPending}
+                onClick={() => {
+                  if (cancelTargetOrder) {
+                    cancelMutation.mutate({
+                      orderId: cancelTargetOrder.id,
+                      reason: cancelReason.trim(),
+                    });
+                  }
+                }}
+              >
+                Confirm Force Cancellation
               </Button>
             </div>
           </div>

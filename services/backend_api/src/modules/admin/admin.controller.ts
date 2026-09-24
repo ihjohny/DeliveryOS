@@ -22,6 +22,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { BannerLinkType, DiscountType, PermissionScope, UserRole } from '@prisma/client';
 import { AdminService } from './admin.service';
 import { OrderFlowMode } from '../order-flow/dto/update-order-flow.dto';
+import { AdminCancelOrderDto } from './dto/admin-cancel-order.dto';
 
 @ApiTags('Super Admin Master Governance')
 @Controller('admin')
@@ -505,6 +506,26 @@ export class AdminController {
     return {
       message: `Retrieved ${batches.length} settlement batches`,
       data: batches,
+    };
+  }
+
+  // 12. Super Admin Force-Cancel Order
+  @Post('orders/:id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Force-cancel an order prior to dispatch with mandatory audit reason' })
+  @ApiResponse({ status: 200, description: 'Order force-cancelled and refunded' })
+  @ApiResponse({ status: 400, description: 'Cannot cancel dispatched or delivered order' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  async cancelOrder(
+    @Param('id') id: string,
+    @Req() req: ExpressRequest & { user?: { id?: string; sub?: string } },
+    @Body() dto: AdminCancelOrderDto,
+  ) {
+    const adminUserId = req.user?.id || req.user?.sub || 'SUPER_ADMIN';
+    const order = await this.adminService.cancelOrder(adminUserId, id, dto);
+    return {
+      message: 'Order force-cancelled successfully',
+      data: order,
     };
   }
 }
