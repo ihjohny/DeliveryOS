@@ -61,6 +61,23 @@ export class RiderService {
       );
     }
 
+    if (!isOnline) {
+      const activeOrder = await this.prisma.order.findFirst({
+        where: {
+          riderId: rider.id,
+          status: {
+            in: [OrderStatus.RIDER_ASSIGNED, OrderStatus.DISPATCHED],
+          },
+        },
+      });
+
+      if (activeOrder) {
+        throw new BadRequestException(
+          `Cannot go offline while you have an active in-flight delivery (Order #${activeOrder.orderNumber}). Please complete delivery first.`,
+        );
+      }
+    }
+
     return this.prisma.rider.update({
       where: { id: rider.id },
       data: { isOnline },
@@ -206,7 +223,7 @@ export class RiderService {
   }
 
   /**
-   * 4. Deposit Collected COD Cash to Platform Account
+   * 4. Deposit Collected COD Cash to Platform Account (Requires Admin Verification)
    */
   async depositCash(userId: string, dto: DepositCashDto) {
     const rider = await this.getRiderProfile(userId);
@@ -227,30 +244,35 @@ export class RiderService {
     const randSuffix = Math.floor(1000 + Math.random() * 9000).toString();
     const referenceNo = dto.referenceNo || `DEP-${dateStr}-${randSuffix}`;
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const deposit = await tx.cashDeposit.create({
-        data: {
-          riderId: rider.id,
-          amount: depositAmount,
-          referenceNo,
-          note: dto.note,
-          status: 'COMPLETED',
-        },
-      });
-
-      const updatedRider = await tx.rider.update({
-        where: { id: rider.id },
-        data: {
-          cashInHand: { decrement: depositAmount },
-        },
-      });
-
-      return { deposit, updatedRider };
+    // Security Guard: Create deposit in PENDING_APPROVAL status.
+    // Cash in hand is officially decremented upon Admin verification.
+    const deposit = await this.prisma.cashDeposit.create({
+      data: {
+        riderId: rider.id,
+        amount: depositAmount,
+        referenceNo,
+        note: dto.note || dto.notes,
+        status: 'PENDING_APPROVAL',
+      },
     });
 
     return {
-      deposit: result.deposit,
-      remainingCashInHand: Number(result.updatedRider.cashInHand),
+      message: 'Cash deposit request submitted for admin verification',
+      deposit,
+      cashInHand: currentCashInHand,
+      remainingCashInHand: currentCashInHand,
+      status: 'PENDING_APPROVAL',
     };
+  }
+
+  /**
+   * 5. Get Cash Deposit History for Rider
+   */
+  async getCashDeposits(userId: string) {
+    const rider = await this.getRiderProfile(userId);
+    return this.prisma.cashDeposit.findMany({
+      where: { riderId: rider.id },
+      orderBy: { depositedAt: 'desc' },
+    });
   }
 }

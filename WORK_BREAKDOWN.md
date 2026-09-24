@@ -557,5 +557,34 @@ graph TD
 - **Task C.7: Documentation Synchronization**:
   - [x] Updated `ADR-002`, `TID-03`, and `WORK_BREAKDOWN.md`.
 
+---
+
+## 📌 Market Launch Readiness Track 1: Core Business & Financial Integrity (Completed)
+
+> Master reference: [`market_launch_readiness_plan.md`](file:///Users/bs0650/.gemini/antigravity/brain/a9578038-9055-4a3e-95b8-7631874cfe10/market_launch_readiness_plan.md)
+
+### Track 1 Milestones Summary
+- **Task 1.1: Store Hours & Busy Pause Guard on Checkout**:
+  - [x] In `OrderService.checkout()`, verified `vendor.isActive` and `!vendor.isBusy`.
+  - [x] Validated current day/time against `VendorOperatingHour` schedule (`isClosed`, `openTime`, `closeTime` including overnight shift handling), throwing `400 Bad Request` if store is closed or busy paused.
+  - [x] Updated `validateAddressCoverage` in `vendor.service.ts` to return `isBusy` and `isActive` states to the client.
+- **Task 1.2: COD Cash Deposit Security & Verification**:
+  - [x] In `rider.service.ts#depositCash`, created deposits in `PENDING_APPROVAL` status and prevented immediate decrement of `cashInHand`.
+  - [x] Added `GET /rider/cash/deposits` for couriers to track submitted deposit requests.
+  - [x] Added Admin management endpoints: `GET /admin/finance/cash-deposits` and `PATCH /admin/finance/cash-deposits/:id/verify` (`APPROVE` or `REJECT`).
+  - [x] Decremented `rider.cashInHand` only upon admin verification in an atomic database transaction.
+- **Task 1.3: Net COD Cash Offset in Settlement Cycle Engine**:
+  - [x] In `admin.service.ts#executeSettlementCycle`, deducted `codCollected` from `deliveryEarnings` (`Math.max(0, gross - cod)`), protecting the platform from overpaying couriers holding COD cash.
+- **Task 1.4: Guard Rider Duty Switch Mid-Delivery**:
+  - [x] In `rider.service.ts#toggleDuty`, blocked going offline (`isOnline: false`) with `400 Bad Request` when rider holds an in-flight order in `RIDER_ASSIGNED` or `DISPATCHED`.
+- **Task 1.5: Route Deduplication & Dead Stubs Cleanup**:
+  - [x] Removed duplicate `PATCH /admin/settings/order-flow` from `admin.controller.ts` (handled in `order-flow.controller.ts`).
+  - [x] Removed duplicate `PATCH /admin/riders/:id/cash-limit` and duplicate `setRiderCashLimit` from `admin.controller.ts` and `admin.service.ts`.
+  - [x] Removed dead test endpoint `GET /auth/admin-check` from `auth.controller.ts`; verified RBAC on `/admin/overview`.
+- **Task 1.6: Automated Test Verification**:
+  - [x] Created `services/backend_api/scripts/test-track-1-integrity.ts` (`npm run track1:test`) covering all 5 security and business integrity checks (100% passed).
+  - [x] Regression test suites passed 100%: `npm run auth:test`, `npm run settlement:test`, `npm run cancel:test`, `npm run payment:test`.
+
+
 
 

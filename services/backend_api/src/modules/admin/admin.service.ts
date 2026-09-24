@@ -894,16 +894,6 @@ export class AdminService {
     return updated;
   }
 
-  async setRiderCashLimit(riderId: string, maxCashLimit: number) {
-    const rider = await this.prisma.rider.findUnique({ where: { id: riderId } });
-    if (!rider) throw new NotFoundException(`Rider with ID "${riderId}" not found`);
-
-    return this.prisma.rider.update({
-      where: { id: riderId },
-      data: { maxCashLimit },
-    });
-  }
-
   // ===========================================================================
   // 11. Automated Financial Settlement Cycle Engine
   // ===========================================================================
@@ -936,7 +926,8 @@ export class AdminService {
       // Compute aggregates
       let totalVendorPayout = 0;
       let totalPlatformMargin = 0;
-      let totalRiderPayout = 0;
+      let totalRiderGrossEarnings = 0;
+      let totalRiderCodCollected = 0;
 
       for (const c of pendingCommissions) {
         totalVendorPayout += Number(c.netVendorPayable);
@@ -944,12 +935,17 @@ export class AdminService {
       }
 
       for (const t of pendingTrips) {
-        totalRiderPayout += Number(t.deliveryEarnings);
+        totalRiderGrossEarnings += Number(t.deliveryEarnings);
+        totalRiderCodCollected += Number(t.codCollected || 0);
       }
 
       totalVendorPayout = Math.round(totalVendorPayout * 100) / 100;
       totalPlatformMargin = Math.round(totalPlatformMargin * 100) / 100;
-      totalRiderPayout = Math.round(totalRiderPayout * 100) / 100;
+      totalRiderGrossEarnings = Math.round(totalRiderGrossEarnings * 100) / 100;
+      totalRiderCodCollected = Math.round(totalRiderCodCollected * 100) / 100;
+
+      // Net Rider Payout: Delivery gross earnings offset by collected COD cash held by couriers
+      const totalRiderPayout = Math.max(0, Math.round((totalRiderGrossEarnings - totalRiderCodCollected) * 100) / 100);
 
       const orderIds = Array.from(
         new Set([...pendingCommissions.map((c) => c.orderId), ...pendingTrips.map((t) => t.orderId)]),
@@ -999,7 +995,7 @@ export class AdminService {
       }
 
       this.logger.log(
-        `[Settlement Engine] Closed Batch ${batchNumber}: ${orderIds.length} orders settled (Vendors: ${totalVendorPayout} BDT, Riders: ${totalRiderPayout} BDT, Platform: ${totalPlatformMargin} BDT)`,
+        `[Settlement Engine] Closed Batch ${batchNumber}: ${orderIds.length} orders settled (Vendors: ${totalVendorPayout} BDT, Riders Net: ${totalRiderPayout} BDT [Gross: ${totalRiderGrossEarnings}, COD Offset: ${totalRiderCodCollected}], Platform: ${totalPlatformMargin} BDT)`,
       );
 
       return {
@@ -1056,5 +1052,103 @@ export class AdminService {
 
     const auditReason = `[ADMIN_FORCE_CANCEL by ${adminUserId}] ${dto.reason.trim()}`;
     return this.orderService.executeOrderCancellation(order, auditReason, UserRole.SUPER_ADMIN);
+  }
+
+  /**
+   * 13. Financial Cash Deposits Administration
+   */
+  async getCashDeposits(status?: string) {
+    const where: any = {};
+    if (status) {
+      where.status = status;
+    }
+    return this.prisma.cashDeposit.findMany({
+      where,
+      include: {
+        rider: {
+          select: {
+            id: true,
+            cashInHand: true,
+            maxCashLimit: true,
+            isApproved: true,
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                phone: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { depositedAt: 'desc' },
+    });
+  }
+
+  async verifyCashDeposit(depositId: string, action: 'APPROVE' | 'REJECT', notes?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const deposit = await tx.cashDeposit.findUnique({
+        where: { id: depositId },
+        include: { rider: { include: { user: true } } },
+      });
+
+      if (!deposit) {
+        throw new NotFoundException(`Cash deposit with ID "${depositId}" not found`);
+      }
+
+      if (deposit.status !== 'PENDING_APPROVAL') {
+        throw new BadRequestException(
+          `Cash deposit #${deposit.referenceNo} has already been processed with status: ${deposit.status}`,
+        );
+      }
+
+      const noteSuffix = notes ? ` [Admin Note: ${notes}]` : '';
+      const finalNote = `${deposit.note || ''}${noteSuffix}`.trim();
+
+      if (action === 'APPROVE') {
+        const updatedDeposit = await tx.cashDeposit.update({
+          where: { id: depositId },
+          data: {
+            status: 'APPROVED',
+            note: finalNote,
+          },
+        });
+
+        const updatedRider = await tx.rider.update({
+          where: { id: deposit.riderId },
+          data: {
+            cashInHand: { decrement: Number(deposit.amount) },
+          },
+        });
+
+        this.logger.log(
+          `[Cash Deposit] Approved deposit #${deposit.referenceNo} for rider ${deposit.rider.user?.fullName || deposit.riderId}. Amount: ${deposit.amount} BDT, Remaining cash in hand: ${updatedRider.cashInHand} BDT`,
+        );
+
+        return {
+          message: `Deposit #${deposit.referenceNo} approved successfully`,
+          deposit: updatedDeposit,
+          riderCashInHand: Number(updatedRider.cashInHand),
+        };
+      } else {
+        const updatedDeposit = await tx.cashDeposit.update({
+          where: { id: depositId },
+          data: {
+            status: 'REJECTED',
+            note: finalNote,
+          },
+        });
+
+        this.logger.log(
+          `[Cash Deposit] Rejected deposit #${deposit.referenceNo} for rider ${deposit.rider.user?.fullName || deposit.riderId}. Reason: ${notes || 'No reason provided'}`,
+        );
+
+        return {
+          message: `Deposit #${deposit.referenceNo} rejected`,
+          deposit: updatedDeposit,
+          riderCashInHand: Number(deposit.rider.cashInHand),
+        };
+      }
+    });
   }
 }

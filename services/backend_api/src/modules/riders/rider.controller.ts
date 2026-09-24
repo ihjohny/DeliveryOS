@@ -104,15 +104,26 @@ export class RiderController {
   @Post('cash/deposit')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Deposit collected COD cash into platform custody' })
-  @ApiResponse({ status: 200, description: 'Cash successfully deposited and ledger updated' })
+  @ApiResponse({ status: 200, description: 'Cash deposit request submitted for admin approval' })
   async depositCash(
     @CurrentUser() user: User,
     @Body() dto: DepositCashDto,
   ) {
     const result = await this.riderService.depositCash(user.id, dto);
     return {
-      message: 'Cash deposited successfully',
+      message: 'Cash deposit request submitted successfully',
       data: result,
+    };
+  }
+
+  @Get('cash/deposits')
+  @ApiOperation({ summary: 'Get history of cash deposits submitted by current rider' })
+  @ApiResponse({ status: 200, description: 'Rider cash deposit history' })
+  async getCashDeposits(@CurrentUser() user: User) {
+    const deposits = await this.riderService.getCashDeposits(user.id);
+    return {
+      message: 'Cash deposits retrieved successfully',
+      data: deposits,
     };
   }
 }

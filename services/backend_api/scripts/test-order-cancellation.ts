@@ -126,7 +126,7 @@ async function runCancellationTests() {
       `${API_BASE}/orders/checkout`,
       {
         vendorId: vendor.id,
-        items: [{ productId: product.id, quantity: 2 }],
+        items: [{ productId: product.id, quantity: Math.max(2, Math.ceil(300 / (Number(product.basePrice) || 50))) }],
         deliveryMethod: 'HOME_DELIVERY',
         paymentMethod: 'CASH_ON_DELIVERY',
         couponCode: coupon?.code,

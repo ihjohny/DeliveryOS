@@ -16,4 +16,10 @@ export class DepositCashDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @ApiPropertyOptional({ description: 'Optional deposit note alias' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }
+

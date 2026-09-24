@@ -21,8 +21,8 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { BannerLinkType, DiscountType, PermissionScope, UserRole } from '@prisma/client';
 import { AdminService } from './admin.service';
-import { OrderFlowMode } from '../order-flow/dto/update-order-flow.dto';
 import { AdminCancelOrderDto } from './dto/admin-cancel-order.dto';
+import { VerifyCashDepositDto } from './dto/verify-cash-deposit.dto';
 
 @ApiTags('Super Admin Master Governance')
 @Controller('admin')
@@ -386,22 +386,6 @@ export class AdminController {
     };
   }
 
-  @Patch('settings/order-flow')
-  @ApiOperation({ summary: 'Switch order flow mode (RIDER_FIRST vs VENDOR_FIRST)' })
-  async updateOrderFlow(
-    @Body()
-    dto: {
-      mode: OrderFlowMode;
-      riderSearchTimeoutSeconds?: number;
-    },
-  ) {
-    const updated = await this.adminService.updateOrderFlow(dto.mode, dto.riderSearchTimeoutSeconds);
-    return {
-      message: `Order flow mode switched to ${dto.mode}`,
-      data: updated,
-    };
-  }
-
   @Patch('settings/delivery-fee')
   @ApiOperation({ summary: 'Update delivery fee mode (FIXED_FLAT vs DISTANCE_TIERED)' })
   async updateDeliveryFee(
@@ -477,19 +461,6 @@ export class AdminController {
     };
   }
 
-  @Patch('riders/:id/cash-limit')
-  @ApiOperation({ summary: 'Update courier maximum allowed COD cash in hand threshold' })
-  async setRiderCashLimit(
-    @Param('id') riderId: string,
-    @Body('maxCashLimit') maxCashLimit: number,
-  ) {
-    const updated = await this.adminService.setRiderCashLimit(riderId, maxCashLimit);
-    return {
-      message: `Courier cash limit updated to ${maxCashLimit} BDT`,
-      data: updated,
-    };
-  }
-
   // 11. Automated Financial Settlement Cycle Engine
   @Post('finance/settle-cycle')
   @ApiOperation({ summary: 'Execute financial settlement cycle closing pending commission and trip ledgers' })
@@ -509,7 +480,30 @@ export class AdminController {
     };
   }
 
-  // 12. Super Admin Force-Cancel Order
+  // 12. Courier Cash Deposits Governance
+  @Get('finance/cash-deposits')
+  @ApiOperation({ summary: 'List courier COD cash deposits awaiting verification or historical logs' })
+  @ApiResponse({ status: 200, description: 'List of cash deposits' })
+  async getCashDeposits(@Query('status') status?: string) {
+    const data = await this.adminService.getCashDeposits(status);
+    return {
+      message: `Retrieved ${data.length} cash deposit records`,
+      data,
+    };
+  }
+
+  @Patch('finance/cash-deposits/:id/verify')
+  @ApiOperation({ summary: 'Verify and approve or reject courier COD cash deposit' })
+  @ApiResponse({ status: 200, description: 'Cash deposit verified and processed' })
+  async verifyCashDeposit(
+    @Param('id') id: string,
+    @Body() dto: VerifyCashDepositDto,
+  ) {
+    const result = await this.adminService.verifyCashDeposit(id, dto.action, dto.notes);
+    return result;
+  }
+
+  // 13. Super Admin Force-Cancel Order
   @Post('orders/:id/cancel')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Force-cancel an order prior to dispatch with mandatory audit reason' })

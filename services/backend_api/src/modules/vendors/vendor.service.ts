@@ -294,6 +294,8 @@ export class VendorService {
       distanceKm,
       deliveryRadiusKm: Number(vendor.deliveryRadiusKm),
       estimatedDeliveryFee,
+      isBusy: vendor.isBusy,
+      isActive: vendor.isActive,
     };
   }
 }

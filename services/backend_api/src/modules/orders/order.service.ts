@@ -99,9 +99,53 @@ export class OrderService {
     // 2. Fetch vendor outlet
     const vendor = await this.prisma.vendor.findUnique({
       where: { id: dto.vendorId },
+      include: {
+        operatingHours: true,
+      },
     });
     if (!vendor || !vendor.isActive) {
-      throw new NotFoundException('Vendor outlet not found or currently closed');
+      throw new BadRequestException('Vendor outlet not found or currently closed');
+    }
+
+    if (vendor.isBusy) {
+      throw new BadRequestException(
+        `Vendor "${vendor.name}" is currently busy and temporarily paused receiving new orders`,
+      );
+    }
+
+    // Operating Hours Validation Guard
+    if (vendor.operatingHours && vendor.operatingHours.length > 0) {
+      const now = new Date();
+      const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const todayHours = vendor.operatingHours.find((h) => h.dayOfWeek === currentDay);
+
+      if (todayHours) {
+        if (todayHours.isClosed) {
+          throw new BadRequestException(`Vendor "${vendor.name}" is scheduled closed today`);
+        }
+
+        const currentHour = now.getHours().toString().padStart(2, '0');
+        const currentMinute = now.getMinutes().toString().padStart(2, '0');
+        const currentSecond = now.getSeconds().toString().padStart(2, '0');
+        const currentTime = `${currentHour}:${currentMinute}:${currentSecond}`;
+
+        const openTime = todayHours.openTime.length === 5 ? `${todayHours.openTime}:00` : todayHours.openTime;
+        const closeTime = todayHours.closeTime.length === 5 ? `${todayHours.closeTime}:00` : todayHours.closeTime;
+
+        let isOpen = false;
+        if (openTime <= closeTime) {
+          isOpen = currentTime >= openTime && currentTime <= closeTime;
+        } else {
+          // Overnight shift (e.g. 18:00 - 02:00)
+          isOpen = currentTime >= openTime || currentTime <= closeTime;
+        }
+
+        if (!isOpen) {
+          throw new BadRequestException(
+            `Vendor "${vendor.name}" is currently outside operating hours (${todayHours.openTime} - ${todayHours.closeTime})`,
+          );
+        }
+      }
     }
 
     // 3. Validate Delivery Address & Spatial Geofence Guard

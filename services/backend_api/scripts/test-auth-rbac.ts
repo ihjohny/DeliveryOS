@@ -76,8 +76,8 @@ async function runAuthRbacTest() {
     // -------------------------------------------------------------------------
     // Test 4: RBAC Guard Enforcement (Customer tries accessing Super Admin endpoint)
     // -------------------------------------------------------------------------
-    console.log('🛡️  4. Testing RBAC Guard: Customer accessing /auth/admin-check...');
-    const forbiddenRes = await fetch(`${baseUrl}/auth/admin-check`, {
+    console.log('🛡️  4. Testing RBAC Guard: Customer accessing /admin/overview...');
+    const forbiddenRes = await fetch(`${baseUrl}/admin/overview`, {
       headers: { Authorization: `Bearer ${customerToken}` },
     });
     const forbiddenJson = await forbiddenRes.json();
@@ -102,15 +102,15 @@ async function runAuthRbacTest() {
     const adminLoginJson = await adminLoginRes.json();
     const adminToken = adminLoginJson.data.accessToken;
 
-    const adminCheckRes = await fetch(`${baseUrl}/auth/admin-check`, {
+    const adminCheckRes = await fetch(`${baseUrl}/admin/overview`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     const adminCheckJson = await adminCheckRes.json();
-    console.log(`   Response: status=${adminCheckRes.status}, message="${adminCheckJson.message}", role=${adminCheckJson.data?.role}`);
-    if (adminCheckRes.status !== 200 || adminCheckJson.data?.role !== 'SUPER_ADMIN') {
+    console.log(`   Response: status=${adminCheckRes.status}, message="${adminCheckJson.message}"`);
+    if (adminCheckRes.status !== 200) {
       throw new Error('Super Admin access test failed');
     }
-    console.log('   ✅ Super Admin successfully accessed protected endpoint with 200 OK!\n');
+    console.log('   ✅ Super Admin successfully accessed protected endpoint /admin/overview with 200 OK!\n');
 
     console.log('====================================================');
     console.log('🎉 Task 2.1: AuthModule & RBAC Verification PASSED!');

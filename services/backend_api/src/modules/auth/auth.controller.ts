@@ -4,10 +4,8 @@ import { AuthService } from './auth.service';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { User, UserRole } from '@prisma/client';
+import { User } from '@prisma/client';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -45,18 +43,6 @@ export class AuthController {
   async getProfile(@CurrentUser() user: User) {
     return {
       data: user,
-    };
-  }
-
-  @Get('admin-check')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Protected test endpoint restricted to SUPER_ADMIN' })
-  async adminCheck(@CurrentUser() user: User) {
-    return {
-      message: 'Welcome Super Admin!',
-      data: { userId: user.id, role: user.role },
     };
   }
 }
