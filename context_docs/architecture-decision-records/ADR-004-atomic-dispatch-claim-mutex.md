@@ -93,6 +93,38 @@ try {
 
 ---
 
+## Dispatch Escalation Architecture (Phase 2)
+To prevent unassigned orders from starving when nearby couriers do not claim them promptly, the dispatch engine implements an autonomous 2-tier escalation loop scanning unassigned orders every 30 seconds:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  Tier 0 (T = 0s): Initial Broadcast                                   │
+│  - Proximity radius: 3.0 km                                            │
+│  - Push FCM alert + Socket event [dispatch:broadcast] to riders_pool   │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Unclaimed after > 90s
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  Tier 1 Escalation (T > 90s): Expanded Proximity Broadcast             │
+│  - Radius expanded: 6.0 km                                             │
+│  - Idempotent Redis key: dispatch:escalated:{orderId}:tier1 (TTL 10m)  │
+│  - Re-broadcasts via WebSockets & FCM notification                     │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Unclaimed after > 180s
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  Tier 2 Escalation (T > 180s): Super Admin Emergency Radar Alert       │
+│  - Idempotent Redis key: dispatch:escalated:{orderId}:tier2 (TTL 10m)  │
+│  - Emits [dispatch:escalated] to admin_hq socket room                  │
+│  - Displays high-priority warning banner in Admin Dispatch Live Radar  │
+│  - Allows dispatcher manual courier override                           │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Compliance & Verification
-- Concurrency simulation: Verified via [`test-admin-console.ts`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/admin_portal/scripts/test-admin-console.ts) (Section 6: Dispatch Override & Concurrency tests).
-- Courier UI error handling: Handled via Riverpod exception interception in [`trip_provider.dart`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/rider_app/lib/features/trips/presentation/providers/trip_provider.dart).
+- **Distributed Mutex Test**: Verified via `npm run dispatch:test` (`scripts/test-dispatch-fsm.ts`) asserting 6 concurrent rider claims result in exactly 1 winner (200 OK) and 5 rejections (409 Conflict).
+- **Escalation & FCM Test**: Verified via `npm run escalation:test` (`scripts/test-fcm-notifications.ts`) asserting Tier 1 radius expansion and Tier 2 `admin_hq` room escalation.
+- **Courier UI error handling**: Handled via Riverpod exception interception in [`trip_provider.dart`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/rider_app/lib/features/trips/presentation/providers/trip_provider.dart).
+- **Admin Fleet Map Radar**: Verified in [`LiveFleetMap.tsx`](file:///Users/bs0650/BS-23-Pro/DeliveryOS/apps/admin_portal/src/components/dispatch/LiveFleetMap.tsx) showing real-time rider pins and escalation badges.

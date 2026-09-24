@@ -1,0 +1,105 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
+import '../constants/api_constants.dart';
+import '../storage/local_storage.dart';
+import '../../features/auth/providers/auth_provider.dart';
+
+class RiderSocketService {
+  io.Socket? _socket;
+  final _connectionStateController = StreamController<bool>.broadcast();
+
+  Stream<bool> get connectionStream => _connectionStateController.stream;
+  bool get isConnected => _socket?.connected ?? false;
+
+  void init(String? token) {
+    if (_socket != null) {
+      if (_socket!.connected) return;
+      _socket!.dispose();
+    }
+
+    final uri = '${ApiConstants.socketUrl}/events';
+    debugPrint('🔌 [Rider] Connecting to WebSocket: $uri');
+
+    _socket = io.io(
+      uri,
+      io.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect()
+          .enableReconnection()
+          .setReconnectionAttempts(10)
+          .setReconnectionDelay(2000)
+          .setAuth({'token': token ?? ''})
+          .build(),
+    );
+
+    _socket!.onConnect((_) {
+      debugPrint('✅ [Rider] WebSocket Connected: ${_socket?.id}');
+      _connectionStateController.add(true);
+    });
+
+    _socket!.onDisconnect((reason) {
+      debugPrint('❌ [Rider] WebSocket Disconnected: $reason');
+      _connectionStateController.add(false);
+    });
+
+    _socket!.onConnectError((err) {
+      debugPrint('⚠️ [Rider] WebSocket Connect Error: $err');
+      _connectionStateController.add(false);
+    });
+
+    _socket!.connect();
+  }
+
+  void emitLocationUpdate({
+    required double latitude,
+    required double longitude,
+    double bearing = 0.0,
+    double speed = 0.0,
+    String? activeOrderId,
+  }) {
+    if (_socket?.connected == true) {
+      _socket!.emit('rider:location:update', {
+        'latitude': latitude,
+        'longitude': longitude,
+        'bearing': bearing,
+        'speed': speed,
+        if (activeOrderId != null) 'activeOrderId': activeOrderId,
+      });
+    }
+  }
+
+  void on(String event, Function(dynamic) handler) {
+    _socket?.on(event, handler);
+  }
+
+  void off(String event) {
+    _socket?.off(event);
+  }
+
+  void dispose() {
+    _socket?.dispose();
+    _socket = null;
+    _connectionStateController.close();
+  }
+}
+
+final riderSocketServiceProvider = Provider<RiderSocketService>((ref) {
+  final service = RiderSocketService();
+  final authState = ref.watch(riderAuthProvider);
+  final storage = ref.watch(localStorageProvider);
+
+  if (authState.isAuthenticated) {
+    final token = storage.getAccessToken();
+    if (token != null) {
+      service.init(token);
+    }
+  }
+
+  ref.onDispose(() {
+    service.dispose();
+  });
+
+  return service;
+});

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/network/socket_service.dart';
 import '../../dashboard/domain/duty_models.dart';
 import '../../dashboard/providers/duty_provider.dart';
 import '../domain/trip_models.dart';
@@ -53,7 +54,48 @@ class RiderTripNotifier extends Notifier<RiderTripState> {
 
   @override
   RiderTripState build() {
+    final socket = ref.watch(riderSocketServiceProvider);
+
+    void handleBroadcast(dynamic payload) {
+      if (payload is Map<String, dynamic>) {
+        final data = payload['data'] is Map<String, dynamic>
+            ? payload['data'] as Map<String, dynamic>
+            : payload;
+        final store = TripStoreMeta(
+          id: data['vendorId']?.toString() ?? 'store-01',
+          name: data['vendorName']?.toString() ?? 'Restaurant',
+          address: data['vendorAddress']?.toString() ?? 'Dhaka',
+          phone: '+8801700000001',
+          latitude: 23.7925,
+          longitude: 90.4078,
+        );
+        final customer = TripCustomerMeta(
+          name: 'Customer',
+          address: data['deliveryArea']?.toString() ?? 'Delivery Address',
+          phone: '+8801700000005',
+          latitude: 23.7940,
+          longitude: 90.4030,
+        );
+        final trip = TripOrder(
+          id: data['orderId']?.toString() ?? '',
+          orderNumber: data['orderNumber']?.toString() ?? 'ORD',
+          status: 'PLACED',
+          store: store,
+          customer: customer,
+          distanceKm: 2.5,
+          payout: (data['riderEarnings'] as num?)?.toDouble() ?? 50.0,
+          isCod: true,
+          totalAmount: (data['totalAmount'] as num?)?.toDouble() ?? 300.0,
+          itemsCount: (data['itemCount'] as num?)?.toInt() ?? 1,
+        );
+        triggerBroadcastAlert(trip);
+      }
+    }
+
+    socket.on('dispatch:broadcast', handleBroadcast);
+
     ref.onDispose(() {
+      socket.off('dispatch:broadcast');
       _countdownTimer?.cancel();
     });
     return RiderTripState();

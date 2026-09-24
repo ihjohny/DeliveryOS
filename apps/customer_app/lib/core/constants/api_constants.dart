@@ -12,10 +12,21 @@ class ApiConstants {
     return 'http://localhost:4000/api/v1';
   }
 
+  static String get socketUrl {
+    if (kIsWeb) {
+      return 'http://localhost:4000';
+    }
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:4000';
+    }
+    return 'http://localhost:4000';
+  }
+
   // Auth Endpoints
   static const String sendOtp = '/auth/otp/send';
   static const String verifyOtp = '/auth/otp/verify';
   static const String refreshAuth = '/auth/refresh';
+  static const String registerDeviceToken = '/auth/device-token';
 
   // Vendor Discovery Endpoints
   static const String nearbyVendors = '/vendors/nearby';

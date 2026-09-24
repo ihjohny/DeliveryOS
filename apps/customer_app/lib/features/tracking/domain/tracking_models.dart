@@ -230,6 +230,7 @@ class OrderTrackingState {
   bool isStageActive(OrderStage s) => stage == s;
 
   OrderTrackingState copyWith({
+    String? orderNumber,
     OrderStage? stage,
     StoreMeta? store,
     RiderMeta? rider,
@@ -242,7 +243,7 @@ class OrderTrackingState {
   }) {
     return OrderTrackingState(
       orderId: orderId,
-      orderNumber: orderNumber,
+      orderNumber: orderNumber ?? this.orderNumber,
       stage: stage ?? this.stage,
       store: store ?? this.store,
       rider: rider ?? this.rider,

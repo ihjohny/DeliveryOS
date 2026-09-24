@@ -167,16 +167,29 @@ async function claimOrder(orderId: string, riderId: string, isRiderFirst: boolea
 ```
 ┌────────────────────────────────────────────────────────┐
 │  T = 0s: Broadcast to riders within 3 km radius        │
+│  - FCM Push + [dispatch:broadcast] to riders_pool      │
 └───────────────────────────┬────────────────────────────┘
-                            │ (If unassigned after 45s)
+                            │ (If unassigned after > 90s)
                             ▼
 ┌────────────────────────────────────────────────────────┐
-│  T = 45s: Expand broadcast radius to 6 km              │
+│  Tier 1 (T > 90s): Expand broadcast radius to 6 km     │
+│  - Idempotent Redis key: dispatch:escalated:{id}:tier1 │
+│  - Re-broadcasts via FCM + WebSockets to wider pool    │
 └───────────────────────────┬────────────────────────────┘
-                            │ (If unassigned after 90s)
+                            │ (If unassigned after > 180s)
                             ▼
 ┌────────────────────────────────────────────────────────┐
-│  T = 90s: Raise Warning in Super Admin Master Console  │
-│  Dispatcher clicks "Manual Assign" ──► Selects Rider   │
+│  Tier 2 (T > 180s): Raise Warning in Super Admin Radar │
+│  - Idempotent Redis key: dispatch:escalated:{id}:tier2 │
+│  - Emits [dispatch:escalated] to admin_hq socket room  │
+│  - Dispatcher clicks "Manual Assign" ──► Selects Rider │
 └────────────────────────────────────────────────────────┘
 ```
+
+### 5.1 Push Notification Trigger Lifecycle
+Push notifications are orchestrated via `NotificationsService` with Firebase Cloud Messaging (FCM):
+1. **Order Broadcast**: Sent to all eligible online couriers (`sendToRole('RIDER', ...)`).
+2. **Order Claimed**: Sent to customer (`sendToUser(customerId, ...)`: `"Rider Assigned! Your courier is heading to the store."`).
+3. **Dispatched / In Transit**: Sent to customer: `"Your order is on the way! Track courier live."`).
+4. **Delivered**: Sent to customer: `"Order delivered! Enjoy your meal."`).
+

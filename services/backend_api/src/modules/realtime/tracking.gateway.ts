@@ -241,7 +241,7 @@ export class TrackingGateway
       });
 
       if (order?.deliveryAddressSnapshot) {
-        const dest = order.deliveryAddressSnapshot as any;
+        const dest = order.deliveryAddressSnapshot as { latitude?: number; longitude?: number };
         if (dest.latitude && dest.longitude) {
           const distanceKm = this.calculateHaversineDistanceKm(
             payload.latitude,
@@ -255,7 +255,7 @@ export class TrackingGateway
               where: { key: 'delivery_economics' },
             });
             if (econSetting?.value && typeof econSetting.value === 'object') {
-              avgSpeed = (econSetting.value as Record<string, any>).eta_avg_speed_kmh || 25;
+              avgSpeed = (econSetting.value as { eta_avg_speed_kmh?: number }).eta_avg_speed_kmh || 25;
             }
           } catch {
             avgSpeed = 25;
@@ -282,6 +282,23 @@ export class TrackingGateway
         estimatedMinutesRemaining,
       });
     }
+
+    // 4. Stream live courier telemetry to Admin Fleet Radar
+    this.server.to('admin_fleet').emit('rider:location', {
+      event: 'rider:location',
+      data: {
+        riderId,
+        fullName: user.fullName,
+        phone: user.phone,
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+        bearing: payload.bearing ?? 0,
+        speed: payload.speed ?? 0,
+        hasActiveOrder: Boolean(activeOrderId),
+        activeOrderId: activeOrderId || null,
+        updatedAt: telemetry.updatedAt,
+      },
+    });
   }
 
   private calculateHaversineDistanceKm(
@@ -389,4 +406,27 @@ export class TrackingGateway
     this.server.to('riders_pool').emit('dispatch:broadcast', payload);
     this.logger.log(`Emitted [dispatch:broadcast] to riders_pool for order ${dispatchData.orderNumber || dispatchData.orderId}`);
   }
+
+  /**
+   * Event: dispatch:escalated (Server -> Admin HQ)
+   * Alert dispatcher when an order is aging without rider acceptance
+   */
+  notifyDispatchEscalated(escalationData: {
+    orderId: string;
+    orderNumber: string;
+    tier: number;
+    agingSeconds: number;
+    searchRadiusKm: number;
+    vendorName?: string;
+  }) {
+    const payload = {
+      event: 'dispatch:escalated',
+      data: escalationData,
+    };
+    this.server.to('admin_hq').emit('dispatch:escalated', payload);
+    this.logger.warn(
+      `Emitted [dispatch:escalated] (Tier ${escalationData.tier}) for order ${escalationData.orderNumber} (Aging: ${escalationData.agingSeconds}s, Radius: ${escalationData.searchRadiusKm}km)`,
+    );
+  }
 }
+

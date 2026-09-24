@@ -1,8 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/tracking_models.dart';
 
-class TrackingMapView extends StatelessWidget {
+class TrackingMapView extends StatefulWidget {
   final OrderTrackingState state;
 
   const TrackingMapView({
@@ -11,198 +13,219 @@ class TrackingMapView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFE6E8EA),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Background Road Grid & Route Painter
-          CustomPaint(
-            painter: _RouteMapPainter(
-              stage: state.stage,
-            ),
-          ),
-
-          // Store Marker
-          Positioned(
-            left: 50,
-            top: 60,
-            child: _buildPin(
-              label: state.store.name.split('-').first.trim(),
-              icon: Icons.storefront_rounded,
-              color: AppColors.primary,
-            ),
-          ),
-
-          // Customer Delivery Pin
-          Positioned(
-            right: 50,
-            bottom: 70,
-            child: _buildPin(
-              label: 'Delivery Address',
-              icon: Icons.home_rounded,
-              color: AppColors.secondary,
-            ),
-          ),
-
-          // Live Moving Rider Pin (interpolated)
-          if (state.rider != null && state.stage == OrderStage.dispatched)
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 1500),
-              curve: Curves.easeInOut,
-              left: 140,
-              top: 130,
-              child: _buildRiderPin(state.rider!),
-            ),
-
-          // Telemetry Overlay Badge
-          Positioned(
-            bottom: 12,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.satellite_alt_rounded, size: 14, color: AppColors.secondary),
-                  const SizedBox(width: 6),
-                  Text(
-                    'GPS Live Telemetry • ${state.rider?.speed.toStringAsFixed(0) ?? "0"} km/h',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPin({
-    required String label,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Icon(icon, size: 30, color: color),
-      ],
-    );
-  }
-
-  Widget _buildRiderPin(RiderMeta rider) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: AppColors.textPrimary,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.two_wheeler_rounded, size: 12, color: Colors.white),
-              const SizedBox(width: 4),
-              Text(
-                rider.name.split(' ').first,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 2),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
-                blurRadius: 10,
-                spreadRadius: 3,
-              ),
-            ],
-          ),
-          child: const Icon(Icons.navigation_rounded, size: 18, color: Colors.white),
-        ),
-      ],
-    );
-  }
+  State<TrackingMapView> createState() => _TrackingMapViewState();
 }
 
-class _RouteMapPainter extends CustomPainter {
-  final OrderStage stage;
-
-  _RouteMapPainter({required this.stage});
+class _TrackingMapViewState extends State<TrackingMapView> {
+  GoogleMapController? _mapController;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final roadPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round;
+  void didUpdateWidget(covariant TrackingMapView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.state.rider != null && _mapController != null) {
+      final rider = widget.state.rider!;
+      if (widget.state.stage == OrderStage.dispatched) {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLng(LatLng(rider.latitude, rider.longitude)),
+        );
+      }
+    }
+  }
 
-    final routePaint = Paint()
-      ..color = AppColors.primary
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+  Set<Marker> _buildMarkers() {
+    final markers = <Marker>{};
+    final store = widget.state.store;
+    final customer = widget.state.customer;
+    final rider = widget.state.rider;
 
-    // Grid Roads
-    canvas.drawLine(Offset(0, size.height * 0.3), Offset(size.width, size.height * 0.3), roadPaint);
-    canvas.drawLine(Offset(0, size.height * 0.7), Offset(size.width, size.height * 0.7), roadPaint);
-    canvas.drawLine(Offset(size.width * 0.3, 0), Offset(size.width * 0.3, size.height), roadPaint);
-    canvas.drawLine(Offset(size.width * 0.7, 0), Offset(size.width * 0.7, size.height), roadPaint);
+    // 1. Store Marker
+    markers.add(
+      Marker(
+        markerId: const MarkerId('store_marker'),
+        position: LatLng(store.latitude, store.longitude),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+        infoWindow: InfoWindow(
+          title: store.name,
+          snippet: store.address,
+        ),
+      ),
+    );
 
-    // Active Route Polyline from Store (left: 70, top: 90) to Customer (width - 70, height - 90)
-    final routePath = Path()
-      ..moveTo(70, 90)
-      ..lineTo(size.width * 0.3, 90)
-      ..lineTo(size.width * 0.3, size.height * 0.5)
-      ..lineTo(size.width * 0.7, size.height * 0.5)
-      ..lineTo(size.width * 0.7, size.height - 90)
-      ..lineTo(size.width - 70, size.height - 90);
+    // 2. Customer Destination Marker
+    markers.add(
+      Marker(
+        markerId: const MarkerId('customer_marker'),
+        position: LatLng(customer.latitude, customer.longitude),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: InfoWindow(
+          title: 'Delivery Address',
+          snippet: customer.address,
+        ),
+      ),
+    );
 
-    canvas.drawPath(routePath, routePaint);
+    // 3. Live Courier Marker (if assigned)
+    if (rider != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('rider_marker'),
+          position: LatLng(rider.latitude, rider.longitude),
+          rotation: rider.bearing,
+          flat: true,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          infoWindow: InfoWindow(
+            title: '${rider.name} (Courier)',
+            snippet: '${rider.speed.toStringAsFixed(1)} km/h • ${rider.vehicleType}',
+          ),
+        ),
+      );
+    }
+
+    return markers;
+  }
+
+  Set<Polyline> _buildPolylines() {
+    final points = <LatLng>[
+      LatLng(widget.state.store.latitude, widget.state.store.longitude),
+    ];
+
+    if (widget.state.rider != null && widget.state.stage == OrderStage.dispatched) {
+      points.add(LatLng(widget.state.rider!.latitude, widget.state.rider!.longitude));
+    }
+
+    points.add(LatLng(widget.state.customer.latitude, widget.state.customer.longitude));
+
+    return {
+      Polyline(
+        polylineId: const PolylineId('delivery_route'),
+        points: points,
+        color: AppColors.primary,
+        width: 4,
+        jointType: JointType.round,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+      ),
+    };
+  }
+
+  LatLngBounds _computeBounds() {
+    final store = widget.state.store;
+    final customer = widget.state.customer;
+    final rider = widget.state.rider;
+
+    final lats = [store.latitude, customer.latitude];
+    final lngs = [store.longitude, customer.longitude];
+    if (rider != null) {
+      lats.add(rider.latitude);
+      lngs.add(rider.longitude);
+    }
+
+    final south = lats.reduce(math.min);
+    final north = lats.reduce(math.max);
+    final west = lngs.reduce(math.min);
+    final east = lngs.reduce(math.max);
+
+    return LatLngBounds(
+      southwest: LatLng(south, west),
+      northeast: LatLng(north, east),
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _RouteMapPainter oldDelegate) => oldDelegate.stage != stage;
+  Widget build(BuildContext context) {
+    final store = widget.state.store;
+    final initialCenter = LatLng(store.latitude, store.longitude);
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Production Real GoogleMap
+        GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: initialCenter,
+            zoom: 14.0,
+          ),
+          markers: _buildMarkers(),
+          polylines: _buildPolylines(),
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          compassEnabled: true,
+          onMapCreated: (controller) {
+            _mapController = controller;
+            try {
+              final bounds = _computeBounds();
+              controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
+            } catch (_) {}
+          },
+        ),
+
+        // Live Telemetry Overlay Badge
+        Positioned(
+          left: 16,
+          top: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: widget.state.stage == OrderStage.dispatched
+                        ? const Color(0xFF10B981)
+                        : AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  widget.state.stage == OrderStage.dispatched
+                      ? 'Live GPS • ${widget.state.estimatedMinutesRemaining} mins away'
+                      : widget.state.stage.title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Recenter Camera Floating Action Button
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton.small(
+            backgroundColor: Colors.white,
+            foregroundColor: AppColors.primary,
+            elevation: 3,
+            onPressed: () {
+              if (_mapController != null) {
+                try {
+                  final bounds = _computeBounds();
+                  _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
+                } catch (_) {}
+              }
+            },
+            child: const Icon(Icons.crop_free_rounded, size: 20),
+          ),
+        ),
+      ],
+    );
+  }
 }

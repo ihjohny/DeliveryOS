@@ -469,3 +469,38 @@ graph TD
   - [x] Updated `ADR-002`, `TID-02`, `TID-03`, `BRD-03`, and `WORK_BREAKDOWN.md`.
   - [x] Verified all 11 backend test suites pass 100% with double-entry balance down to 0.0000 BDT.
 
+---
+
+## 📌 Production Readiness Track — Phase 2: Realtime & Maps Truth-Telling (Completed)
+
+> Master reference: [`PHASE_2_IMPLEMENTATION_PLAN.md`](./PHASE_2_IMPLEMENTATION_PLAN.md) and [`PROJECT_REVIEW_AND_PLAN.md`](./PROJECT_REVIEW_AND_PLAN.md) §5 Phase 2
+
+### Phase 2 Milestones Summary
+- **Task 2.1: Flutter Socket Client Infrastructure**:
+  - [x] Integrated `socket_io_client: ^3.1.6` into `apps/customer_app` and `apps/rider_app`.
+  - [x] Implemented resilient `SocketService` with JWT authentication, auto-reconnection, and typed event stream providers.
+- **Task 2.2: Rider Live Location GPS Telemetry**:
+  - [x] Wired real-time GPS stream (`duty_provider.dart`) emitting `rider:location:update` directly over WebSocket.
+  - [x] Enhanced `TrackingGateway` to index coordinates in Redis via `GEOADD riders:locations:active` and broadcast to `admin_fleet` and active `order_{orderId}` rooms.
+- **Task 2.3: Customer Order Tracking with Real Google Maps**:
+  - [x] Replaced `_RouteMapPainter` / `CustomPaint` with genuine `GoogleMap` widget displaying real store, customer, and moving courier pins with bearing rotation and polyline routes.
+  - [x] Eliminated synthetic timer loops (`_telemetryTimer`) in `TrackingNotifier`, subscribing directly to `order:rider:moved` and `order:status:changed`.
+- **Task 2.4: Admin Live Fleet Radar & Interactive Map**:
+  - [x] Integrated OpenStreetMap via Leaflet into `apps/admin_portal` (`LiveFleetMap.tsx`).
+  - [x] Rendered color-coded courier pins (Idle/Green, Busy/Blue, Cash Limit/Orange) and unassigned order targets with click popups and live radar alerts.
+- **Task 2.5: Dispatch Timeout Escalation & Aging Alerts**:
+  - [x] Implemented autonomous 30-second unassigned dispatch scanner in `OrderFlowService`.
+  - [x] Tier 1 (> 90s): Idempotent radius expansion to 6.0 km and courier re-broadcast.
+  - [x] Tier 2 (> 180s): Emits `dispatch:escalated` event to `admin_hq` socket room and alerts dispatcher console.
+- **Task 2.6: Push Notification Infrastructure (FCM Interface)**:
+  - [x] Added `fcm_token` and `device_platform` columns to Prisma schema (`20260924075551_add_device_fcm_tokens`).
+  - [x] Created `NotificationsModule` with `POST /auth/device-token` and multi-role messaging interface (`NotificationsService`).
+  - [x] Connected FCM triggers on dispatch broadcast, rider claim, and order delivery.
+- **Task 2.7: Verification & Documentation Synchronization**:
+  - [x] All 11 backend test suites passed 100% (`npm run db:test`, `auth:test`, `vendor:test`, `promotions:test`, `order:test`, `vendor-rider:test`, `ws:test`, `dispatch:test`, `tracking:test`, `escalation:test`, `e2e:test`).
+  - [x] Customer app passed `flutter test` (32/32 tests, 100%) and `flutter analyze` (0 issues).
+  - [x] Rider app passed `flutter test` (28/28 tests, 100%) and `flutter analyze` (0 issues).
+  - [x] Both web portals build cleanly (`npm run build` exits 0).
+  - [x] Synchronized `ADR-004`, `TID-04`, `TID-05`, `PHASE_2_IMPLEMENTATION_PLAN.md`, and `WORK_BREAKDOWN.md`.
+
+

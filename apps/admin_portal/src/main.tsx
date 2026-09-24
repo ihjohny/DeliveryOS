@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import App from './App';
 import './index.css';
+import 'leaflet/dist/leaflet.css';
 import './i18n/i18n';
 
 const queryClient = new QueryClient({

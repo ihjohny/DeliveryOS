@@ -89,9 +89,11 @@ model User {
   fullName  String        @map("full_name") @db.VarChar(100)
   email     String?       @db.VarChar(100)
   role      UserRole      @default(CUSTOMER)
-  status    AccountStatus @default(ACTIVE)
-  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  status         AccountStatus @default(ACTIVE)
+  fcmToken       String?       @map("fcm_token") @db.Text
+  devicePlatform String?       @map("device_platform") @db.VarChar(20)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   addresses   CustomerAddress[]
   rider       Rider?

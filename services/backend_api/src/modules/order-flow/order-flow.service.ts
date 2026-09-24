@@ -4,14 +4,17 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleDestroy,
+  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { TrackingGateway } from '../realtime/tracking.gateway';
 import { OrderFlowMode, UpdateOrderFlowDto } from './dto/update-order-flow.dto';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, UserRole } from '@prisma/client';
 import { assertClaimable, assertTransition } from '../orders/order-state.machine';
 import { DeliveryFeeService } from '../promotions/pricing/delivery-fee.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 interface OrderFlowSettingValue {
   mode?: OrderFlowMode;
@@ -24,15 +27,35 @@ interface AddressSnapshot {
 }
 
 @Injectable()
-export class OrderFlowService {
+export class OrderFlowService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(OrderFlowService.name);
+  private escalationTimer: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly trackingGateway: TrackingGateway,
     private readonly deliveryFeeService: DeliveryFeeService,
+    private readonly notificationsService: NotificationsService,
   ) {}
+
+  onModuleInit() {
+    // Background scanner for unassigned dispatch escalation (runs every 30s)
+    this.escalationTimer = setInterval(() => {
+      this.evaluateDispatchEscalations().catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        this.logger.error(`Error in dispatch escalation scanner: ${msg}`);
+      });
+    }, 30000);
+    this.escalationTimer.unref();
+  }
+
+  onModuleDestroy() {
+    if (this.escalationTimer) {
+      clearInterval(this.escalationTimer);
+      this.escalationTimer = null;
+    }
+  }
 
   /**
    * 1. Get Active Order Flow Configuration
@@ -169,6 +192,18 @@ export class OrderFlowService {
         riderEarnings,
         timeoutSeconds: riderSearchTimeoutSeconds,
       });
+
+      // Push notification to couriers
+      this.notificationsService
+        .sendToRole(UserRole.RIDER, {
+          title: 'New Delivery Opportunity! 📦',
+          body: `Order ${order.orderNumber} available near ${order.vendor.name}. Tap to accept.`,
+          data: { orderId: order.id, type: 'DISPATCH_BROADCAST' },
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          this.logger.warn(`Push notify riders failed: ${msg}`);
+        });
 
       this.logger.log(
         `[RIDER_FIRST] Order ${order.orderNumber} broadcasted to riders_pool. Vendor chime held until rider claim.`,
@@ -356,6 +391,18 @@ export class OrderFlowService {
         );
       }
 
+      // Send push notification to customer
+      this.notificationsService
+        .sendToUser(updatedOrder.customerId, {
+          title: 'Rider Assigned! 🛵',
+          body: `${rider.user.fullName} is delivering your order from ${updatedOrder.vendor.name}.`,
+          data: { orderId: updatedOrder.id, status: updatedOrder.status },
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          this.logger.warn(`Push notify customer failed: ${msg}`);
+        });
+
       return updatedOrder;
     } finally {
       // Safely release Redis distributed lock
@@ -369,4 +416,93 @@ export class OrderFlowService {
   async releaseRiderActiveTrip(riderId: string) {
     await this.redis.del(`rider:active_order:${riderId}`);
   }
+
+  /**
+   * 9. Evaluate Unassigned Order Dispatch Escalations (Tier 1 & Tier 2)
+   */
+  async evaluateDispatchEscalations() {
+    const { mode, riderSearchTimeoutSeconds } = await this.getOrderFlowConfig();
+
+    const unassignedOrders = await this.prisma.order.findMany({
+      where: {
+        riderId: null,
+        status: mode === OrderFlowMode.RIDER_FIRST ? OrderStatus.PLACED : OrderStatus.READY_FOR_PICKUP,
+      },
+      include: {
+        vendor: { select: { id: true, name: true, addressText: true } },
+        orderItems: true,
+      },
+    });
+
+    const now = Date.now();
+    for (const order of unassignedOrders) {
+      const agingSeconds = Math.round((now - order.placedAt.getTime()) / 1000);
+
+      // Tier 1 Escalation: aging exceeds configured timeout (default 90s)
+      if (agingSeconds >= riderSearchTimeoutSeconds) {
+        const tier1Key = `dispatch:escalated:${order.id}:tier1`;
+        const alreadyEscalatedTier1 = await this.redis.get(tier1Key);
+
+        if (!alreadyEscalatedTier1) {
+          await this.redis.set(tier1Key, '1', 3600); // 1 hour TTL
+
+          const deliveryAddress = (order.deliveryAddressSnapshot as AddressSnapshot | null)?.addressLine || 'Customer Address';
+          const economics = await this.deliveryFeeService.getEconomicsConfig();
+          const riderShare = (economics.rider_share_percent || 80) / 100;
+          const riderEarnings = Math.round(Number(order.deliveryFee) * riderShare * 100) / 100;
+
+          this.trackingGateway.broadcastDispatch({
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            vendorId: order.vendorId,
+            vendorName: order.vendor.name,
+            vendorAddress: order.vendor.addressText,
+            deliveryArea: deliveryAddress,
+            itemCount: order.orderItems.reduce((acc, i) => acc + i.quantity, 0),
+            totalAmount: Number(order.totalAmount),
+            riderEarnings,
+            timeoutSeconds: riderSearchTimeoutSeconds,
+            searchRadiusKm: 6,
+          });
+
+          this.trackingGateway.notifyDispatchEscalated({
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            tier: 1,
+            agingSeconds,
+            searchRadiusKm: 6,
+            vendorName: order.vendor.name,
+          });
+
+          this.logger.warn(
+            `[Escalation Tier 1] Order ${order.orderNumber} unassigned for ${agingSeconds}s. Search radius expanded to 6km.`,
+          );
+        }
+      }
+
+      // Tier 2 Escalation: aging exceeds 2x timeout (default 180s)
+      if (agingSeconds >= riderSearchTimeoutSeconds * 2) {
+        const tier2Key = `dispatch:escalated:${order.id}:tier2`;
+        const alreadyEscalatedTier2 = await this.redis.get(tier2Key);
+
+        if (!alreadyEscalatedTier2) {
+          await this.redis.set(tier2Key, '1', 3600);
+
+          this.trackingGateway.notifyDispatchEscalated({
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            tier: 2,
+            agingSeconds,
+            searchRadiusKm: 10,
+            vendorName: order.vendor.name,
+          });
+
+          this.logger.error(
+            `[Escalation Tier 2 - CRITICAL] Order ${order.orderNumber} unassigned for ${agingSeconds}s! High priority alert emitted to admin_hq.`,
+          );
+        }
+      }
+    }
+  }
 }
+

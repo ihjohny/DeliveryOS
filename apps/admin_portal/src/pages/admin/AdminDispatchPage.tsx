@@ -23,6 +23,7 @@ import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Alert } from '../../components/ui/Alert';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { LiveFleetMap } from '../../components/dispatch/LiveFleetMap';
 
 export const AdminDispatchPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -31,6 +32,12 @@ export const AdminDispatchPage: React.FC = () => {
   const [selectedRider, setSelectedRider] = useState<FleetRider | null>(null);
   const [newCashLimit, setNewCashLimit] = useState<string>('5000');
   const [isCashModalOpen, setIsCashModalOpen] = useState(false);
+  const [escalationAlert, setEscalationAlert] = useState<{
+    orderNumber: string;
+    tier: number;
+    agingSeconds: number;
+    searchRadiusKm: number;
+  } | null>(null);
 
   const { data: fleet = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-fleet'],
@@ -53,14 +60,25 @@ export const AdminDispatchPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-unassigned-orders'] });
     };
 
+    const handleEscalated = (payload: { data?: { orderNumber: string; tier: number; agingSeconds: number; searchRadiusKm: number } }) => {
+      if (payload?.data) {
+        setEscalationAlert(payload.data);
+      }
+      handleFleetAndOrderEvent();
+    };
+
     socket.on('order:new', handleFleetAndOrderEvent);
     socket.on('order:status:changed', handleFleetAndOrderEvent);
     socket.on('dispatch:broadcast', handleFleetAndOrderEvent);
+    socket.on('rider:location', handleFleetAndOrderEvent);
+    socket.on('dispatch:escalated', handleEscalated);
 
     return () => {
       socket.off('order:new', handleFleetAndOrderEvent);
       socket.off('order:status:changed', handleFleetAndOrderEvent);
       socket.off('dispatch:broadcast', handleFleetAndOrderEvent);
+      socket.off('rider:location', handleFleetAndOrderEvent);
+      socket.off('dispatch:escalated', handleEscalated);
     };
   }, [queryClient]);
 
@@ -162,6 +180,46 @@ export const AdminDispatchPage: React.FC = () => {
             <span className="text-xs text-slate-500">approaching COD limit</span>
           </div>
         </div>
+      </div>
+
+      {/* Live Geographic Fleet Radar Map */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Navigation className="h-4 w-4 text-primary-600" />
+              Live Geographic Radar (Dhaka Zone)
+            </h2>
+            <p className="text-xs text-slate-500">
+              Real-time telemetry showing {onlineCount} active couriers and {unassignedOrders.length} unassigned order pickup targets.
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Live Telemetry
+          </span>
+        </div>
+
+        {escalationAlert && (
+          <div className="mb-4">
+            <Alert
+              type="error"
+              title={`Urgent Dispatch Escalation (Tier ${escalationAlert.tier})`}
+              message={`Order ${escalationAlert.orderNumber} has been waiting ${escalationAlert.agingSeconds}s! Search radius expanded to ${escalationAlert.searchRadiusKm}km.`}
+              onDismiss={() => setEscalationAlert(null)}
+            />
+          </div>
+        )}
+
+        <LiveFleetMap
+          fleet={fleet}
+          unassignedOrders={unassignedOrders}
+          selectedRiderId={selectedRider?.id}
+          onSelectRider={(riderId) => {
+            const found = fleet.find((r) => r.id === riderId);
+            if (found) setSelectedRider(found);
+          }}
+        />
       </div>
 
       {/* Main Grid: Interactive Map Radar & Telemetry Table */}

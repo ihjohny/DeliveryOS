@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:customer_app/core/localization/app_localizations.dart';
@@ -233,8 +234,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(CustomPaint), findsWidgets);
-      expect(find.text("Sultan's Dine"), findsOneWidget);
+      expect(find.byType(GoogleMap), findsOneWidget);
+      expect(find.textContaining('Live GPS'), findsOneWidget);
     });
 
     testWidgets('OrderTrackingScreen displays ETA, Call Rider and Call Store buttons', (tester) async {

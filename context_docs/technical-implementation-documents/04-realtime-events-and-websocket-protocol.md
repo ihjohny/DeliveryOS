@@ -174,6 +174,46 @@ Upon successful authentication, clients are joined to scoped rooms based on thei
 
 ---
 
+### 3.4 Admin Live Fleet & Escalation Events
+
+#### Event: `rider:location` (Server → Admin Console)
+- **Description**: Relayed from `TrackingGateway` to the `admin_fleet` room when any online courier streams telemetry. Used by `LiveFleetMap` for real-time fleet map rendering.
+- **Room**: `admin_fleet`
+- **Payload Schema**:
+```json
+{
+  "event": "rider:location",
+  "data": {
+    "riderId": "a4d9eca4-...",
+    "latitude": 23.780887,
+    "longitude": 90.419065,
+    "bearing": 182.5,
+    "speed": 24.0,
+    "hasActiveOrder": false,
+    "updatedAt": "2026-10-01T12:05:00.000Z"
+  }
+}
+```
+
+#### Event: `dispatch:escalated` (Server → Admin Console)
+- **Description**: Emitted when an order remains unclaimed after Tier 2 threshold (> 180 seconds). Prompts super admin dispatchers for manual intervention.
+- **Room**: `admin_hq`
+- **Payload Schema**:
+```json
+{
+  "event": "dispatch:escalated",
+  "data": {
+    "orderId": "c1f7a4e2-...",
+    "orderNumber": "ORD-20261001-1042",
+    "tier": 2,
+    "unassignedSeconds": 185,
+    "timestamp": "2026-10-01T12:08:05.000Z"
+  }
+}
+```
+
+---
+
 ## 4. Reconnection & Resilience Rules
 
 1. **Heartbeat Pings**: Handled every 25 seconds by Socket.IO (`pingTimeout: 20000`, `pingInterval: 25000`).

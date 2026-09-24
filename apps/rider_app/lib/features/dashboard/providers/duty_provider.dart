@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/network/socket_service.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../auth/domain/auth_models.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -210,6 +211,17 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
 
   Future<void> _dispatchTelemetryToBackend(double lat, double lng, double speed) async {
     try {
+      // 1. WebSocket zero-latency streaming to Redis geospatial index & live customer map
+      final socket = ref.read(riderSocketServiceProvider);
+      socket.emitLocationUpdate(
+        latitude: lat,
+        longitude: lng,
+        speed: speed,
+        bearing: state.bearing,
+        activeOrderId: state.activeOrderId,
+      );
+
+      // 2. HTTP persistent state sync
       final dio = ref.read(dioClientProvider);
       await dio.patch(
         ApiConstants.toggleDuty,

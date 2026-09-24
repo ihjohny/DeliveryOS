@@ -1,5 +1,4 @@
 import 'package:customer_app/core/network/dio_client.dart';
-import 'package:dio/dio.dart';
 
 DioClient createTestMockDioClient() {
   final dio = Dio();

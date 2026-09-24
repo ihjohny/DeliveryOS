@@ -12,10 +12,21 @@ class ApiConstants {
     return 'http://localhost:4000/api/v1';
   }
 
+  static String get socketUrl {
+    if (kIsWeb) {
+      return 'http://localhost:4000';
+    }
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:4000';
+    }
+    return 'http://localhost:4000';
+  }
+
   // Auth endpoints
   static const String requestOtp = '/auth/otp/request';
   static const String verifyOtp = '/auth/otp/verify';
   static const String me = '/auth/me';
+  static const String registerDeviceToken = '/auth/device-token';
 
   // Rider operations
   static const String riderProfile = '/rider/profile';
