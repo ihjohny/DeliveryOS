@@ -15,6 +15,7 @@ import {
   DiscountType,
   OrderStatus,
   PermissionScope,
+  Prisma,
   SettlementStatus,
   UserRole,
 } from '@prisma/client';
@@ -201,9 +202,9 @@ export class AdminService {
   // 3. Live Order Lifecycle Monitor & Manual Dispatch Force-Assign
   // ===========================================================================
   async getLiveOrders(statusFilter?: string) {
-    const where: any = {};
+    const where: Prisma.OrderWhereInput = {};
     if (statusFilter && statusFilter !== 'ALL') {
-      where.status = statusFilter;
+      where.status = statusFilter as OrderStatus;
     }
 
     const orders = await this.prisma.order.findMany({
@@ -231,6 +232,7 @@ export class AdminService {
       customerId: o.customerId,
       customerName: o.customer?.fullName || 'Customer',
       customerPhone: o.customer?.phone || '',
+      customerNotes: o.customerNotes || null,
       riderId: o.riderId,
       riderName: o.rider?.user?.fullName || null,
       riderPhone: o.rider?.user?.phone || null,
@@ -248,7 +250,7 @@ export class AdminService {
         quantity: i.quantity,
         unitPrice: Number(i.unitPrice),
       })),
-      deliveryAddress: (o.deliveryAddressSnapshot as any)?.addressLine || 'Address',
+      deliveryAddress: (o.deliveryAddressSnapshot as { addressLine?: string } | null)?.addressLine || 'Address',
     }));
   }
 
@@ -840,7 +842,7 @@ export class AdminService {
   // 10. Rider Fleet Approval & Governance
   // ===========================================================================
   async getAllRiders(filters?: { approvalStatus?: 'PENDING' | 'APPROVED' | 'ALL'; isOnline?: boolean }) {
-    const where: any = {};
+    const where: Prisma.RiderWhereInput = {};
     if (filters?.approvalStatus === 'PENDING') {
       where.isApproved = false;
     } else if (filters?.approvalStatus === 'APPROVED') {

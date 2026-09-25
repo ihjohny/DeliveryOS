@@ -69,6 +69,7 @@ export interface AdminOrder {
   placedAt: string;
   acceptedAt?: string | null;
   prepTimeMinutes?: number | null;
+  customerNotes?: string | null;
   items: Array<{
     id: string;
     name: string;
@@ -117,6 +118,7 @@ export interface AdminVendor {
   isBusy: boolean;
   isActive: boolean;
   commissionRate: number;
+  deliveryRadiusKm?: number;
   defaultPrepTimeMinutes: number;
   totalOrders: number;
   totalProducts: number;
@@ -203,7 +205,7 @@ export const adminApi = {
     return Array.isArray(payload) ? payload : (payload.data || []);
   },
 
-  async setRiderApproval(riderId: string, isApproved: boolean): Promise<any> {
+  async setRiderApproval(riderId: string, isApproved: boolean): Promise<{ message: string; data: { id: string; isApproved: boolean } }> {
     const res = await apiClient.patch(`/api/v1/admin/riders/${riderId}/approval`, { isApproved });
     return res.data?.data || res.data;
   },
@@ -219,12 +221,12 @@ export const adminApi = {
     return res.data?.data || res.data;
   },
 
-  async forceAssignRider(orderId: string, riderId: string): Promise<any> {
+  async forceAssignRider(orderId: string, riderId: string): Promise<{ message: string; data?: AdminOrder }> {
     const res = await apiClient.post(`/api/v1/admin/orders/${orderId}/force-assign`, { riderId });
     return res.data?.data || res.data;
   },
 
-  async cancelOrder(orderId: string, reason: string): Promise<any> {
+  async cancelOrder(orderId: string, reason: string): Promise<{ message: string }> {
     const res = await apiClient.post(`/api/v1/admin/orders/${orderId}/cancel`, { reason });
     return res.data?.data || res.data;
   },
@@ -284,7 +286,7 @@ export const adminApi = {
     contactPhone: string;
     commissionRate?: number;
     defaultPrepTimeMinutes?: number;
-  }): Promise<any> {
+  }): Promise<AdminVendor> {
     const res = await apiClient.post('/api/v1/admin/vendors', data);
     return res.data?.data || res.data;
   },
@@ -318,7 +320,7 @@ export const adminApi = {
       scope: 'ALL_OUTLETS_MASTER' | 'PARTICULAR_OUTLET';
       brandId?: string;
     },
-  ): Promise<any> {
+  ): Promise<{ message: string; data?: unknown }> {
     const res = await apiClient.post(`/api/v1/admin/vendors/${vendorId}/staff`, data);
     return res.data?.data || res.data;
   },
@@ -329,7 +331,7 @@ export const adminApi = {
     return res.data?.data || res.data;
   },
 
-  async updateOrderFlow(mode: 'RIDER_FIRST' | 'VENDOR_FIRST', timeout?: number): Promise<any> {
+  async updateOrderFlow(mode: 'RIDER_FIRST' | 'VENDOR_FIRST', timeout?: number): Promise<{ message: string; data?: unknown }> {
     const res = await apiClient.patch('/api/v1/admin/settings/order-flow', {
       mode,
       riderSearchTimeoutSeconds: timeout,
@@ -342,7 +344,7 @@ export const adminApi = {
     flatFee?: number;
     baseFee?: number;
     perKmRate?: number;
-  }): Promise<any> {
+  }): Promise<{ message: string; data?: unknown }> {
     const res = await apiClient.patch('/api/v1/admin/settings/delivery-fee', data);
     return res.data?.data || res.data;
   },

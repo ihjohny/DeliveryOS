@@ -247,7 +247,7 @@ export const AdminVendorsPage: React.FC = () => {
                       setEditContactPhone(vendor.contactPhone);
                       setEditCommissionRate(String(vendor.commissionRate));
                       setEditDefaultPrepTime(String(vendor.defaultPrepTimeMinutes));
-                      setEditDeliveryRadius(String((vendor as any).deliveryRadiusKm || 5));
+                      setEditDeliveryRadius(String(vendor.deliveryRadiusKm || 5));
                     }}
                   >
                     <Edit2 className="h-3 w-3" />
@@ -261,7 +261,7 @@ export const AdminVendorsPage: React.FC = () => {
                         ? 'border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400'
                         : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                     }`}
-                    isLoading={toggleStatusMutation.isPending && (toggleStatusMutation.variables as any)?.vendorId === vendor.id}
+                    isLoading={toggleStatusMutation.isPending && toggleStatusMutation.variables?.vendorId === vendor.id}
                     onClick={() =>
                       toggleStatusMutation.mutate({
                         vendorId: vendor.id,

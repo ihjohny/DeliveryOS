@@ -415,7 +415,7 @@ export const AdminPromotionsPage: React.FC = () => {
               </label>
               <select
                 value={couponType}
-                onChange={(e) => setCouponType(e.target.value as any)}
+                onChange={(e) => setCouponType(e.target.value as 'PERCENTAGE' | 'FLAT')}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 <option value="PERCENTAGE">Percentage (%)</option>

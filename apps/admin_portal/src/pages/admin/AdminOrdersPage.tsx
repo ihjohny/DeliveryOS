@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   FileText,
@@ -13,6 +14,10 @@ import {
   CheckCircle2,
   AlertCircle,
   XCircle,
+  Eye,
+  ShoppingBag,
+  MessageSquare,
+  X,
 } from 'lucide-react';
 import adminApi, { AdminOrder, FleetRider } from '../../services/adminApi';
 import { getSocket } from '../../services/socket';
@@ -26,14 +31,22 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 export const AdminOrdersPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const orderNumberParam = searchParams.get('orderNumber');
+
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(orderNumberParam || '');
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedRiderId, setSelectedRiderId] = useState<string>('');
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelTargetOrder, setCancelTargetOrder] = useState<AdminOrder | null>(null);
   const [cancelReason, setCancelReason] = useState('');
+
+  // Details Modal State
+  const [detailsOrder, setDetailsOrder] = useState<AdminOrder | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [autoHandledOrderNumber, setAutoHandledOrderNumber] = useState<string | null>(null);
 
   const { data: orders = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-orders', selectedStatus],
@@ -58,11 +71,41 @@ export const AdminOrdersPage: React.FC = () => {
     };
   }, [queryClient]);
 
-
   const { data: fleet = [] } = useQuery({
     queryKey: ['admin-fleet-assignable'],
     queryFn: adminApi.getFleet,
   });
+
+  const availableRiders = fleet.filter((r) => r.isOnline);
+
+  // Sync search input when URL query param changes
+  useEffect(() => {
+    if (orderNumberParam) {
+      setSearchQuery(orderNumberParam);
+    }
+  }, [orderNumberParam]);
+
+  // Deep-link auto-opener: when orderNumber is in URL, auto-highlight and open force-assign if unassigned
+  useEffect(() => {
+    if (orderNumberParam && orders.length > 0 && autoHandledOrderNumber !== orderNumberParam) {
+      const matched = orders.find(
+        (o) => o.orderNumber.toLowerCase() === orderNumberParam.toLowerCase()
+      );
+      if (matched) {
+        setAutoHandledOrderNumber(orderNumberParam);
+        // If unassigned or user explicitly jumped from dispatch radar, prefill assign modal
+        if (matched.status !== 'DELIVERED' && matched.status !== 'CANCELLED') {
+          setSelectedOrder(matched);
+          setSelectedRiderId(matched.riderId || (availableRiders[0]?.id ?? ''));
+          setIsAssignModalOpen(true);
+        } else {
+          // Open details modal
+          setDetailsOrder(matched);
+          setIsDetailsModalOpen(true);
+        }
+      }
+    }
+  }, [orderNumberParam, orders, autoHandledOrderNumber, availableRiders]);
 
   const forceAssignMutation = useMutation({
     mutationFn: ({ orderId, riderId }: { orderId: string; riderId: string }) =>
@@ -88,15 +131,23 @@ export const AdminOrdersPage: React.FC = () => {
   });
 
   const filteredOrders = orders.filter((o) => {
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      o.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      o.vendorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (o.riderName && o.riderName.toLowerCase().includes(searchQuery.toLowerCase()));
+      o.orderNumber.toLowerCase().includes(q) ||
+      o.customerName.toLowerCase().includes(q) ||
+      o.vendorName.toLowerCase().includes(q) ||
+      (o.riderName && o.riderName.toLowerCase().includes(q)) ||
+      (o.customerPhone && o.customerPhone.includes(q));
     return matchesSearch;
   });
 
-  const availableRiders = fleet.filter((r) => r.isOnline);
+  const clearSearch = () => {
+    setSearchQuery('');
+    if (orderNumberParam) {
+      searchParams.delete('orderNumber');
+      setSearchParams(searchParams);
+    }
+  };
 
   const columns: Column<AdminOrder>[] = [
     {
@@ -104,7 +155,16 @@ export const AdminOrdersPage: React.FC = () => {
       header: 'Order #',
       render: (order) => (
         <div>
-          <span className="font-semibold text-slate-900 dark:text-slate-100">{order.orderNumber}</span>
+          <button
+            onClick={() => {
+              setDetailsOrder(order);
+              setIsDetailsModalOpen(true);
+            }}
+            className="font-semibold text-primary-600 hover:text-primary-700 hover:underline dark:text-primary-400 text-left"
+            title="Click to view line items & details"
+          >
+            {order.orderNumber}
+          </button>
           <div className="text-[11px] text-slate-500">
             {new Date(order.placedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </div>
@@ -118,6 +178,14 @@ export const AdminOrdersPage: React.FC = () => {
         <div>
           <div className="font-medium text-slate-900 dark:text-slate-100">{order.vendorName}</div>
           <div className="text-[11px] text-slate-500 truncate max-w-[150px]">{order.vendorAddress}</div>
+          <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+            <span>{order.items?.length || 0} item{order.items?.length === 1 ? '' : 's'}</span>
+            {order.customerNotes && (
+              <span className="inline-flex items-center text-amber-600 dark:text-amber-400 font-semibold" title={order.customerNotes}>
+                • Note
+              </span>
+            )}
+          </div>
         </div>
       ),
     },
@@ -169,6 +237,20 @@ export const AdminOrdersPage: React.FC = () => {
       header: 'Action',
       render: (order) => (
         <div className="flex items-center justify-end gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs h-7 px-2 gap-1 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            onClick={() => {
+              setDetailsOrder(order);
+              setIsDetailsModalOpen(true);
+            }}
+            title="View full order details & line items"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            Details
+          </Button>
+
           {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' ? (
             <>
               <Button
@@ -256,6 +338,25 @@ export const AdminOrdersPage: React.FC = () => {
         ))}
       </div>
 
+      {/* Deep-link active notice banner */}
+      {orderNumberParam && (
+        <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 dark:bg-amber-950/30 dark:border-amber-900/60 dark:text-amber-200">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-amber-600" />
+            <span>
+              Direct link filter active for Order: <strong className="font-semibold">{orderNumberParam}</strong>
+            </span>
+          </div>
+          <button
+            onClick={clearSearch}
+            className="flex items-center gap-1 text-[11px] font-semibold text-amber-800 hover:text-amber-950 dark:text-amber-300 dark:hover:text-white underline"
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear Filter & View All
+          </button>
+        </div>
+      )}
+
       {/* Table Container */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -266,8 +367,16 @@ export const AdminOrdersPage: React.FC = () => {
               placeholder="Filter by Order #, Store, Customer, Courier..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-1.5 text-xs text-slate-900 focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-8 py-1.5 text-xs text-slate-900 focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
           <div className="text-xs text-slate-500">
             Showing <span className="font-semibold text-slate-900 dark:text-slate-100">{filteredOrders.length}</span> live orders
@@ -288,6 +397,201 @@ export const AdminOrdersPage: React.FC = () => {
         )}
       </div>
 
+      {/* Full Order Details & Line Items Modal */}
+      {isDetailsModalOpen && detailsOrder && (
+        <Modal
+          isOpen={isDetailsModalOpen}
+          onClose={() => setIsDetailsModalOpen(false)}
+          title={`Order Details — #${detailsOrder.orderNumber}`}
+        >
+          <div className="space-y-4">
+            {/* Status & Timing Banner */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700">
+              <div>
+                <span className="text-xs text-slate-500 block mb-0.5">Order Status</span>
+                <OrderStatusBadge status={detailsOrder.status} />
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-slate-500 block mb-0.5">Placed At</span>
+                <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                  {new Date(detailsOrder.placedAt).toLocaleString([], {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              </div>
+            </div>
+
+            {/* Key Entities Info Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-1">
+                  Store Outlet
+                </span>
+                <div className="font-medium text-slate-700 dark:text-slate-300">{detailsOrder.vendorName}</div>
+                <div className="text-slate-500 text-[11px] mt-0.5">{detailsOrder.vendorAddress}</div>
+              </div>
+              <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-1">
+                  Customer Details
+                </span>
+                <div className="font-medium text-slate-700 dark:text-slate-300">{detailsOrder.customerName}</div>
+                <div className="text-slate-500 text-[11px]">{detailsOrder.customerPhone}</div>
+                <div className="text-slate-500 text-[11px] mt-1">
+                  <span className="font-medium text-slate-600 dark:text-slate-400">Delivery: </span>
+                  {detailsOrder.deliveryAddress}
+                </div>
+              </div>
+            </div>
+
+            {/* Courier Assignment */}
+            <div className="rounded-lg border border-slate-200 p-3 text-xs dark:border-slate-800">
+              <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-1">
+                Assigned Delivery Courier
+              </span>
+              {detailsOrder.riderName ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bike className="h-4 w-4 text-primary-600" />
+                    <div>
+                      <div className="font-medium text-slate-800 dark:text-slate-200">{detailsOrder.riderName}</div>
+                      <div className="text-[11px] text-slate-500">{detailsOrder.riderPhone}</div>
+                    </div>
+                  </div>
+                  <Badge variant="info">Assigned</Badge>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
+                  <span className="font-medium italic">No courier assigned yet (Waiting in dispatch pool)</span>
+                  {detailsOrder.status !== 'DELIVERED' && detailsOrder.status !== 'CANCELLED' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7 px-2"
+                      onClick={() => {
+                        setIsDetailsModalOpen(false);
+                        setSelectedOrder(detailsOrder);
+                        setSelectedRiderId(availableRiders[0]?.id ?? '');
+                        setIsAssignModalOpen(true);
+                      }}
+                    >
+                      Assign Now
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Customer Special Cooking / Delivery Notes */}
+            <div className="rounded-lg border border-slate-200 bg-amber-50/40 p-3 text-xs dark:border-amber-900/30 dark:bg-amber-950/20">
+              <div className="flex items-center gap-1.5 font-semibold text-amber-900 dark:text-amber-300 mb-1">
+                <MessageSquare className="h-3.5 w-3.5" />
+                Customer Special Cooking & Delivery Notes
+              </div>
+              <p className="text-slate-700 dark:text-slate-300 italic">
+                {detailsOrder.customerNotes ? `"${detailsOrder.customerNotes}"` : 'No special notes specified by customer.'}
+              </p>
+            </div>
+
+            {/* Itemized Dish Breakdown */}
+            <div>
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                <span className="flex items-center gap-1.5">
+                  <ShoppingBag className="h-3.5 w-3.5 text-primary-600" />
+                  Line Items ({detailsOrder.items?.length || 0})
+                </span>
+                <span className="text-slate-500 font-normal">Subtotal</span>
+              </div>
+              <div className="rounded-lg border border-slate-200 divide-y divide-slate-100 dark:border-slate-800 dark:divide-slate-800 overflow-hidden text-xs">
+                {detailsOrder.items && detailsOrder.items.length > 0 ? (
+                  detailsOrder.items.map((item) => (
+                    <div key={item.id} className="p-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                      <div>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{item.name}</span>
+                        <div className="text-[11px] text-slate-500">
+                          {item.quantity} x ৳{item.unitPrice}
+                        </div>
+                      </div>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">
+                        ৳{item.quantity * item.unitPrice}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-3 text-center text-slate-400 italic">No line items recorded</div>
+                )}
+              </div>
+            </div>
+
+            {/* Financial Summary */}
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs space-y-1.5 dark:border-slate-800 dark:bg-slate-800/50">
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                <span>Items Subtotal:</span>
+                <span>
+                  ৳{detailsOrder.items?.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0) || (detailsOrder.totalAmount - (detailsOrder.deliveryFee || 0))}
+                </span>
+              </div>
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                <span>Delivery Fee:</span>
+                <span>৳{detailsOrder.deliveryFee || 0}</span>
+              </div>
+              <div className="flex justify-between font-bold text-sm text-slate-900 dark:text-slate-100 pt-1.5 border-t border-slate-200 dark:border-slate-700">
+                <span>Total Amount:</span>
+                <span className="text-primary-600 dark:text-primary-400">৳{detailsOrder.totalAmount}</span>
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-500 pt-1">
+                <span>Payment Method & Status:</span>
+                <span className="font-medium text-slate-700 dark:text-slate-300">
+                  {detailsOrder.paymentMethod} • {detailsOrder.paymentStatus}
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button variant="outline" size="sm" onClick={() => setIsDetailsModalOpen(false)}>
+                Close
+              </Button>
+              <div className="flex items-center gap-2">
+                {detailsOrder.status !== 'DELIVERED' && detailsOrder.status !== 'CANCELLED' && detailsOrder.status !== 'DISPATCHED' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-8 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-400"
+                    onClick={() => {
+                      setIsDetailsModalOpen(false);
+                      setCancelTargetOrder(detailsOrder);
+                      setCancelReason('');
+                      setIsCancelModalOpen(true);
+                    }}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    Force Cancel
+                  </Button>
+                )}
+                {detailsOrder.status !== 'DELIVERED' && detailsOrder.status !== 'CANCELLED' && (
+                  <Button
+                    size="sm"
+                    className="text-xs h-8"
+                    onClick={() => {
+                      setIsDetailsModalOpen(false);
+                      setSelectedOrder(detailsOrder);
+                      setSelectedRiderId(detailsOrder.riderId || (availableRiders[0]?.id ?? ''));
+                      setIsAssignModalOpen(true);
+                    }}
+                  >
+                    <UserCheck className="h-3.5 w-3.5" />
+                    {detailsOrder.riderId ? 'Reassign Courier' : 'Force Assign'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Manual Force-Assign Rider Modal */}
       {selectedOrder && (
         <Modal
@@ -301,7 +605,7 @@ export const AdminOrdersPage: React.FC = () => {
               message="Manual assignment forces this order to the designated courier and transmits real-time telemetry updates to the customer app and store kitchen console."
             />
 
-            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs space-y-1 dark:border-slate-800 dark:bg-slate-800/50">
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs space-y-1.5 dark:border-slate-800 dark:bg-slate-800/50">
               <div className="flex justify-between">
                 <span className="text-slate-500">Store Outlet:</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{selectedOrder.vendorName}</span>
@@ -314,6 +618,30 @@ export const AdminOrdersPage: React.FC = () => {
                 <span className="text-slate-500">Gross Total:</span>
                 <span className="font-semibold text-primary-600">৳{selectedOrder.totalAmount}</span>
               </div>
+
+              {/* Items summary */}
+              {selectedOrder.items && selectedOrder.items.length > 0 && (
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                  <span className="text-slate-500 block mb-1 font-semibold">
+                    Items ({selectedOrder.items.length}):
+                  </span>
+                  <div className="space-y-0.5 text-slate-700 dark:text-slate-300">
+                    {selectedOrder.items.map((i) => (
+                      <div key={i.id} className="flex justify-between text-[11px]">
+                        <span>{i.quantity}x {i.name}</span>
+                        <span>৳{i.quantity * i.unitPrice}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Cooking note */}
+              {selectedOrder.customerNotes && (
+                <div className="pt-1.5 border-t border-slate-200 dark:border-slate-700 text-amber-700 dark:text-amber-400 text-[11px]">
+                  <strong>Note:</strong> {selectedOrder.customerNotes}
+                </div>
+              )}
             </div>
 
             <div>
@@ -404,10 +732,12 @@ export const AdminOrdersPage: React.FC = () => {
               message="Force-cancelling an order reverses pending commission ledgers, releases assigned couriers, and refunds online payments. This action is permanently logged in audit trails."
             />
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/50 space-y-1">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/50 space-y-1.5">
               <div className="flex justify-between">
                 <span className="text-slate-500">Customer:</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200">{cancelTargetOrder.customerName}</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">
+                  {cancelTargetOrder.customerName} ({cancelTargetOrder.customerPhone})
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Store Outlet:</span>
@@ -419,6 +749,23 @@ export const AdminOrdersPage: React.FC = () => {
                   ৳{cancelTargetOrder.totalAmount} ({cancelTargetOrder.paymentMethod})
                 </span>
               </div>
+
+              {/* Items summary */}
+              {cancelTargetOrder.items && cancelTargetOrder.items.length > 0 && (
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                  <span className="text-slate-500 block mb-1 font-semibold">
+                    Items to be cancelled:
+                  </span>
+                  <div className="space-y-0.5 text-slate-700 dark:text-slate-300">
+                    {cancelTargetOrder.items.map((i) => (
+                      <div key={i.id} className="flex justify-between text-[11px]">
+                        <span>{i.quantity}x {i.name}</span>
+                        <span>৳{i.quantity * i.unitPrice}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>

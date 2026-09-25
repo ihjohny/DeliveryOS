@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { UserRole } from '../types/auth';
 import { RoleGuard } from './RoleGuard';
 
@@ -38,6 +38,7 @@ export const AppRoutes: React.FC = () => {
         }
       >
         <Route path="/" element={<AdminDashboardPage />} />
+        <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<AdminDashboardPage />} />
         <Route path="/vendors" element={<AdminVendorsPage />} />
         <Route path="/dispatch" element={<AdminDispatchPage />} />

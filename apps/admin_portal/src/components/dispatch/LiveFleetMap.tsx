@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import { FleetRider, AdminOrder } from '../../services/adminApi';
 
@@ -15,6 +16,7 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
   selectedRiderId,
   onSelectRider,
 }) => {
+  const navigate = useNavigate();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
@@ -156,16 +158,33 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
       });
 
       const marker = L.marker([lat, lng], { icon: orderIcon });
-      const popupContent = `
-        <div style="font-family: sans-serif; font-size: 12px; padding: 4px; min-width: 170px;">
-          <div style="font-weight: bold; color: #b45309; margin-bottom: 2px;">Waiting for Courier</div>
-          <div style="font-weight: 600; font-size: 13px;">${order.orderNumber}</div>
-          <div style="color: #64748b; margin-bottom: 4px;">${order.vendorName}</div>
-          <div style="color: #0f172a; font-weight: bold; margin-bottom: 6px;">৳${order.totalAmount}</div>
-          <a href="/orders?orderNumber=${order.orderNumber}" style="color: #4f46e5; text-decoration: underline; font-weight: 600;">Open Order →</a>
-        </div>
+      const popupDiv = document.createElement('div');
+      popupDiv.style.fontFamily = 'sans-serif';
+      popupDiv.style.fontSize = '12px';
+      popupDiv.style.padding = '4px';
+      popupDiv.style.minWidth = '170px';
+      popupDiv.innerHTML = `
+        <div style="font-weight: bold; color: #b45309; margin-bottom: 2px;">Waiting for Courier</div>
+        <div style="font-weight: 600; font-size: 13px;">${order.orderNumber}</div>
+        <div style="color: #64748b; margin-bottom: 4px;">${order.vendorName}</div>
+        <div style="color: #0f172a; font-weight: bold; margin-bottom: 6px;">৳${order.totalAmount}</div>
       `;
-      marker.bindPopup(popupContent);
+      const openBtn = document.createElement('button');
+      openBtn.textContent = 'Open Order →';
+      openBtn.style.color = '#4f46e5';
+      openBtn.style.textDecoration = 'underline';
+      openBtn.style.fontWeight = '600';
+      openBtn.style.background = 'none';
+      openBtn.style.border = 'none';
+      openBtn.style.padding = '0';
+      openBtn.style.cursor = 'pointer';
+      openBtn.onclick = (e) => {
+        e.preventDefault();
+        navigate(`/orders?orderNumber=${encodeURIComponent(order.orderNumber)}`);
+      };
+      popupDiv.appendChild(openBtn);
+
+      marker.bindPopup(popupDiv);
       marker.addTo(layer);
     });
 
@@ -173,7 +192,7 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
     if (bounds.length > 1 && !selectedRiderId) {
       map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40], maxZoom: 15 });
     }
-  }, [fleet, unassignedOrders, selectedRiderId, onSelectRider]);
+  }, [fleet, unassignedOrders, selectedRiderId, onSelectRider, navigate]);
 
   return (
     <div className="relative w-full h-[400px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-inner">

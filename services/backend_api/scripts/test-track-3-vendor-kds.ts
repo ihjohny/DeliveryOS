@@ -286,6 +286,14 @@ async function runTrack3VendorKDSTests() {
       });
     }
 
+    // Ensure vendor operating hours cover current time during automated test run
+    const todayDayOfWeek = new Date().getDay();
+    await prisma.vendorOperatingHour.upsert({
+      where: { vendorId_dayOfWeek: { vendorId, dayOfWeek: todayDayOfWeek } },
+      update: { openTime: '00:00:00', closeTime: '23:59:59', isClosed: false },
+      create: { vendorId, dayOfWeek: todayDayOfWeek, openTime: '00:00:00', closeTime: '23:59:59', isClosed: false },
+    });
+
     const checkoutRes = await requestJson(
       `${API_BASE}/orders/checkout`,
       'POST',

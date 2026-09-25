@@ -152,6 +152,14 @@ async function runAdminConsoleVerification() {
     const customer = await prisma.user.findFirst({ where: { phone: '+8801700000005' } });
     const address = await prisma.customerAddress.findFirst({ where: { userId: customer!.id, isDefault: true } });
 
+    // Ensure vendor operating hours cover current time during automated test run
+    const todayDayOfWeek = new Date().getDay();
+    await prisma.vendorOperatingHour.upsert({
+      where: { vendorId_dayOfWeek: { vendorId: vendor!.id, dayOfWeek: todayDayOfWeek } },
+      update: { openTime: '00:00:00', closeTime: '23:59:59', isClosed: false },
+      create: { vendorId: vendor!.id, dayOfWeek: todayDayOfWeek, openTime: '00:00:00', closeTime: '23:59:59', isClosed: false },
+    });
+
     const checkoutRes = await axios.post(
       `${API_BASE}/orders/checkout`,
       {
@@ -246,6 +254,54 @@ async function runAdminConsoleVerification() {
       'CSV contains valid RFC 4180 headers matching technical specification'
     );
     console.log(`   📄 CSV export verified (${csvData.split('\n').length} lines generated)`);
+
+    // 9. Testing Track 4: Applicant Couriers Queue, Courier Approval, and Order Line Items & Customer Notes
+    console.log('\n📋 9. Testing Track 4: Applicant Couriers Queue & Order Line Items/Notes...');
+    const applicantRes = await axios.get(`${API_BASE}/admin/riders?approvalStatus=PENDING`, {
+      headers: adminHeaders,
+    });
+    assert(applicantRes.status === 200, 'GET /admin/riders?approvalStatus=PENDING returns 200 OK');
+    const applicants = applicantRes.data?.data || applicantRes.data;
+    assert(Array.isArray(applicants), 'Applicant couriers returned as an array');
+    console.log(`   ✅ Pending applicant couriers retrieved: ${applicants.length} awaiting review`);
+
+    // Test Courier Approval Toggle
+    const allRidersRes = await axios.get(`${API_BASE}/admin/riders`, { headers: adminHeaders });
+    const allRiders = allRidersRes.data?.data || allRidersRes.data;
+    assert(allRiders.length > 0, 'Registered couriers available for approval testing');
+    const sampleRider = allRiders[0];
+    const originalApproval = sampleRider.isApproved !== false;
+
+    // Toggle to opposite status
+    const toggleRes = await axios.patch(
+      `${API_BASE}/admin/riders/${sampleRider.id}/approval`,
+      { isApproved: !originalApproval },
+      { headers: adminHeaders }
+    );
+    assert(toggleRes.status === 200, 'PATCH /admin/riders/:id/approval toggled successfully');
+    assert(
+      toggleRes.data?.data?.isApproved === !originalApproval,
+      `Rider approval status correctly updated to ${!originalApproval}`
+    );
+
+    // Restore original status
+    await axios.patch(
+      `${API_BASE}/admin/riders/${sampleRider.id}/approval`,
+      { isApproved: originalApproval },
+      { headers: adminHeaders }
+    );
+    console.log(`   ✅ Courier approval toggle validated and restored for rider: ${sampleRider.fullName || sampleRider.id}`);
+
+    // Verify Orders Endpoint contains Line Items and Customer Notes
+    const ordersRes = await axios.get(`${API_BASE}/admin/orders`, { headers: adminHeaders });
+    assert(ordersRes.status === 200, 'GET /admin/orders returned 200 OK');
+    const liveOrders = ordersRes.data?.data || ordersRes.data;
+    assert(liveOrders.length > 0, 'Live orders list contains active orders');
+    const sampleOrder = liveOrders[0];
+    assert(Array.isArray(sampleOrder.items), 'Order includes items array with line items');
+    assert('customerNotes' in sampleOrder, 'Order includes customerNotes field (string or null)');
+    console.log(`   ✅ Live order line items validated (${sampleOrder.items.length} items found in sample order)`);
+    console.log(`   ✅ Customer notes field verified: ${sampleOrder.customerNotes ? `"${sampleOrder.customerNotes}"` : 'null (verified field schema)'}`);
 
     console.log('\n================================================================');
     console.log(' 🎉 All Super Admin Master Governance & Console Tests Passed!');
