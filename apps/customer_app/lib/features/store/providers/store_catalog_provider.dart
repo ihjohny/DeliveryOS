@@ -5,15 +5,11 @@ import '../domain/store_catalog_model.dart';
 
 final storeCatalogProvider =
     FutureProvider.family<VendorCatalog, String>((ref, vendorId) async {
-  try {
-    final dio = ref.watch(dioClientProvider);
-    final response = await dio.get(ApiConstants.vendorCatalog(vendorId));
-    if (response.statusCode == 200) {
-      final data = response.data['data'] as Map<String, dynamic>? ?? {};
-      return VendorCatalog.fromJson(data);
-    }
-  } catch (_) {
-    // Graceful pilot fallback in offline or test mode
+  final dio = ref.watch(dioClientProvider);
+  final response = await dio.get(ApiConstants.vendorCatalog(vendorId));
+  if (response.statusCode == 200) {
+    final data = response.data['data'] as Map<String, dynamic>? ?? {};
+    return VendorCatalog.fromJson(data);
   }
-  return VendorCatalog.pilotSultansDine();
+  throw Exception('Failed to load menu catalog for vendor $vendorId (HTTP ${response.statusCode})');
 });

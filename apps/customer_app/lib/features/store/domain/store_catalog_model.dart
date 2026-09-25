@@ -126,7 +126,7 @@ class CategoryModel {
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
-    final productsRaw = json['products'] as List<dynamic>? ?? [];
+    final productsRaw = json['products'] as List<dynamic>? ?? json['items'] as List<dynamic>? ?? [];
     return CategoryModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
@@ -174,91 +174,6 @@ class VendorCatalog {
       estimatedPrepTimeMinutes: (json['estimatedPrepTimeMinutes'] as num?)?.toInt() ?? (json['estimated_prep_time_minutes'] as num?)?.toInt() ?? 25,
       isActive: json['isActive'] as bool? ?? json['is_active'] as bool? ?? true,
       categories: categoriesRaw.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>)).toList(),
-    );
-  }
-
-  static VendorCatalog pilotSultansDine() {
-    return VendorCatalog(
-      id: 'b8b33bf6-6b22-4bb3-9d41-e9fb94c25601',
-      name: "Sultan's Dine - Banani",
-      addressText: 'House 42, Road 11, Block D, Banani, Dhaka',
-      contactPhone: '+8801711223344',
-      deliveryRadiusKm: 6.0,
-      estimatedPrepTimeMinutes: 20,
-      isActive: true,
-      categories: [
-        CategoryModel(
-          id: 'cat-kacchi',
-          name: 'Shahi Kacchi',
-          sortOrder: 1,
-          products: [
-            ProductModel(
-              id: 'prod-kacchi-half',
-              name: 'Kacchi Biryani (Basmati)',
-              description: 'Authentic Dhaka-style tender mutton biryani cooked with fragrant basmati, aloo bukhara, and golden potatoes.',
-              basePrice: 420.0,
-              unitType: 'portion',
-              isInStock: true,
-              variants: [
-                VariantModel(id: 'v-half', name: 'Half (1 Mutton piece)', price: 340.0, isInStock: true),
-                VariantModel(id: 'v-full', name: 'Full (2 Mutton pieces)', price: 460.0, isInStock: true),
-                VariantModel(id: 'v-special', name: 'Special Platter (3 pieces + egg)', price: 620.0, isInStock: true),
-              ],
-              addonGroups: [
-                AddonGroupModel(
-                  id: 'addon-grp-side',
-                  name: 'Add-ons & Extras',
-                  minSelections: 0,
-                  maxSelections: 4,
-                  addons: [
-                    AddonModel(id: 'add-borhani', name: 'Chilled Spiced Borhani (250ml)', price: 60.0, isInStock: true),
-                    AddonModel(id: 'add-jali', name: 'Beef Jali Kebab (1 pc)', price: 70.0, isInStock: true),
-                    AddonModel(id: 'add-firni', name: 'Zafrani Shahi Firni', price: 80.0, isInStock: true),
-                    AddonModel(id: 'add-salad', name: 'Cucumber Mint Raita', price: 40.0, isInStock: true),
-                  ],
-                ),
-              ],
-            ),
-            ProductModel(
-              id: 'prod-soldout-roast',
-              name: 'Shahi Chicken Roast with Polao',
-              description: 'Rich ghee-roasted quarter chicken served with fragrant chinigura polao.',
-              basePrice: 320.0,
-              unitType: 'portion',
-              isInStock: false, // SOLD OUT
-              variants: [],
-              addonGroups: [],
-            ),
-          ],
-        ),
-        CategoryModel(
-          id: 'cat-sides',
-          name: 'Kebabs & Sides',
-          sortOrder: 2,
-          products: [
-            ProductModel(
-              id: 'prod-mutton-rezala',
-              name: 'Mutton Shahi Rezala',
-              description: 'Tender mutton simmered in yogurt gravy with dry fruits and cashews.',
-              basePrice: 380.0,
-              unitType: 'bowl',
-              isInStock: true,
-              variants: [],
-              addonGroups: [],
-            ),
-            ProductModel(
-              id: 'prod-borhani-large',
-              name: 'Traditional Borhani (1 Liter Bottle)',
-              description: 'Digestive probiotic yogurt drink with roasted cumin, mint, and black salt.',
-              basePrice: 220.0,
-              unitType: 'bottle',
-              isInStock: true,
-              variants: [],
-              addonGroups: [],
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/localization/language_provider.dart';
+import '../../../core/utils/currency_formatter.dart';
+import '../../../core/widgets/empty_state_view.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/presentation/phone_input_screen.dart';
 import '../../banners/presentation/banner_carousel.dart';
@@ -14,6 +16,8 @@ import '../../location/presentation/map_location_picker_screen.dart';
 import '../../orders/presentation/order_history_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../store/presentation/outlet_detail_screen.dart';
+import 'widgets/category_chip.dart';
+import 'widgets/outlet_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -33,47 +37,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final currentLocale = ref.watch(languageProvider);
     final cartState = ref.watch(cartProvider);
 
-    final defaultPilotOutlets = [
-      {
-        'id': 'b8b33bf6-6b22-4bb3-9d41-e9fb94c25601',
-        'name': "Sultan's Dine - Banani",
-        'vertical': 'FOOD',
-        'cuisine': 'Biryani, Kacchi, Traditional',
-        'rating': 4.8,
-        'deliveryTime': '20-30 min',
-        'isOpen': true,
-        'isBusy': false,
-      },
-      {
-        'id': 'c7c44cf7-7c33-4cc4-8e52-f0fc05d36712',
-        'name': 'Kacchi Bhai - Gulshan 1',
-        'vertical': 'FOOD',
-        'cuisine': 'Platters, Kebabs, Desserts',
-        'rating': 4.6,
-        'deliveryTime': '25-35 min',
-        'isOpen': true,
-        'isBusy': false,
-      },
-      {
-        'id': 'd6d55df8-8d44-5dd5-9f63-01fd16e47823',
-        'name': 'Shwapno Superstore Express',
-        'vertical': 'GROCERY',
-        'cuisine': 'Groceries, Fresh Produce, Dairy',
-        'rating': 4.9,
-        'deliveryTime': '15-25 min',
-        'isOpen': true,
-        'isBusy': false,
-      },
-    ];
-
-    final rawVendors = locState.nearbyVendors.isNotEmpty
-        ? locState.nearbyVendors
-        : defaultPilotOutlets;
-
-    final displayedVendors = rawVendors.where((v) {
+    final displayedVendors = locState.nearbyVendors.where((v) {
       if (_selectedCategory == null) return true;
-      final vert = (v['vertical'] as String?)?.toUpperCase();
-      return vert == _selectedCategory;
+      return v.vertical.toUpperCase() == _selectedCategory;
     }).toList();
 
     return Scaffold(
@@ -446,22 +412,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      _CategoryChip(
+                      CategoryChip(
                         label: 'All',
                         isSelected: _selectedCategory == null,
                         onTap: () => setState(() => _selectedCategory = null),
                       ),
-                      _CategoryChip(
+                      CategoryChip(
                         label: l10n.translate('restaurants'),
                         isSelected: _selectedCategory == 'FOOD',
                         onTap: () => setState(() => _selectedCategory = 'FOOD'),
                       ),
-                      _CategoryChip(
+                      CategoryChip(
                         label: l10n.translate('groceries'),
                         isSelected: _selectedCategory == 'GROCERY',
                         onTap: () => setState(() => _selectedCategory = 'GROCERY'),
                       ),
-                      _CategoryChip(
+                      CategoryChip(
                         label: 'Pharmacy',
                         isSelected: _selectedCategory == 'PHARMACY',
                         onTap: () => setState(() => _selectedCategory = 'PHARMACY'),
@@ -477,48 +443,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  ...displayedVendors.map((vendor) {
-                    final isPilot = vendor is Map<String, dynamic> && vendor['cuisine'] != null;
-                    final vId = vendor['id']?.toString() ?? '';
-                    final vName = vendor['name']?.toString() ?? 'Outlet';
-                    final vCuisine = isPilot
-                        ? vendor['cuisine']?.toString() ?? 'Biryani, Traditional'
-                        : vendor['addressText']?.toString() ?? 'Store';
-                    final vRating = (vendor['rating'] as num?)?.toDouble() ?? 4.8;
-                    final vDeliveryTime = isPilot
-                        ? vendor['deliveryTime']?.toString() ?? '20-30 min'
-                        : '${vendor['defaultPrepTimeMinutes'] ?? 25} min';
-                    final vIsOpen = vendor['isActive'] as bool? ?? vendor['isOpen'] as bool? ?? true;
-                    final vIsBusy = vendor['isBusy'] as bool? ?? false;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: _OutletCard(
-                        vendorId: vId,
-                        name: vName,
-                        cuisine: vCuisine,
-                        rating: vRating,
-                        deliveryTime: vDeliveryTime,
-                        isOpen: vIsOpen,
-                        isBusy: vIsBusy,
+                  if (locState.isLoading)
+                    const Padding(
+                      padding: EdgeInsets.all(40.0),
+                      child: Center(
+                        child: CircularProgressIndicator(color: AppColors.primary),
                       ),
-                    );
-                  }),
-                  if (displayedVendors.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(32),
-                      alignment: Alignment.center,
-                      child: const Column(
-                        children: [
-                          Icon(Icons.storefront_outlined, size: 48, color: AppColors.textMuted),
-                          SizedBox(height: 12),
-                          Text(
-                            'No outlets found in this category',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
+                    )
+                  else if (displayedVendors.isEmpty)
+                    EmptyStateView(
+                      icon: Icons.storefront_outlined,
+                      title: 'No outlets found in this area',
+                      message: _selectedCategory == null
+                          ? 'We could not find any active stores delivering to your current location.'
+                          : 'No stores available in this category nearby.',
+                    )
+                  else
+                    ...displayedVendors.map((vendor) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12.0),
+                        child: OutletCard(vendor: vendor),
+                      );
+                    }),
                   const SizedBox(height: 24),
                 ]),
               ),
@@ -577,7 +523,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                         Text(
-                          '৳${cartState.totalPayable.toStringAsFixed(0)}',
+                          CurrencyFormatter.format(cartState.totalPayable),
                           style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
                         ),
                       ],
@@ -590,187 +536,3 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class _CategoryChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _CategoryChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? AppColors.primary : AppColors.border),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? Colors.white : AppColors.textPrimary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OutletCard extends StatelessWidget {
-  final String vendorId;
-  final String name;
-  final String cuisine;
-  final double rating;
-  final String deliveryTime;
-  final bool isOpen;
-  final bool isBusy;
-
-  const _OutletCard({
-    required this.vendorId,
-    required this.name,
-    required this.cuisine,
-    required this.rating,
-    required this.deliveryTime,
-    required this.isOpen,
-    this.isBusy = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => OutletDetailScreen(
-              vendorId: vendorId,
-              initialVendorName: name,
-            ),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            children: [
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.storefront_rounded,
-                  color: AppColors.primary,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      cuisine,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(Icons.star_rounded, size: 16, color: Color(0xFFF59E0B)),
-                        const SizedBox(width: 2),
-                        Text(
-                          rating.toString(),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Icon(Icons.timer_outlined, size: 14, color: AppColors.textMuted),
-                        const SizedBox(width: 4),
-                        Text(
-                          deliveryTime,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: !isOpen
-                                ? const Color(0xFFFEE2E2)
-                                : isBusy
-                                    ? const Color(0xFFFEF3C7)
-                                    : const Color(0xFFDCFCE7),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            !isOpen
-                                ? 'CLOSED'
-                                : isBusy
-                                    ? 'BUSY'
-                                    : 'OPEN',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: !isOpen
-                                  ? const Color(0xFFDC2626)
-                                  : isBusy
-                                      ? const Color(0xFFD97706)
-                                      : const Color(0xFF16A34A),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

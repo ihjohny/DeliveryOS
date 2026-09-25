@@ -21,18 +21,18 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
     final initialState = OrderTrackingState(
       orderId: orderId,
       orderNumber: '#ORD-${orderId.length > 8 ? orderId.substring(0, 8).toUpperCase() : orderId}',
-      stage: OrderStage.dispatched,
-      store: StoreMeta.defaultSultansDine(),
-      rider: RiderMeta.pilotRider(),
+      stage: OrderStage.placed,
+      store: StoreMeta.initial(),
+      rider: null,
       customer: CustomerMeta(
         address: customerLocation.addressLine,
-        phone: '+8801700000005',
+        phone: '',
         latitude: customerLocation.latitude,
         longitude: customerLocation.longitude,
       ),
-      estimatedMinutesRemaining: 15,
-      itemsCount: 1,
-      totalAmount: 350.0,
+      estimatedMinutesRemaining: 25,
+      itemsCount: 0,
+      totalAmount: 0.0,
     );
 
     // 1. Join real-time WebSocket dynamic order room
@@ -100,8 +100,8 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
         final bearing = (loc['bearing'] as num?)?.toDouble() ?? 0.0;
         final eta = (data['estimatedMinutesRemaining'] as num?)?.toInt();
 
-        if (lat != null && lng != null) {
-          final currentRider = state.rider ?? RiderMeta.pilotRider();
+        if (lat != null && lng != null && state.rider != null) {
+          final currentRider = state.rider!;
           state = state.copyWith(
             rider: currentRider.copyWith(
               latitude: lat,

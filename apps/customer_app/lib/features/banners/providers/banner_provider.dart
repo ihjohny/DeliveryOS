@@ -31,7 +31,7 @@ class BannerNotifier extends Notifier<BannerState> {
   @override
   BannerState build() {
     Future.microtask(() => fetchBanners());
-    return BannerState(banners: BannerModel.pilotBanners, isLoading: false);
+    return BannerState(banners: const [], isLoading: true);
   }
 
   Future<void> fetchBanners() async {
@@ -42,17 +42,21 @@ class BannerNotifier extends Notifier<BannerState> {
       if (response.statusCode == 200) {
         final data = response.data['data'] as List<dynamic>? ?? [];
         final banners = data
-            .map((json) => BannerModel.fromJson(json as Map<String, dynamic>))
+            .whereType<Map<String, dynamic>>()
+            .map((json) => BannerModel.fromJson(json))
             .toList();
-        if (banners.isNotEmpty) {
-          state = state.copyWith(banners: banners, isLoading: false);
-          return;
-        }
+        state = state.copyWith(banners: banners, isLoading: false);
+        return;
       }
-    } catch (_) {
-      // Graceful fallback to pilot banners in offline / test environments
+    } catch (e) {
+      state = state.copyWith(
+        banners: const [],
+        isLoading: false,
+        error: 'Failed to load promotional banners',
+      );
+      return;
     }
-    state = state.copyWith(banners: BannerModel.pilotBanners, isLoading: false);
+    state = state.copyWith(banners: const [], isLoading: false);
   }
 }
 

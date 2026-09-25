@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/empty_state_view.dart';
+import '../../../core/widgets/vendor_conflict_dialog.dart';
 import '../../cart/presentation/cart_screen.dart';
 import '../../cart/providers/cart_provider.dart';
 import '../../store/domain/store_catalog_model.dart';
@@ -8,6 +10,8 @@ import '../../store/presentation/item_customizer_sheet.dart';
 import '../../store/presentation/outlet_detail_screen.dart';
 import '../domain/search_result_model.dart';
 import '../providers/search_provider.dart';
+import 'widgets/search_item_card.dart';
+import 'widgets/search_store_card.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -77,23 +81,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Widget _buildEmptyOrSuggestionsState() {
     if (_controller.text.trim().isNotEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.search_off_rounded, size: 56, color: AppColors.textMuted),
-            const SizedBox(height: 12),
-            Text(
-              'No matches found for "${_controller.text.trim()}"',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Try searching for "Biryani", "Kacchi", or "Burger"',
-              style: TextStyle(fontSize: 13, color: AppColors.textMuted),
-            ),
-          ],
-        ),
+      return EmptyStateView(
+        icon: Icons.search_off_rounded,
+        title: 'No matches found for "${_controller.text.trim()}"',
+        message: 'Try searching for "Biryani", "Kacchi", or "Burger"',
       );
     }
 
@@ -116,8 +107,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               _buildSuggestionChip('Borhani'),
               _buildSuggestionChip('Beef Kebab'),
               _buildSuggestionChip('Fresh Milk'),
-              _buildSuggestionChip("Sultan's Dine"),
-              _buildSuggestionChip('Shwapno'),
+              _buildSuggestionChip('Chicken Biryani'),
+              _buildSuggestionChip('Groceries'),
             ],
           ),
         ],
@@ -159,7 +150,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 8),
-          ...results.outlets.map((outlet) => _buildOutletCard(outlet)),
+          ...results.outlets.map(
+            (outlet) => SearchStoreCard(
+              outlet: outlet,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => OutletDetailScreen(
+                      vendorId: outlet.id,
+                      initialVendorName: outlet.name,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
           const SizedBox(height: 16),
         ],
 
@@ -170,283 +175,110 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 8),
-          ...results.items.map((item) => _buildItemCard(item)),
+          ...results.items.map(
+            (item) => SearchItemCard(
+              item: item,
+              onAdd: () => _openItemCustomizer(item),
+            ),
+          ),
         ],
       ],
     );
   }
 
-  Widget _buildOutletCard(SearchOutlet outlet) {
-    return InkWell(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => OutletDetailScreen(
-              vendorId: outlet.id,
-              initialVendorName: outlet.name,
-            ),
-          ),
+  void _openItemCustomizer(SearchItem item) {
+    final product = ProductModel(
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      basePrice: item.basePrice,
+      unitType: item.unitType,
+      imageUrl: item.imageUrl,
+      isInStock: item.isInStock,
+    );
+
+    ItemCustomizerSheet.show(
+      context,
+      product: product,
+      onAddToCart: ({
+        required product,
+        selectedVariant,
+        required selectedAddons,
+        required quantity,
+        specialInstructions,
+        required totalPrice,
+      }) {
+        _handleAddToCart(
+          item: item,
+          product: product,
+          selectedVariant: selectedVariant,
+          selectedAddons: selectedAddons,
+          quantity: quantity,
+          specialInstructions: specialInstructions,
+          unitPrice: totalPrice / quantity,
         );
       },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    outlet.name,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    outlet.addressText,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Text(
-                '${outlet.distanceKm.toStringAsFixed(1)} km',
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildItemCard(SearchItem item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.name,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: item.isInStock ? AppColors.textPrimary : AppColors.textMuted,
-                        ),
-                      ),
-                    ),
-                    if (!item.isInStock)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.errorContainer,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'Sold Out',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.error),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'from ${item.vendorName}',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
-                ),
-                if (item.description != null) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    item.description!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '৳${item.basePrice.toStringAsFixed(0)} / ${item.unitType}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: item.isInStock ? AppColors.textPrimary : AppColors.textMuted,
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: item.isInStock
-                          ? () {
-                              final product = ProductModel(
-                                id: item.id,
-                                name: item.name,
-                                description: item.description,
-                                basePrice: item.basePrice,
-                                unitType: item.unitType,
-                                imageUrl: item.imageUrl,
-                                isInStock: item.isInStock,
-                              );
-                              ItemCustomizerSheet.show(
-                                context,
-                                product: product,
-                                onAddToCart: ({
-                                  required product,
-                                  selectedVariant,
-                                  required selectedAddons,
-                                  required quantity,
-                                  specialInstructions,
-                                  required totalPrice,
-                                }) {
-                                  final result = ref.read(cartProvider.notifier).addItem(
-                                        vendorId: item.vendorId,
-                                        vendorName: item.vendorName,
-                                        product: product,
-                                        selectedVariant: selectedVariant,
-                                        selectedAddons: selectedAddons,
-                                        quantity: quantity,
-                                        specialInstructions: specialInstructions,
-                                        unitPrice: totalPrice / quantity,
-                                      );
+  void _handleAddToCart({
+    required SearchItem item,
+    required ProductModel product,
+    required VariantModel? selectedVariant,
+    required List<AddonModel> selectedAddons,
+    required int quantity,
+    required String? specialInstructions,
+    required double unitPrice,
+  }) {
+    final result = ref.read(cartProvider.notifier).addItem(
+          vendorId: item.vendorId,
+          vendorName: item.vendorName,
+          product: product,
+          selectedVariant: selectedVariant,
+          selectedAddons: selectedAddons,
+          quantity: quantity,
+          specialInstructions: specialInstructions,
+          unitPrice: unitPrice,
+        );
 
-                                  if (result == AddToCartResult.vendorConflict) {
-                                    showDialog(
-                                      context: context,
-                                      builder: (ctx) => AlertDialog(
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                        title: const Text('Replace Cart Items?', style: TextStyle(fontWeight: FontWeight.w800)),
-                                        content: Text(
-                                          'Your cart already contains items from a different store. Clear cart and add from ${item.vendorName}?',
-                                          style: const TextStyle(fontSize: 14),
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.of(ctx).pop(),
-                                            child: const Text('Cancel'),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () {
-                                              ref.read(cartProvider.notifier).addItem(
-                                                    vendorId: item.vendorId,
-                                                    vendorName: item.vendorName,
-                                                    product: product,
-                                                    selectedVariant: selectedVariant,
-                                                    selectedAddons: selectedAddons,
-                                                    quantity: quantity,
-                                                    specialInstructions: specialInstructions,
-                                                    unitPrice: totalPrice / quantity,
-                                                    forceReplace: true,
-                                                  );
-                                              Navigator.of(ctx).pop();
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text('Added $quantity x ${product.name} to cart'),
-                                                  backgroundColor: AppColors.secondary,
-                                                  action: SnackBarAction(
-                                                    label: 'VIEW CART',
-                                                    textColor: Colors.white,
-                                                    onPressed: () {
-                                                      Navigator.of(context).push(
-                                                        MaterialPageRoute(builder: (_) => const CartScreen()),
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColors.primary,
-                                              foregroundColor: Colors.white,
-                                            ),
-                                            child: const Text('Clear & Add'),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Added $quantity x ${product.name} to cart'),
-                                        backgroundColor: AppColors.secondary,
-                                        action: SnackBarAction(
-                                          label: 'VIEW CART',
-                                          textColor: Colors.white,
-                                          onPressed: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(builder: (_) => const CartScreen()),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                              );
-                            }
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryContainer,
-                        foregroundColor: AppColors.primary,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                          side: const BorderSide(color: AppColors.primary),
-                        ),
-                        disabledBackgroundColor: AppColors.background,
-                        disabledForegroundColor: AppColors.textMuted,
-                      ),
-                      child: Text(
-                        item.isInStock ? 'ADD +' : 'UNAVAILABLE',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+    if (result == AddToCartResult.vendorConflict) {
+      showVendorConflictDialog(
+        context: context,
+        newVendorName: item.vendorName,
+        onConfirmReplace: () {
+          ref.read(cartProvider.notifier).addItem(
+                vendorId: item.vendorId,
+                vendorName: item.vendorName,
+                product: product,
+                selectedVariant: selectedVariant,
+                selectedAddons: selectedAddons,
+                quantity: quantity,
+                specialInstructions: specialInstructions,
+                unitPrice: unitPrice,
+                forceReplace: true,
+              );
+          _showAddedSnackbar(product.name, quantity);
+        },
+      );
+    } else {
+      _showAddedSnackbar(product.name, quantity);
+    }
+  }
+
+  void _showAddedSnackbar(String productName, int quantity) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Added $quantity x $productName to cart'),
+        backgroundColor: AppColors.secondary,
+        action: SnackBarAction(
+          label: 'VIEW CART',
+          textColor: Colors.white,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CartScreen()),
+            );
+          },
+        ),
       ),
     );
   }

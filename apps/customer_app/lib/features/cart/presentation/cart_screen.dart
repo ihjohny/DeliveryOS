@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
+import '../../../core/widgets/empty_state_view.dart';
 import '../../addresses/domain/address_model.dart';
 import '../../addresses/presentation/address_book_screen.dart';
 import '../../addresses/providers/address_provider.dart';
@@ -170,7 +172,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('Amount:', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                          Text('৳${paymentSession?['amount']?.toString() ?? ''}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.primary)),
+                          Text(
+                            paymentSession?['amount'] != null
+                                ? CurrencyFormatter.format(num.tryParse(paymentSession!['amount'].toString()) ?? 0)
+                                : '',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.primary),
+                          ),
                         ],
                       ),
                     ],
@@ -251,41 +258,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.remove_shopping_cart_rounded, size: 64, color: AppColors.primary),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Your cart is empty',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Browse restaurants and stores to add your favorite items',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-                child: const Text('Start Exploring', style: TextStyle(fontWeight: FontWeight.w700)),
-              ),
-            ],
-          ),
+        body: EmptyStateView(
+          icon: Icons.remove_shopping_cart_rounded,
+          title: 'Your cart is empty',
+          message: 'Browse restaurants and stores to add your favorite items',
+          actionButtonText: 'Start Exploring',
+          onActionPressed: () => Navigator.of(context).pop(),
         ),
       );
     }
@@ -345,6 +323,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           // 1. Delivery Method Selector
           DeliveryModeSelector(
             selectedMethod: cartState.deliveryMethod,
+            deliveryFee: cartState.deliveryFee,
             onMethodChanged: (method) {
               ref.read(cartProvider.notifier).setDeliveryMethod(method);
             },
@@ -602,7 +581,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                         ),
                         Text(
-                          '৳${cartState.totalPayable.toStringAsFixed(0)}',
+                          CurrencyFormatter.format(cartState.totalPayable),
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
                         ),
                       ],
@@ -657,7 +636,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 ],
                 const SizedBox(height: 6),
                 Text(
-                  '৳${item.totalPrice.toStringAsFixed(0)}',
+                  CurrencyFormatter.format(item.totalPrice),
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                 ),
               ],
@@ -716,21 +695,21 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 10),
-          _buildSummaryRow('Item Subtotal', '৳${cart.grossSubtotal.toStringAsFixed(0)}'),
+          _buildSummaryRow('Item Subtotal', CurrencyFormatter.format(cart.grossSubtotal)),
           if (cart.couponDiscount > 0)
             _buildSummaryRow(
               'Coupon Discount (${cart.couponCode})',
-              '-৳${cart.couponDiscount.toStringAsFixed(0)}',
+              CurrencyFormatter.formatDiscount(cart.couponDiscount),
               color: AppColors.secondary,
             ),
           _buildSummaryRow(
             'Delivery Fee',
-            cart.deliveryMethod == DeliveryMethod.takeaway ? 'FREE' : '৳${cart.deliveryFee.toStringAsFixed(0)}',
+            cart.deliveryMethod == DeliveryMethod.takeaway ? 'FREE' : CurrencyFormatter.format(cart.deliveryFee),
           ),
           const Divider(height: 20, color: AppColors.border),
           _buildSummaryRow(
             'Total Payable',
-            '৳${cart.totalPayable.toStringAsFixed(0)}',
+            CurrencyFormatter.format(cart.totalPayable),
             isBold: true,
           ),
         ],

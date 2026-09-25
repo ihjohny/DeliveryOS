@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/currency_formatter.dart';
 
 class CouponInputSection extends StatefulWidget {
   final String? appliedCoupon;
@@ -59,7 +60,7 @@ class _CouponInputSectionState extends State<CouponInputSection> {
                     ),
                   ),
                   Text(
-                    'Saved ৳${widget.couponDiscount.toStringAsFixed(0)} on your order',
+                    'Saved ${CurrencyFormatter.format(widget.couponDiscount)} on your order',
                     style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
                 ],

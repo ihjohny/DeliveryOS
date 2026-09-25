@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/phone_call_launcher.dart';
 import '../domain/tracking_models.dart';
 import '../providers/tracking_provider.dart';
 import 'widgets/order_stepper_widget.dart';
+import 'widgets/payment_recovery_banner.dart';
+import 'widgets/tracking_contact_card.dart';
+import 'widgets/tracking_eta_banner.dart';
 import 'widgets/tracking_map_view.dart';
 
 class OrderTrackingScreen extends ConsumerWidget {
@@ -82,11 +86,33 @@ class OrderTrackingScreen extends ConsumerWidget {
                   if (trackingState.paymentMethod == 'ONLINE_GATEWAY' &&
                       trackingState.paymentStatus != 'PAID' &&
                       !trackingState.isCancelled) ...[
-                    _buildPaymentRecoveryBanner(context, ref, trackingState),
+                    PaymentRecoveryBanner(
+                      onSwitchToCOD: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final success = await ref.read(trackingProvider(orderId).notifier).switchToCOD();
+                        if (success) {
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Switched to Cash on Delivery! Order is now being dispatched.'),
+                              backgroundColor: AppColors.secondary,
+                            ),
+                          );
+                        }
+                      },
+                      onRefresh: () {
+                        ref.read(trackingProvider(orderId).notifier).refreshDetails();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Checking gateway payment status...'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    ),
                   ],
 
                   // ETA Card
-                  _buildEtaBanner(trackingState),
+                  TrackingEtaBanner(state: trackingState),
                   const SizedBox(height: 12),
 
                   // Refund Banner (if cancelled and refund processed/applicable)
@@ -103,12 +129,61 @@ class OrderTrackingScreen extends ConsumerWidget {
 
                   // Courier Card with Native Dialer Call Button
                   if (trackingState.rider != null && !trackingState.isCancelled) ...[
-                    _buildRiderCard(context, trackingState.rider!),
+                    TrackingContactCard(
+                      leading: CircleAvatar(
+                        radius: 22,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                        child: const Icon(Icons.person_rounded, color: AppColors.primary, size: 26),
+                      ),
+                      title: trackingState.rider!.name,
+                      titleTrailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 14),
+                          Text(
+                            trackingState.rider!.rating.toString(),
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                      subtitle: '${trackingState.rider!.vehicleType} • ${trackingState.rider!.phone}',
+                      actionLabel: 'Call Rider',
+                      isPrimaryAction: true,
+                      onAction: () async {
+                        final launched = await makeDirectPhoneCall(trackingState.rider!.phone);
+                        if (!launched && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Calling ${trackingState.rider!.phone}...')),
+                          );
+                        }
+                      },
+                    ),
                     const SizedBox(height: 10),
                   ],
 
                   // Store Card with Native Dialer Call Button
-                  _buildStoreCard(context, trackingState.store),
+                  TrackingContactCard(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
+                    ),
+                    title: trackingState.store.name,
+                    subtitle: trackingState.store.address,
+                    actionLabel: 'Call Store',
+                    isPrimaryAction: false,
+                    onAction: () async {
+                      final launched = await makeDirectPhoneCall(trackingState.store.phone);
+                      if (!launched && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Calling store at ${trackingState.store.phone}...')),
+                        );
+                      }
+                    },
+                  ),
                   const SizedBox(height: 16),
 
                   // Customer Cancel CTA (allowed in PLACED and RIDER_ASSIGNED)
@@ -124,306 +199,6 @@ class OrderTrackingScreen extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _buildPaymentRecoveryBanner(BuildContext context, WidgetRef ref, OrderTrackingState state) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFDE68A), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.payment_rounded, color: Color(0xFFD97706), size: 22),
-              SizedBox(width: 8),
-              Text(
-                'Online Payment Pending',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF92400E)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Kitchen preparation and courier dispatch will begin immediately once payment is confirmed.',
-            style: TextStyle(fontSize: 12, color: Color(0xFFB45309)),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    final success = await ref.read(trackingProvider(orderId).notifier).switchToCOD();
-                    if (success) {
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Switched to Cash on Delivery! Order is now being dispatched.'),
-                          backgroundColor: AppColors.secondary,
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.money_rounded, size: 16),
-                  label: const Text('Switch to Cash (COD)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD97706),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: () {
-                  ref.read(trackingProvider(orderId).notifier).refreshDetails();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Checking gateway payment status...'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.sync_rounded, size: 16),
-                label: const Text('Refresh', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF92400E),
-                  side: const BorderSide(color: Color(0xFFF59E0B)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEtaBanner(OrderTrackingState state) {
-    final isDelivered = state.stage == OrderStage.delivered;
-    final isCancelled = state.stage == OrderStage.cancelled;
-
-    Color bgColor = AppColors.primaryContainer;
-    Color borderColor = AppColors.primaryLight.withValues(alpha: 0.5);
-    Color iconBgColor = AppColors.primary;
-    IconData icon = Icons.timer_outlined;
-    String title = 'Estimated Arrival in ~${state.estimatedMinutesRemaining} mins';
-    String subtitle = 'Rider is on the move with your fresh order';
-    Color titleColor = AppColors.primaryDark;
-    Color subtitleColor = AppColors.textSecondary;
-
-    if (isCancelled) {
-      bgColor = const Color(0xFFFEF2F2);
-      borderColor = const Color(0xFFFECACA);
-      iconBgColor = const Color(0xFFDC2626);
-      icon = Icons.cancel_rounded;
-      title = 'Order Cancelled';
-      subtitle = state.cancellationReason != null && state.cancellationReason!.isNotEmpty
-          ? 'Reason: ${state.cancellationReason}'
-          : 'This order has been cancelled.';
-      titleColor = const Color(0xFF991B1B);
-      subtitleColor = const Color(0xFFB91C1C);
-    } else if (isDelivered) {
-      bgColor = const Color(0xFFECFDF5);
-      borderColor = const Color(0xFFA7F3D0);
-      iconBgColor = const Color(0xFF059669);
-      icon = Icons.task_alt_rounded;
-      title = 'Delivered Successfully!';
-      subtitle = 'Order completed at ${state.customer.address.split(',').first}';
-      titleColor = const Color(0xFF065F46);
-      subtitleColor = const Color(0xFF047857);
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: titleColor,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: subtitleColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRiderCard(BuildContext context, RiderMeta rider) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-            child: const Icon(Icons.person_rounded, color: AppColors.primary, size: 26),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      rider.name,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-                    ),
-                    const SizedBox(width: 6),
-                    const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 14),
-                    Text(
-                      rider.rating.toString(),
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${rider.vehicleType} • ${rider.phone}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ),
-          // Direct Native Dialer Call Button
-          ElevatedButton.icon(
-            onPressed: () async {
-              final launched = await makeDirectPhoneCall(rider.phone);
-              if (!launched && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Calling ${rider.phone}...')),
-                );
-              }
-            },
-            icon: const Icon(Icons.call_rounded, size: 16),
-            label: const Text('Call Rider', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.secondary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStoreCard(BuildContext context, StoreMeta store) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  store.name,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  store.address,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ),
-          // Direct Native Dialer Call Store Button
-          OutlinedButton.icon(
-            onPressed: () async {
-              final launched = await makeDirectPhoneCall(store.phone);
-              if (!launched && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Calling store at ${store.phone}...')),
-                );
-              }
-            },
-            icon: const Icon(Icons.phone_rounded, size: 14),
-            label: const Text('Call Store', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textPrimary,
-              side: const BorderSide(color: AppColors.border),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildRefundBanner(OrderTrackingState state) {
     final isRefunded = state.paymentStatus == 'REFUNDED';
     return Container(
@@ -459,7 +234,7 @@ class OrderTrackingScreen extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   isRefunded
-                      ? '৳${state.totalAmount.toStringAsFixed(0)} has been refunded to your original payment method.'
+                      ? '${CurrencyFormatter.format(state.totalAmount)} has been refunded to your original payment method.'
                       : 'Your refund will be returned to your original payment method shortly.',
                   style: const TextStyle(
                     fontSize: 12,
@@ -551,7 +326,7 @@ class OrderTrackingScreen extends ConsumerWidget {
                       border: Border.all(color: const Color(0xFFBFDBFE)),
                     ),
                     child: Text(
-                      'Your payment of ৳${state.totalAmount.toStringAsFixed(0)} will be automatically refunded.',
+                      'Your payment of ${CurrencyFormatter.format(state.totalAmount)} will be automatically refunded.',
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E40AF)),
                     ),
                   ),

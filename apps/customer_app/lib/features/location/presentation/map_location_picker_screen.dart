@@ -495,7 +495,7 @@ class _MapLocationPickerScreenState
                       size: 14, color: AppColors.primary),
                   const SizedBox(width: 6),
                   Text(
-                    'Dhaka Pilot Sector (${_currentLat.toStringAsFixed(4)}, ${_currentLng.toStringAsFixed(4)})',
+                    'Coordinates: (${_currentLat.toStringAsFixed(4)}, ${_currentLng.toStringAsFixed(4)})',
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,

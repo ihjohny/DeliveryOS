@@ -169,6 +169,7 @@ void main() {
       return ProviderScope(
         overrides: [
           localStorageProvider.overrideWithValue(storage),
+          dioClientProvider.overrideWithValue(createTestMockDioClient()),
         ],
         child: MaterialApp(
           locale: locale ?? const Locale('en'),

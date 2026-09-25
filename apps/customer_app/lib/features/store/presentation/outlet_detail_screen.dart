@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
+import '../../../core/widgets/error_retry_view.dart';
+import '../../../core/widgets/store_status_badge.dart';
+import '../../../core/widgets/vendor_conflict_dialog.dart';
 import '../../cart/domain/cart_item_model.dart';
 import '../../cart/presentation/cart_screen.dart';
 import '../../cart/providers/cart_provider.dart';
 import '../domain/store_catalog_model.dart';
 import '../providers/store_catalog_provider.dart';
 import 'item_customizer_sheet.dart';
+import 'widgets/product_menu_card.dart';
 
 class OutletDetailScreen extends ConsumerStatefulWidget {
   final String vendorId;
@@ -55,50 +60,29 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
         );
 
     if (result == AddToCartResult.vendorConflict) {
-      showDialog(
+      showVendorConflictDialog(
         context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Replace Cart Items?', style: TextStyle(fontWeight: FontWeight.w800)),
-          content: Text(
-            'Your cart already contains items from a different store. Clear cart and add from ${catalog.name}?',
-            style: const TextStyle(fontSize: 14),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
+        newVendorName: catalog.name,
+        onConfirmReplace: () {
+          ref.read(cartProvider.notifier).addItem(
+                vendorId: catalog.id,
+                vendorName: catalog.name,
+                vendorDeliveryRadiusKm: catalog.deliveryRadiusKm,
+                product: product,
+                selectedVariant: selectedVariant,
+                selectedAddons: selectedAddons,
+                quantity: quantity,
+                specialInstructions: specialInstructions,
+                unitPrice: totalPrice / quantity,
+                forceReplace: true,
+              );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Added $quantity x ${product.name} to cart'),
+              backgroundColor: AppColors.secondary,
             ),
-            ElevatedButton(
-              onPressed: () {
-                ref.read(cartProvider.notifier).addItem(
-                      vendorId: catalog.id,
-                      vendorName: catalog.name,
-                      vendorDeliveryRadiusKm: catalog.deliveryRadiusKm,
-                      product: product,
-                      selectedVariant: selectedVariant,
-                      selectedAddons: selectedAddons,
-                      quantity: quantity,
-                      specialInstructions: specialInstructions,
-                      unitPrice: totalPrice / quantity,
-                      forceReplace: true,
-                    );
-                Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Added $quantity x ${product.name} to cart'),
-                    backgroundColor: AppColors.secondary,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Replace & Add'),
-            ),
-          ],
-        ),
+          );
+        },
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -109,6 +93,31 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
         ),
       );
     }
+  }
+
+  void _openItemCustomizer(VendorCatalog catalog, ProductModel product) {
+    ItemCustomizerSheet.show(
+      context,
+      product: product,
+      onAddToCart: ({
+        required product,
+        selectedVariant,
+        required selectedAddons,
+        required quantity,
+        specialInstructions,
+        required totalPrice,
+      }) {
+        _onAddToCart(
+          catalog: catalog,
+          product: product,
+          selectedVariant: selectedVariant,
+          selectedAddons: selectedAddons,
+          quantity: quantity,
+          specialInstructions: specialInstructions,
+          totalPrice: totalPrice,
+        );
+      },
+    );
   }
 
   @override
@@ -122,23 +131,9 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
-              const SizedBox(height: 12),
-              Text(
-                'Failed to load outlet menu: $err',
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => ref.refresh(storeCatalogProvider(widget.vendorId)),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
+        error: (err, _) => ErrorRetryView(
+          message: 'Failed to load outlet menu: $err',
+          onRetry: () => ref.refresh(storeCatalogProvider(widget.vendorId)),
         ),
         data: (catalog) => _buildCatalogBody(catalog),
       ),
@@ -198,7 +193,7 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
                   ],
                 ),
                 Text(
-                  '৳${cart.grossSubtotal.toStringAsFixed(0)}',
+                  CurrencyFormatter.format(cart.grossSubtotal),
                   style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
                 ),
               ],
@@ -303,20 +298,9 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
                         ),
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: catalog.isActive ? const Color(0xFFECFDF5) : AppColors.errorContainer,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        catalog.isActive ? 'OPEN NOW' : 'CLOSED',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: catalog.isActive ? const Color(0xFF059669) : AppColors.error,
-                        ),
-                      ),
+                    StoreStatusBadge(
+                      isOpen: catalog.isActive,
+                      isBusy: false,
                     ),
                   ],
                 ),
@@ -381,7 +365,10 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final product = activeCategory.products[index];
-                  return _buildProductCard(catalog, product);
+                  return ProductMenuCard(
+                    product: product,
+                    onAdd: () => _openItemCustomizer(catalog, product),
+                  );
                 },
                 childCount: activeCategory.products.length,
               ),
@@ -431,139 +418,6 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
     );
   }
 
-  Widget _buildProductCard(VendorCatalog catalog, ProductModel product) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Text Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          product.name,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: product.isInStock ? AppColors.textPrimary : AppColors.textMuted,
-                          ),
-                        ),
-                      ),
-                      if (!product.isInStock)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.errorContainer,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'Sold Out',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.error,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  if (product.description != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      product.description!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '৳${product.basePrice.toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: product.isInStock ? AppColors.primary : AppColors.textMuted,
-                        ),
-                      ),
-                      // ADD Button
-                      ElevatedButton(
-                        onPressed: product.isInStock
-                            ? () {
-                                ItemCustomizerSheet.show(
-                                  context,
-                                  product: product,
-                                  onAddToCart: ({
-                                    required product,
-                                    selectedVariant,
-                                    required selectedAddons,
-                                    required quantity,
-                                    specialInstructions,
-                                    required totalPrice,
-                                  }) {
-                                    _onAddToCart(
-                                      catalog: catalog,
-                                      product: product,
-                                      selectedVariant: selectedVariant,
-                                      selectedAddons: selectedAddons,
-                                      quantity: quantity,
-                                      specialInstructions: specialInstructions,
-                                      totalPrice: totalPrice,
-                                    );
-                                  },
-                                );
-                              }
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryContainer,
-                          foregroundColor: AppColors.primary,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: const BorderSide(color: AppColors.primary),
-                          ),
-                          disabledBackgroundColor: AppColors.background,
-                          disabledForegroundColor: AppColors.textMuted,
-                        ),
-                        child: Text(
-                          product.isInStock ? 'ADD +' : 'UNAVAILABLE',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {

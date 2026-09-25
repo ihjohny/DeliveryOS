@@ -105,6 +105,12 @@ When generating code, you must strictly uphold these inviolable business rules:
 - **Localization**: JSON translation dictionaries (`en.json`, `ar.json`, `bn.json`) with auto-mirroring RTL directionality for Arabic.
 - **Battery Preservation**: Throttled GPS beaconing (every 5–8 seconds only when rider status is `Online`).
 
+### 3.6 Code Cleanliness & Commenting Standards
+- **Zero Trivial Comments**: Do NOT add code-level comments on basic code, straightforward getters/setters, routine boilerplate, standard UI widgets/layouts, trivial mappings, or obvious logic.
+- **Self-Documenting Code**: Express intent through clear, descriptive variable names, function names, and types rather than explanatory comments.
+- **Complex Logic Only**: Code-level comments are permitted **only** when explaining non-obvious business invariants (e.g. FSM transition sequences, Redis claim mutex timeouts, double-entry financial balance guards), non-trivial math/algorithms, or tricky platform-specific workarounds.
+- **No Commented-Out Dead Code**: Never leave commented-out blocks of code in production files. Delete obsolete code cleanly.
+
 ---
 
 ## 4. Step-by-Step Implementation Procedure for AI Agents
@@ -146,6 +152,7 @@ Before marking any engineering task as complete, verify that:
 - [ ] Database transactions wrap all multi-step financial or order updates.
 - [ ] Error messages are clear, human-understandable, and do not leak internal stack traces to clients.
 - [ ] No hardcoded credentials or API keys exist in the source code (use `.env`).
+- [ ] Code is clean and self-documenting with **zero redundant comments on basic or obvious logic**.
 - [ ] The implementation aligns 100% with the requirements in `context_docs/`.
 
 ---

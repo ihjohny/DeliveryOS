@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../domain/store_catalog_model.dart';
 
 class ItemCustomizerSheet extends StatefulWidget {
@@ -156,7 +157,7 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '৳${product.basePrice.toStringAsFixed(0)} / ${product.unitType}',
+                            CurrencyFormatter.formatWithUnit(product.basePrice, product.unitType),
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
@@ -270,7 +271,7 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                               ),
                             ),
                             Text(
-                              variant.isInStock ? '৳${variant.price.toStringAsFixed(0)}' : 'Unavailable',
+                              variant.isInStock ? CurrencyFormatter.format(variant.price) : 'Unavailable',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -359,7 +360,7 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                                     ),
                                   ),
                                   Text(
-                                    addon.isInStock ? '+৳${addon.price.toStringAsFixed(0)}' : 'Unavailable',
+                                    addon.isInStock ? '+${CurrencyFormatter.format(addon.price)}' : 'Unavailable',
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
@@ -482,7 +483,7 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                             ),
                             if (_canAddToCart)
                               Text(
-                                '৳${_totalPrice.toStringAsFixed(0)}',
+                                CurrencyFormatter.format(_totalPrice),
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w900,

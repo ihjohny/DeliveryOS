@@ -2,6 +2,7 @@ import 'dart:math' show cos, sqrt, asin, pi;
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../location/providers/location_provider.dart';
 import '../../store/domain/store_catalog_model.dart';
@@ -228,7 +229,7 @@ class CartNotifier extends Notifier<CartState> {
           isApplyingCoupon: false,
           couponCode: cleanCode,
           couponDiscount: discount,
-          couponMessage: 'Coupon "$cleanCode" applied! (Saved ৳${discount.toStringAsFixed(0)})',
+          couponMessage: 'Coupon "$cleanCode" applied! (Saved ${CurrencyFormatter.format(discount)})',
         );
         return true;
       }

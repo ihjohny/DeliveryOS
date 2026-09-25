@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
+import '../../../core/widgets/empty_state_view.dart';
 import '../../cart/presentation/cart_screen.dart';
 import '../../tracking/presentation/order_tracking_screen.dart';
 import '../domain/order_history_model.dart';
@@ -51,30 +53,10 @@ class OrderHistoryScreen extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.primaryContainer.withValues(alpha: 0.5),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.receipt_long_rounded, size: 60, color: AppColors.primary),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'No orders yet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'When you place orders, they will appear here.',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
+    return const EmptyStateView(
+      icon: Icons.receipt_long_rounded,
+      title: 'No orders yet',
+      message: 'When you place orders, they will appear here.',
     );
   }
 
@@ -142,7 +124,7 @@ class OrderHistoryScreen extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    '৳${item.totalPrice.toStringAsFixed(0)}',
+                    CurrencyFormatter.format(item.totalPrice),
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -161,7 +143,7 @@ class OrderHistoryScreen extends ConsumerWidget {
                 children: [
                   const Text('Total Paid', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
                   Text(
-                    '৳${order.totalAmount.toStringAsFixed(0)}',
+                    CurrencyFormatter.format(order.totalAmount),
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
                   ),
                 ],

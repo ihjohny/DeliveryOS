@@ -106,14 +106,14 @@ class StoreMeta {
     required this.longitude,
   });
 
-  factory StoreMeta.defaultSultansDine() {
+  factory StoreMeta.initial() {
     return StoreMeta(
-      id: 'b8b33bf6-6b22-4bb3-9d41-e9fb94c25601',
-      name: "Sultan's Dine - Banani",
-      address: 'House 42, Road 11, Banani, Dhaka',
-      phone: '+8801711223344',
-      latitude: 23.7925,
-      longitude: 90.4078,
+      id: '',
+      name: 'Connecting to store...',
+      address: '',
+      phone: '',
+      latitude: 0.0,
+      longitude: 0.0,
     );
   }
 }
@@ -140,20 +140,6 @@ class RiderMeta {
     this.bearing = 45.0,
     this.speed = 28.0,
   });
-
-  factory RiderMeta.pilotRider({double? lat, double? lng}) {
-    return RiderMeta(
-      id: 'rider-tanvir-01',
-      name: 'Tanvir Hossain',
-      phone: '+8801700112233',
-      vehicleType: 'Honda CB Shine 125',
-      rating: 4.92,
-      latitude: lat ?? 23.7900,
-      longitude: lng ?? 90.4090,
-      bearing: 55.0,
-      speed: 32.0,
-    );
-  }
 
   RiderMeta copyWith({
     double? latitude,

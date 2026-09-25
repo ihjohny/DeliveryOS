@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../../domain/cart_item_model.dart';
 
 class DeliveryModeSelector extends StatelessWidget {
   final DeliveryMethod selectedMethod;
   final ValueChanged<DeliveryMethod> onMethodChanged;
+  final double deliveryFee;
 
   const DeliveryModeSelector({
     super.key,
     required this.selectedMethod,
     required this.onMethodChanged,
+    this.deliveryFee = 60.0,
   });
 
   @override
@@ -27,7 +30,7 @@ class DeliveryModeSelector extends StatelessWidget {
             child: _buildModeTab(
               method: DeliveryMethod.homeDelivery,
               title: 'Home Delivery',
-              subtitle: '৳60 fee',
+              subtitle: '${CurrencyFormatter.format(deliveryFee)} fee',
               icon: Icons.delivery_dining_rounded,
             ),
           ),

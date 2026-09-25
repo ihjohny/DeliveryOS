@@ -13,6 +13,7 @@ import 'package:customer_app/features/discovery/presentation/search_screen.dart'
 import 'package:customer_app/features/store/domain/store_catalog_model.dart';
 import 'package:customer_app/features/store/presentation/item_customizer_sheet.dart';
 import 'package:customer_app/features/store/presentation/outlet_detail_screen.dart';
+import 'mock_dio_client.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +30,7 @@ void main() {
     return ProviderScope(
       overrides: [
         localStorageProvider.overrideWithValue(storage),
+        dioClientProvider.overrideWithValue(createTestMockDioClient()),
       ],
       child: MaterialApp(
         localizationsDelegates: const [

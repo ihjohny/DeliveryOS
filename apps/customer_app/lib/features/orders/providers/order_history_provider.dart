@@ -32,14 +32,17 @@ class OrderHistoryState {
 class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
   @override
   OrderHistoryState build() {
-    Future.microtask(() => fetchHistory());
-    return OrderHistoryState(orders: PastOrder.pilotOrders, isLoading: false);
+    final auth = ref.watch(authProvider);
+    if (auth.isAuthenticated) {
+      Future.microtask(() => fetchHistory());
+    }
+    return OrderHistoryState(orders: const [], isLoading: false);
   }
 
   Future<void> fetchHistory() async {
     final auth = ref.read(authProvider);
     if (!auth.isAuthenticated) {
-      state = OrderHistoryState(orders: PastOrder.pilotOrders, isLoading: false);
+      state = OrderHistoryState(orders: const [], isLoading: false);
       return;
     }
 
@@ -49,16 +52,27 @@ class OrderHistoryNotifier extends Notifier<OrderHistoryState> {
       final response = await dio.get(ApiConstants.orderHistory);
       if (response.statusCode == 200) {
         final data = response.data['data'] as List<dynamic>? ?? [];
-        final parsed = data.map((json) => PastOrder.fromJson(json as Map<String, dynamic>)).toList();
+        final parsed = data
+            .whereType<Map<String, dynamic>>()
+            .map((json) => PastOrder.fromJson(json))
+            .toList();
         state = state.copyWith(
-          orders: parsed.isNotEmpty ? parsed : PastOrder.pilotOrders,
+          orders: parsed,
           isLoading: false,
+          error: null,
         );
         return;
       }
-    } catch (_) {}
+    } catch (e) {
+      state = state.copyWith(
+        orders: const [],
+        isLoading: false,
+        error: 'Failed to load order history',
+      );
+      return;
+    }
 
-    state = state.copyWith(orders: PastOrder.pilotOrders, isLoading: false);
+    state = state.copyWith(orders: const [], isLoading: false);
   }
 
   Future<ReorderValidationResult> validateAndReorder(PastOrder pastOrder) async {

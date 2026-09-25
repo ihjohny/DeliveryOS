@@ -57,7 +57,7 @@ class PastOrder {
       id: json['id'] as String? ?? '',
       orderNumber: json['orderNumber'] as String? ?? json['order_number'] as String? ?? '#ORD-2026',
       vendorId: json['vendorId'] as String? ?? json['vendor_id'] as String? ?? vendor['id'] as String? ?? '',
-      vendorName: vendor['name'] as String? ?? json['vendorName'] as String? ?? "Sultan's Dine",
+      vendorName: vendor['name'] as String? ?? json['vendorName'] as String? ?? 'Outlet',
       status: json['status'] as String? ?? 'DELIVERED',
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? (json['total_amount'] as num?)?.toDouble() ?? 0.0,
       createdAt: json['createdAt'] != null
@@ -66,73 +66,6 @@ class PastOrder {
       items: itemsRaw.map((i) => OrderItemSummary.fromJson(i as Map<String, dynamic>)).toList(),
     );
   }
-
-  static List<PastOrder> get pilotOrders => [
-    PastOrder(
-      id: 'ord-pilot-01',
-      orderNumber: '#ORD-20260917-001',
-      vendorId: 'b8b33bf6-6b22-4bb3-9d41-e9fb94c25601',
-      vendorName: "Sultan's Dine - Banani",
-      status: 'DISPATCHED',
-      totalAmount: 480.0,
-      createdAt: DateTime.now().subtract(const Duration(minutes: 25)),
-      items: [
-        OrderItemSummary(
-          productId: 'prod-kacchi-half',
-          name: 'Kacchi Biryani (Basmati)',
-          quantity: 1,
-          unitPrice: 420.0,
-          variantName: 'Full (2 Mutton pieces)',
-        ),
-        OrderItemSummary(
-          productId: 'add-borhani',
-          name: 'Chilled Spiced Borhani',
-          quantity: 1,
-          unitPrice: 60.0,
-        ),
-      ],
-    ),
-    PastOrder(
-      id: 'ord-pilot-02',
-      orderNumber: '#ORD-20260915-084',
-      vendorId: 'b8b33bf6-6b22-4bb3-9d41-e9fb94c25601',
-      vendorName: "Sultan's Dine - Banani",
-      status: 'DELIVERED',
-      totalAmount: 900.0,
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      items: [
-        OrderItemSummary(
-          productId: 'prod-kacchi-half',
-          name: 'Kacchi Biryani (Basmati)',
-          quantity: 2,
-          unitPrice: 420.0,
-        ),
-      ],
-    ),
-    PastOrder(
-      id: 'ord-pilot-03',
-      orderNumber: '#ORD-20260912-142',
-      vendorId: 'd6d55df8-8d44-5dd5-9f63-01fd16e47823',
-      vendorName: 'Shwapno Superstore Express',
-      status: 'DELIVERED',
-      totalAmount: 640.0,
-      createdAt: DateTime.now().subtract(const Duration(days: 5)),
-      items: [
-        OrderItemSummary(
-          productId: 'prod-milk-1',
-          name: 'Pasteurized Milk (1L)',
-          quantity: 2,
-          unitPrice: 95.0,
-        ),
-        OrderItemSummary(
-          productId: 'prod-eggs-1',
-          name: 'Farm Fresh Brown Eggs (12 pcs)',
-          quantity: 1,
-          unitPrice: 155.0,
-        ),
-      ],
-    ),
-  ];
 }
 
 class ReorderValidationResult {

@@ -27,6 +27,7 @@ We enforce a mandatory **AI Engineering Governance Protocol** across all contrib
 - **Zero Raw `any`**: In TypeScript (NestJS, React SPAs), `any` or `as any` is strictly prohibited. Use strong interfaces, DTOs, or Prisma generated types.
 - **Zero Mock / Placeholder Shortcuts**: In production code, no `// TODO: implement later` or dummy returns. All features must be fully implemented and integrated.
 - **Zero Test Deletion**: Failing tests must be fixed at the root cause, never commented out or deleted.
+- **Zero Trivial Comments**: Write self-documenting code with expressive identifiers. Do not add redundant code-level comments on basic functions, getters, simple UI widgets, or obvious boilerplate. Reserve comments exclusively for complex algorithms, subtle business invariants, or tricky workarounds.
 
 ### 3. Living ADR Lifecycle
 - Any modification to dependencies, order state machines, storage engines, or API contracts requires an ADR update or new ADR in `context_docs/architecture-decision-records/`.

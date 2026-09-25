@@ -3,13 +3,14 @@ import 'package:geolocator/geolocator.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../domain/nearby_vendor_model.dart';
 import '../domain/user_location.dart';
 
 class LocationState {
   final UserLocation location;
   final bool isLoading;
   final int nearbyStoreCount;
-  final List<dynamic> nearbyVendors;
+  final List<NearbyVendor> nearbyVendors;
   final String? error;
 
   LocationState({
@@ -24,7 +25,7 @@ class LocationState {
     UserLocation? location,
     bool? isLoading,
     int? nearbyStoreCount,
-    List<dynamic>? nearbyVendors,
+    List<NearbyVendor>? nearbyVendors,
     String? error,
   }) {
     return LocationState(
@@ -132,7 +133,12 @@ class LocationNotifier extends Notifier<LocationState> {
 
       if (response.statusCode == 200) {
         final data = response.data['data'];
-        final vendors = data is List ? data : [];
+        final vendors = data is List
+            ? data
+                .whereType<Map<String, dynamic>>()
+                .map((e) => NearbyVendor.fromJson(e))
+                .toList()
+            : <NearbyVendor>[];
         state = state.copyWith(
           isLoading: false,
           nearbyStoreCount: vendors.length,

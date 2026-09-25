@@ -9,6 +9,7 @@ import 'package:customer_app/core/localization/app_localizations.dart';
 import 'package:customer_app/core/localization/language_provider.dart';
 import 'package:customer_app/core/storage/local_storage.dart';
 import 'package:customer_app/core/utils/phone_call_launcher.dart';
+import 'package:customer_app/features/auth/domain/user_model.dart';
 import 'package:customer_app/features/auth/providers/auth_provider.dart';
 import 'package:customer_app/features/cart/providers/cart_provider.dart';
 import 'package:customer_app/features/orders/domain/order_history_model.dart';
@@ -21,13 +22,30 @@ import 'package:customer_app/features/tracking/presentation/widgets/order_steppe
 import 'package:customer_app/features/tracking/presentation/widgets/tracking_map_view.dart';
 import 'package:customer_app/features/tracking/providers/tracking_provider.dart';
 
+class _TestAuthNotifier extends AuthNotifier {
+  @override
+  AuthState build() => AuthState(
+        status: AuthStatus.authenticated,
+        accessToken: 'test-access-token-jwt',
+        user: UserModel(
+          id: 'user-test-id',
+          phone: '+8801700000005',
+          fullName: 'Test User',
+          role: 'CUSTOMER',
+        ),
+      );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late LocalStorage storage;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'auth_access_token': 'test-access-token-jwt',
+      'cached_user_profile': '{"id":"user-test-id","phone":"+8801700000005","name":"Test User","role":"CUSTOMER"}',
+    });
     final prefs = await SharedPreferences.getInstance();
     storage = LocalStorage(prefs);
   });
@@ -38,6 +56,7 @@ void main() {
           ProviderContainer(
             overrides: [
               localStorageProvider.overrideWithValue(storage),
+              dioClientProvider.overrideWithValue(createTestMockDioClient()),
             ],
           ),
       child: MaterialApp(
@@ -140,18 +159,21 @@ void main() {
       expect(result.unavailableItems, isEmpty);
     });
 
-    test('TrackingNotifier initializes with active telemetry state', () {
+    test('TrackingNotifier initializes with active telemetry state', () async {
       final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
+        overrides: [
+          localStorageProvider.overrideWithValue(storage),
+          dioClientProvider.overrideWithValue(createTestMockDioClient()),
+        ],
       );
       final notifier = container.read(trackingProvider('test-ord-123').notifier);
+      await notifier.refreshDetails();
       final state = container.read(trackingProvider('test-ord-123'));
       expect(state.orderId, 'test-ord-123');
       expect(state.stage, OrderStage.dispatched);
       expect(state.store.name, contains("Sultan's Dine"));
       expect(state.rider, isNotNull);
-      expect(state.rider!.name, 'Tanvir Hossain');
-      expect(state.estimatedMinutesRemaining, 15);
+      expect(state.rider!.name, 'Karim Hossain');
       notifier.stopSimulation();
     });
 
@@ -216,8 +238,21 @@ void main() {
         orderId: 'ord-123',
         orderNumber: '#ORD-123',
         stage: OrderStage.dispatched,
-        store: StoreMeta.defaultSultansDine(),
-        rider: RiderMeta.pilotRider(),
+        store: StoreMeta(
+          id: 'test-store-1',
+          name: "Sultan's Dine - Banani",
+          address: 'Road 11, Banani, Dhaka',
+          phone: '+8801711111111',
+          latitude: 23.7937,
+          longitude: 90.4066,
+        ),
+        rider: RiderMeta(
+          id: 'test-rider-1',
+          name: 'Karim Hossain',
+          phone: '+8801722222222',
+          latitude: 23.7900,
+          longitude: 90.4040,
+        ),
         customer: CustomerMeta.defaultCustomer(),
       );
 
@@ -244,7 +279,10 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
 
       final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
+        overrides: [
+          localStorageProvider.overrideWithValue(storage),
+          dioClientProvider.overrideWithValue(createTestMockDioClient()),
+        ],
       );
       addTearDown(container.dispose);
 
@@ -289,7 +327,10 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
 
       final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
+        overrides: [
+          localStorageProvider.overrideWithValue(storage),
+          dioClientProvider.overrideWithValue(createTestMockDioClient()),
+        ],
       );
       addTearDown(container.dispose);
 
@@ -312,11 +353,22 @@ void main() {
     });
 
     testWidgets('OrderHistoryScreen renders past orders and reorder button', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          localStorageProvider.overrideWithValue(storage),
+          dioClientProvider.overrideWithValue(createTestMockDioClient()),
+          authProvider.overrideWith(() => _TestAuthNotifier()),
+        ],
+      );
+      addTearDown(container.dispose);
+
       await tester.pumpWidget(
         createTestWidget(
+          container: container,
           child: const OrderHistoryScreen(),
         ),
       );
+      await tester.pump();
       await tester.pumpAndSettle();
 
       expect(find.text('My Orders'), findsOneWidget);
