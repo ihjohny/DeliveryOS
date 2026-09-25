@@ -322,6 +322,16 @@ class RiderDashboardScreen extends ConsumerWidget {
               onPressed: state.isToggling
                   ? null
                   : () async {
+                      final hasActiveTrip = ref.read(riderTripProvider).hasActiveTrip;
+                      if (isOnline && hasActiveTrip) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Cannot go offline while you have an active in-flight delivery. Please complete or release the order first.'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                        return;
+                      }
                       final success = await ref.read(riderDutyProvider.notifier).toggleDuty();
                       if (!success && context.mounted) {
                         final error = ref.read(riderDutyProvider).error;

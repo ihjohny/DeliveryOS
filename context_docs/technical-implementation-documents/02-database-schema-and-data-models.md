@@ -28,8 +28,8 @@ erDiagram
     RIDERS ||--o{ ORDERS : delivers
     COUPONS ||--o{ ORDERS : applies_to
     ORDERS ||--o{ ORDER_ITEMS : contains
-    ORDER_ITEMS ||--o{ ORDER_ITEM_ADDONS : has
     ORDERS ||--o{ PAYMENTS : initiates
+    RIDERS ||--o{ CASH_DEPOSITS : submits
 
     ORDERS ||--o| COMMISSION_LEDGERS : generates
     ORDERS ||--o| RIDER_TRIP_LEDGERS : tracks
@@ -57,7 +57,7 @@ CREATE TYPE permission_scope AS ENUM ('PARTICULAR_OUTLET', 'ALL_OUTLETS_MASTER')
 CREATE TYPE order_status AS ENUM (
   'PLACED', 
   'RIDER_ASSIGNED',
-  'ACCEPTED', 
+  'ACCEPTED', -- Deprecated legacy state: runtime engine transitions directly to PREPARING (ADR-002)
   'PREPARING', 
   'READY_FOR_PICKUP', 
   'DISPATCHED', 
@@ -68,6 +68,7 @@ CREATE TYPE order_flow_mode AS ENUM ('RIDER_FIRST', 'VENDOR_FIRST');
 CREATE TYPE payment_method AS ENUM ('CASH_ON_DELIVERY', 'ONLINE_GATEWAY');
 CREATE TYPE payment_status AS ENUM ('PENDING', 'PAID', 'REFUNDED', 'FAILED');
 CREATE TYPE settlement_status AS ENUM ('PENDING', 'PROCESSING', 'SETTLED');
+CREATE TYPE cash_deposit_status AS ENUM ('PENDING_APPROVAL', 'APPROVED', 'REJECTED');
 CREATE TYPE delivery_fee_mode AS ENUM ('FIXED_FLAT', 'DISTANCE_TIERED');
 CREATE TYPE discount_type AS ENUM ('PERCENTAGE', 'FLAT');
 CREATE TYPE banner_link_type AS ENUM ('OUTLET', 'CATEGORY', 'EXTERNAL');
@@ -80,6 +81,8 @@ CREATE TABLE users (
     email VARCHAR(100),
     role user_role NOT NULL DEFAULT 'CUSTOMER',
     status account_status NOT NULL DEFAULT 'ACTIVE',
+    fcm_token TEXT,
+    device_platform VARCHAR(20),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -241,12 +244,14 @@ CREATE TABLE riders (
     user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     vehicle_type VARCHAR(50) NOT NULL DEFAULT 'motorcycle',
     is_online BOOLEAN DEFAULT FALSE,
+    is_approved BOOLEAN DEFAULT TRUE,
     cash_in_hand NUMERIC(10, 2) DEFAULT 0.00,
     max_cash_limit NUMERIC(10, 2) DEFAULT 5000.00,
     current_location GEOGRAPHY(Point, 4326),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_riders_geo ON riders USING GIST(current_location);
+CREATE INDEX idx_riders_is_approved ON riders(is_approved);
 
 -- 16. System Settings Table
 CREATE TABLE system_settings (
@@ -305,11 +310,28 @@ CREATE TABLE order_items (
     addons_snapshot JSONB
 );
 
--- 19. Financial Ledgers
+-- 19. Settlement Batches Table
+CREATE TABLE settlement_batches (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    batch_number VARCHAR(30) UNIQUE NOT NULL,
+    start_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    total_orders INT NOT NULL,
+    total_vendor_payout NUMERIC(12, 2) NOT NULL,
+    total_rider_payout NUMERIC(12, 2) NOT NULL,
+    total_platform_margin NUMERIC(12, 2) NOT NULL,
+    status settlement_status NOT NULL DEFAULT 'SETTLED',
+    executed_by_user_id UUID REFERENCES users(id),
+    executed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_settlement_batches_number ON settlement_batches(batch_number);
+
+-- 20. Financial Ledgers
 CREATE TABLE commission_ledgers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID UNIQUE NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     vendor_id UUID NOT NULL REFERENCES vendors(id),
+    settlement_batch_id UUID REFERENCES settlement_batches(id),
     gross_amount NUMERIC(10, 2) NOT NULL,
     commission_rate NUMERIC(5, 2) NOT NULL,
     commission_amount NUMERIC(10, 2) NOT NULL,
@@ -319,27 +341,53 @@ CREATE TABLE commission_ledgers (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_commission_vendor ON commission_ledgers(vendor_id);
+CREATE INDEX idx_commission_settlement_batch ON commission_ledgers(settlement_batch_id);
 
 CREATE TABLE rider_trip_ledgers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID UNIQUE NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     rider_id UUID NOT NULL REFERENCES riders(id),
+    settlement_batch_id UUID REFERENCES settlement_batches(id),
     delivery_earnings NUMERIC(10, 2) NOT NULL,
     cod_collected NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
     status settlement_status NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX idx_rider_trips_rider ON rider_trip_ledgers(rider_id);
+CREATE INDEX idx_rider_trips_settlement_batch ON rider_trip_ledgers(settlement_batch_id);
 
--- 20. Rider Cash Hub Deposits
+-- 21. Rider Cash Hub Deposits
 CREATE TABLE cash_deposits (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     rider_id UUID NOT NULL REFERENCES riders(id) ON DELETE CASCADE,
     amount NUMERIC(10, 2) NOT NULL,
-    reference VARCHAR(100),
-    notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    status cash_deposit_status NOT NULL DEFAULT 'PENDING_APPROVAL',
+    reference_no VARCHAR(50) UNIQUE NOT NULL,
+    note TEXT,
+    deposited_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_cash_deposits_rider_id ON cash_deposits(rider_id);
+CREATE INDEX idx_cash_deposits_status ON cash_deposits(status);
+
+-- 22. Payments & Gateway Transactions (ADR-011)
+CREATE TABLE payments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    gateway VARCHAR(50) NOT NULL, -- 'BKASH', 'MOYASAR', 'STRIPE', 'CASH'
+    transaction_id VARCHAR(100) UNIQUE,
+    session_key VARCHAR(150),
+    amount NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(10) NOT NULL DEFAULT 'BDT',
+    status payment_status NOT NULL DEFAULT 'PENDING',
+    gateway_response JSONB,
+    paid_at TIMESTAMP WITH TIME ZONE,
+    failed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_payments_order_id ON payments(order_id);
+CREATE INDEX idx_payments_transaction_id ON payments(transaction_id);
+CREATE INDEX idx_payments_status ON payments(status);
 
 -- Performance & Spatial Indexes
 CREATE INDEX idx_vendor_staff_user_id ON vendor_staff(user_id);

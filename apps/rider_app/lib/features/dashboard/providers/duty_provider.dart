@@ -128,7 +128,8 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
         data: {'isOnline': targetState},
       );
     } on DioException catch (dioErr) {
-      if (dioErr.response?.statusCode == 403) {
+      final statusCode = dioErr.response?.statusCode;
+      if (statusCode == 403 || statusCode == 400) {
         final resData = dioErr.response?.data;
         final msg = resData is Map ? (resData['message'] ?? dioErr.message) : (dioErr.message ?? 'Duty switch failed');
         state = state.copyWith(

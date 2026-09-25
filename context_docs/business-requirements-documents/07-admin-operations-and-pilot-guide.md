@@ -1,62 +1,79 @@
 # 07 — Super Admin Operations & 10-Vendor Pilot Guide
 
-This document defines the controls of the **Super Admin Master Console** (`/admin`) and provides the execution checklist for the **1-Month 10-Vendor Pilot Test Run**.
+This document defines the controls of the **Super Admin Master Console** (`/admin`) and provides the operational playbook for platform administrators and dispatchers.
 
 ---
 
-## 1. Master Console Modules (`/admin`)
+## 1. Master Console Modules & Route Architecture
+
+The Super Admin Console is structured into 6 consolidated SPA operational modules ([ADR-005](context_docs/architecture-decision-records/ADR-005-micro-frontends-and-subpath-routing.md)):
 
 ```
 /admin
-├── /fleet-radar      # Interactive Live Map of Active Riders & Orders
-├── /orders           # Live Order Lifecycle Monitor & Manual Dispatch Override
-├── /banners          # Home Screen Promotional / Offer Banner Management
-├── /coupons          # Promo Code Engine & Discount Rules
-├── /vendors          # Vendor Applications, Direct Creation & Permission Scopes
-├── /master-catalog   # Central Categories, Global SKUs & Store Price Overrides
-├── /riders           # Rider Registrations, Account Approvals & Cash Limits
-├── /settings         # Delivery Fee Mode, Currency, Tax Rates & Flow Pipelines
-└── /finance          # Vendor Batch Settlements & Rider Cash Audits
+├── / & /dashboard    # Operational Overview, Real-time KPIs & Order Feed
+├── /dispatch         # Leaflet Live Fleet Radar & Applicant Couriers Queue
+├── /orders           # Order Lifecycle Monitor, ?orderNumber Deep Linking & Overrides
+├── /promotions       # Hero Carousel Banners & Discount Coupon Engine
+├── /vendors          # Outlet Onboarding, Commission Rates & Staff Scopes
+└── /settings         # Order Flow FSM, Delivery Fee Economics & CSV Settlements
 ```
 
 ---
 
 ## 2. Key Administrative Controls & Workflows
 
-### 2.1 Promotional Banner Management (`/admin/banners`)
-- **Banner Creation & Scheduling**: Upload desktop/mobile banner creative, define display title, and assign sort sequence order.
-- **Deep-Linking**: Direct clicks to:
-  - Specific Vendor Outlet (`vendor_id`).
-  - Catalog Category (`category_id`).
-  - External promotional URL.
-- **Active State Toggle**: Instantly activate or pause promotional banners without app redeployment.
+### 2.1. Live Fleet Radar & Dispatch Command (`/dispatch`)
+- **Interactive Leaflet OSM Radar**: Zero-API-cost mapping engine tracking active couriers and unassigned delivery orders (`LiveFleetMap`).
+- **Color-Coded Courier Pins**:
+  - Emerald `#10b981`: Online & idle, ready for dispatch.
+  - Sky `#0284c7`: In-flight active delivery.
+  - Amber `#ea580c`: Approaching COD cash collection limit.
+  - Slate `#64748b`: Offline.
+- **Unassigned Orders Radar**: Bouncing amber target markers displaying order number, store name, and gross total.
+- **SPA Deep Linking Navigation**: Clicking `"Open Order →"` inside a map popup navigates directly to `/orders?orderNumber=...` via React Router without page reload or dropping WebSocket connections.
 
-### 2.2 Coupon Code Management (`/admin/coupons`)
-- **Promo Code Definition**: Specify alphanumeric code (e.g. `WELCOME50`, `EATFREE`).
-- **Discount Computation**:
-  - `PERCENTAGE`: Discount rate (e.g. 20%) with strict `max_discount_amount` cap.
-  - `FLAT`: Fixed deduction (e.g. 50 ৳ / 15 ﷼).
-- **Enforcement Rules**: Minimum gross subtotal spend, date validity range (`valid_from` to `valid_to`), and total system-wide usage limit.
+### 2.2. Courier Fleet Governance & Applicant Queue (`/dispatch`)
+- **Dedicated Applicant Couriers Queue**: Filter tab displaying all pending self-registered couriers awaiting verification.
+- **Applicant Badge Metric Card**: Real-time counter of couriers awaiting verification.
+- **1-Click Approval & Suspension**: Instant toggle approving applicant credentials (`adminApi.setRiderApproval(id, true)`) or suspending problematic couriers.
+- **Cash Safety Limit Adjustment**: Modal allowing operations staff to adjust a courier's maximum COD limit (e.g. ৳3,000 to ৳10,000) based on trust and tenure.
 
-### 2.3 Rider Fleet Administration (`/admin/riders`)
-- **Registration Approval**: Review incoming rider applications, verify vehicle information and contact phone, and activate accounts (`PENDING_APPROVAL` → `ACTIVE`).
-- **Live Fleet Radar**: View all active riders on an interactive Google Map (color-coded: Green = Idle/Online, Orange = En Route to Store, Blue = En Route to Customer).
-- **Cash Safety Controls**: Monitor rider `cash_in_hand` and adjust maximum cash collection thresholds before blocking further COD assignments.
+### 2.3. Live Order Monitor & Administrative Overrides (`/orders`)
+- **URL Query Param Deep Linking**: Navigating to `/orders?orderNumber=ORD-XXXX` automatically filters the table, displays an active filter banner, and opens the assignment or details modal.
+- **Itemized Order Details Modal**:
+  - Store outlet and customer details.
+  - Courier assignment status with 1-click assign shortcut.
+  - Cooking and delivery notes.
+  - Complete line items list with unit prices and subtotals.
+  - Financial summary.
+- **Force-Assign Courier Modal**:
+  - Line items summary with quantities and dish names.
+  - Customer notes display.
+  - Courier selection radio list displaying online status, active delivery state, and current cash balance.
+  - Bypasses automated dispatch algorithm via `adminApi.forceAssignRider(orderId, riderId)`.
+- **Force-Cancel Order Modal**:
+  - Reversal warning alert: audit trail logging, courier release, and ledger reversal.
+  - Itemized list of dishes to be cancelled.
+  - Mandatory audit reason textarea (minimum 5 characters).
+  - Reverses commission ledger and broadcasts cancellation to all parties (`adminApi.cancelOrder(orderId, reason)`).
 
-### 2.4 Restaurant & Outlet Management (`/admin/vendors`)
-- **Application Approvals & Direct Creation**: Approve pending merchant registration requests or directly create new outlets and staff logins.
-- **Permission Assignment**: Grant either:
-  - **Particular Outlet Permission**: Binds a staff user strictly to a single physical outlet.
-  - **All Outlets Permission (Master Vendor)**: Empowers franchise owners to manage all branches under their brand.
+### 2.4. Promotional Campaigns & Coupons (`/promotions`)
+- **Hero Carousel Banner Management**: Tab to schedule, activate, prioritize, and delete homepage promotion banners with image previews.
+- **Discount Coupon Engine**:
+  - Alphanumeric promo codes with flat or percentage discount modes.
+  - Configurable minimum order spend, maximum discount ceiling, and total usage limits.
+  - 1-click active/inactive toggle and deletion.
+
+### 2.5. Restaurant & Outlet Management (`/vendors`)
+- **Outlet Onboarding & Approval**: Approve pending merchant registration requests or directly create new outlets and staff logins.
+- **Permission Assignment**: Grant either `PARTICULAR_OUTLET` (binds staff strictly to one branch) or `ALL_OUTLETS_MASTER` (brand owner access).
 - **Store Configuration**: Commission rate (e.g. 15%), delivery radius (km), operational hours, and default prep time.
 
-### 2.5 Master Catalog Authority (`/admin/master-catalog`)
-- **Central Category Management**: Create and standardize global cuisine and product categories across the platform.
-- **Central Product Control**: 100% authority to create, edit, price-override, or disable any store's menu items centrally to guarantee catalog data quality.
-
-### 2.6 Order Lifecycle Monitor & Manual Dispatch Override (`/admin/orders`)
-- **Real-Time Order Table**: Inspect all active orders across every stage: `PLACED`, `RIDER_ASSIGNED`, `ACCEPTED`, `PREPARING`, `READY_FOR_PICKUP`, `DISPATCHED`, `DELIVERED`.
-- **Manual Assignment Override**: If an order remains unassigned or delayed, platform operators can one-click assign the delivery to any active online rider.
+### 2.6. System Settings & Settlement Statements (`/settings`)
+- **Order Flow FSM Selector**: 1-click toggle between `RIDER_FIRST` (Zero Food Waste Mode) and `VENDOR_FIRST` (Traditional Retail Mode).
+- **Delivery Fee Pricing Engine**: Toggle between `FIXED_FLAT` (uniform flat rate) and `DISTANCE_TIERED` (base fee + per-km fee).
+- **RFC 4180 CSV Settlement Export**: Download formatted `vendor-settlements-YYYY-MM-DD.csv` for enterprise accounting systems (ERP / QuickBooks) ([ADR-009](context_docs/architecture-decision-records/ADR-009-deterministic-financial-accounting-ledger.md)).
+- **Settlement Batch Audit Trail & Trigger**: Payout batch list and modal to execute settlement cycles via `POST /admin/finance/settlement-cycle`.
 
 ---
 
@@ -87,6 +104,6 @@ This document defines the controls of the **Super Admin Master Console** (`/admi
 - [ ] Optimize vendor prep times and address any recurring stock-out issues.
 
 ### Week 4: Pilot Audit & Expansion Sign-Off
-- [ ] Export 30-day financial, commission, and rider remuneration statements.
+- [ ] Export 30-day financial, commission, and rider remuneration statements via CSV export.
 - [ ] Review customer feedback, vendor satisfaction, and rider delivery metrics.
 - [ ] Plan Phase 2 expansion to 50+ stores and additional delivery zones.
