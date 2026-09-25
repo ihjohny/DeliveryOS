@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
@@ -7,12 +6,17 @@ import '../../auth/presentation/pending_approval_screen.dart';
 import '../../auth/presentation/phone_login_screen.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../earnings/presentation/rider_earnings_screen.dart';
-import '../../trips/domain/trip_models.dart';
 import '../../trips/presentation/active_trip_screen.dart';
 import '../../trips/presentation/widgets/incoming_trip_modal.dart';
 import '../../trips/providers/trip_provider.dart';
-import '../domain/duty_models.dart';
 import '../providers/duty_provider.dart';
+import 'widgets/active_trip_banner.dart';
+import 'widgets/cash_limit_alert_banner.dart';
+import 'widgets/dispatch_radar_card.dart';
+import 'widgets/duty_switch_card.dart';
+import 'widgets/gps_telemetry_card.dart';
+import 'widgets/performance_metrics_card.dart';
+import 'widgets/rider_top_bar.dart';
 
 class RiderDashboardScreen extends ConsumerWidget {
   const RiderDashboardScreen({super.key});
@@ -34,7 +38,6 @@ class RiderDashboardScreen extends ConsumerWidget {
       }
     });
 
-    // Safety Invariant: unapproved accounts cannot access active dashboard
     if (authState.isPendingApproval || profile?.status == AccountStatus.pendingApproval) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pushReplacement(
@@ -56,678 +59,91 @@ class RiderDashboardScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             children: [
-              // Top Bar: Rider Profile & Logout
-              _buildTopBar(context, ref, profile),
+              RiderTopBar(
+                profile: profile,
+                onOpenEarnings: () => _navigateToEarnings(context),
+                onLogout: () => _handleLogout(context, ref),
+              ),
               const SizedBox(height: 16),
-
-              // Urgent COD Safety Limit Alert Banner (if reached)
               if (dutyState.isCashLimitReached) ...[
-                _buildCashLimitAlertBanner(context, dutyState),
+                CashLimitAlertBanner(
+                  dutyState: dutyState,
+                  onDeposit: () => _navigateToEarnings(context),
+                ),
                 const SizedBox(height: 16),
               ],
-
-              // Prominent Sunlight-Readable Duty Switch Card
-              _buildDutySwitchCard(context, ref, dutyState, isOnline),
+              DutySwitchCard(
+                dutyState: dutyState,
+                isOnline: isOnline,
+                onToggleDuty: () => _handleToggleDuty(context, ref, isOnline),
+              ),
               const SizedBox(height: 16),
-
-              // Active Delivery In-Progress Banner (if active)
               if (tripState.hasActiveTrip) ...[
-                _buildActiveTripBanner(context, tripState.activeTrip!),
+                ActiveTripBanner(
+                  trip: tripState.activeTrip!,
+                  onResumeTrip: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ActiveTripScreen()),
+                  ),
+                ),
                 const SizedBox(height: 16),
               ],
-
-              // Live GPS Radar Telemetry Card
-              _buildGpsTelemetryCard(dutyState),
+              GpsTelemetryCard(dutyState: dutyState),
               const SizedBox(height: 16),
-
-              // Daily Performance & Cash Safety Overview
-              _buildPerformanceMetrics(context, dutyState),
+              PerformanceMetricsCard(
+                dutyState: dutyState,
+                onOpenEarnings: () => _navigateToEarnings(context),
+              ),
               const SizedBox(height: 16),
-
-              // Dispatch Radar Status
-              _buildDispatchRadarStatus(context, ref, isOnline, tripState),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar(BuildContext context, WidgetRef ref, RiderProfileData? profile) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: AppColors.primaryLight.withValues(alpha: 0.15),
-            child: const Icon(Icons.person_pin_rounded, color: AppColors.primary, size: 28),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      profile?.fullName ?? 'Rider Partner',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.dutyOnlineBackground,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.star_rounded, size: 13, color: Color(0xFFF59E0B)),
-                          const SizedBox(width: 2),
-                          Text(
-                            profile?.rating.toString() ?? '5.0',
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(
-                      _getVehicleIcon(profile?.vehicleType),
-                      size: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      profile?.vehicleType.displayName ?? 'Motorcycle',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-                    ),
-                    const Text(' • ', style: TextStyle(color: AppColors.textMuted)),
-                    Text(
-                      profile?.phone ?? '',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 22),
-            tooltip: 'Earnings & COD Wallet',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const RiderEarningsScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded, color: AppColors.textSecondary, size: 20),
-            tooltip: 'Log Out',
-            onPressed: () async {
-              await ref.read(riderAuthProvider.notifier).logout();
-              if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const PhoneLoginScreen()),
-                  (route) => false,
-                );
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCashLimitAlertBanner(BuildContext context, RiderDutyState state) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.errorBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.error, width: 1.5),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'COD SAFETY LIMIT REACHED',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.error, letterSpacing: 0.5),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Collected: ৳${state.codCashInHand.toStringAsFixed(0)} / Limit: ৳${state.cashSafetyLimit.toStringAsFixed(0)}. Deposit cash to unblock COD trips.',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                ),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const RiderEarningsScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              elevation: 0,
-            ),
-            child: const Text('DEPOSIT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDutySwitchCard(
-    BuildContext context,
-    WidgetRef ref,
-    RiderDutyState state,
-    bool isOnline,
-  ) {
-    final bgColor = isOnline ? AppColors.dutyOnline : AppColors.dutyOffline;
-    final statusTitle = isOnline ? 'YOU ARE ONLINE' : 'YOU ARE OFFLINE';
-    final statusSubtitle = isOnline
-        ? 'Live GPS radar streaming • Ready for incoming trip orders'
-        : 'Duty toggle is off • You will not receive delivery alerts';
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: (isOnline ? AppColors.dutyOnline : Colors.black).withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: isOnline ? Colors.white : Colors.white54,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    statusTitle,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  isOnline ? 'DUTY ACTIVE' : 'DUTY OFF',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
-                ),
+              DispatchRadarCard(
+                isOnline: isOnline,
+                hasActiveTrip: tripState.hasActiveTrip,
+                onSimulateBroadcast: () {
+                  ref.read(riderTripProvider.notifier).simulateIncomingBroadcast();
+                },
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            statusSubtitle,
-            style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 20),
-
-          // High-Contrast Large Touch-Target Switch Button (height >= 56px)
-          SizedBox(
-            height: 56,
-            child: ElevatedButton.icon(
-              onPressed: state.isToggling
-                  ? null
-                  : () async {
-                      final hasActiveTrip = ref.read(riderTripProvider).hasActiveTrip;
-                      if (isOnline && hasActiveTrip) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Cannot go offline while you have an active in-flight delivery. Please complete or release the order first.'),
-                            backgroundColor: AppColors.error,
-                          ),
-                        );
-                        return;
-                      }
-                      final success = await ref.read(riderDutyProvider.notifier).toggleDuty();
-                      if (!success && context.mounted) {
-                        final error = ref.read(riderDutyProvider).error;
-                        if (error != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(error), backgroundColor: AppColors.error),
-                          );
-                        }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: isOnline ? AppColors.dutyOnline : AppColors.textPrimary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                elevation: 0,
-              ),
-              icon: state.isToggling
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2.5),
-                    )
-                  : Icon(
-                      isOnline ? Icons.power_settings_new_rounded : Icons.flash_on_rounded,
-                      size: 24,
-                      color: isOnline ? AppColors.error : AppColors.dutyOnline,
-                    ),
-              label: Text(
-                isOnline ? 'GO OFFLINE (END SHIFT)' : 'GO ONLINE (START SHIFT)',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.4,
-                  color: isOnline ? AppColors.error : AppColors.dutyOnline,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGpsTelemetryCard(RiderDutyState state) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: state.isOnline ? AppColors.dutyOnlineBackground : AppColors.dutyOfflineBackground,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              state.isOnline ? Icons.radar_rounded : Icons.location_off_rounded,
-              color: state.isOnline ? AppColors.dutyOnline : AppColors.textSecondary,
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'GPS LOCATION RADAR',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textSecondary),
-                    ),
-                    if (state.isOnline)
-                      const Text(
-                        'Beaconing (5s)',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.dutyOnline),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  state.isOnline
-                      ? '${state.latitude.toStringAsFixed(4)}° N, ${state.longitude.toStringAsFixed(4)}° E'
-                      : 'Location streaming paused while offline',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPerformanceMetrics(BuildContext context, RiderDutyState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'TODAY\'S PERFORMANCE',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.5),
-            ),
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const RiderEarningsScreen()),
-                );
-              },
-              child: const Text(
-                'View All ➔',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.primary),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _buildMetricTile(
-                title: 'Completed Trips',
-                value: '${state.todayTrips}',
-                icon: Icons.task_alt_rounded,
-                iconColor: AppColors.dutyOnline,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildMetricTile(
-                title: 'Earned Payout',
-                value: '৳${state.todayEarnings.toStringAsFixed(0)}',
-                icon: Icons.account_balance_wallet_rounded,
-                iconColor: AppColors.primary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // Cash-in-Hand vs Safety Limit Card
-        GestureDetector(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const RiderEarningsScreen()),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: state.isCashLimitReached ? AppColors.error : AppColors.border,
-                width: state.isCashLimitReached ? 1.5 : 1.0,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.payments_rounded, color: AppColors.warning, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'COD Cash in Hand',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '৳${state.codCashInHand.toStringAsFixed(0)} / ৳${state.cashSafetyLimit.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: state.isCashLimitReached ? AppColors.error : AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: (state.codCashInHand / state.cashSafetyLimit).clamp(0.0, 1.0),
-                    minHeight: 8,
-                    backgroundColor: AppColors.background,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      state.isCashLimitReached ? AppColors.error : AppColors.warning,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        state.isCashLimitReached
-                            ? '⚠️ Cash safety limit reached! Deposit cash to accept more COD orders.'
-                            : 'Safe limit remaining: ৳${(state.cashSafetyLimit - state.codCashInHand).toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: state.isCashLimitReached ? AppColors.error : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textSecondary),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMetricTile({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color iconColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: iconColor, size: 22),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActiveTripBanner(BuildContext context, TripOrder trip) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.navigation_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'ACTIVE TRIP: ${trip.orderNumber}',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  trip.currentStep.stepTitle,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '${trip.store.name} ➔ ${trip.customer.address}',
-            style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 14),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ActiveTripScreen()),
-              );
-            },
-            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-            label: const Text('RESUME FULFILLMENT', style: TextStyle(fontWeight: FontWeight.w900)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDispatchRadarStatus(BuildContext context, WidgetRef ref, bool isOnline, RiderTripState tripState) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isOnline ? AppColors.dutyOnlineBackground : AppColors.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isOnline ? AppColors.dutyOnline.withValues(alpha: 0.3) : AppColors.border,
         ),
       ),
-      child: Column(
-        children: [
-          Icon(
-            isOnline ? Icons.sensors_rounded : Icons.sensors_off_rounded,
-            size: 36,
-            color: isOnline ? AppColors.dutyOnline : AppColors.textMuted,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            isOnline ? 'Searching for Incoming Trips...' : 'Radar Disconnected',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: isOnline ? AppColors.dutyOnline : AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            isOnline
-                ? 'Your GPS beacon is active in the pilot cluster. Incoming orders will chime with instant audio alert.'
-                : 'Switch duty toggle to Online to begin receiving delivery dispatches in your zone.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
-          ),
-          if (kDebugMode && isOnline && !tripState.hasActiveTrip) ...[
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () {
-                ref.read(riderTripProvider.notifier).simulateIncomingBroadcast();
-              },
-              icon: const Icon(Icons.bolt_rounded, size: 18, color: AppColors.dutyOnline),
-              label: const Text(
-                'Simulate Order Broadcast (Pilot Demo)',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.dutyOnline),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 
-  IconData _getVehicleIcon(VehicleType? vehicle) {
-    switch (vehicle) {
-      case VehicleType.bicycle:
-        return Icons.pedal_bike_rounded;
-      case VehicleType.car:
-        return Icons.directions_car_rounded;
-      case VehicleType.motorcycle:
-      default:
-        return Icons.two_wheeler_rounded;
+  void _navigateToEarnings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const RiderEarningsScreen()),
+    );
+  }
+
+  Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
+    await ref.read(riderAuthProvider.notifier).logout();
+    if (context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const PhoneLoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+  Future<void> _handleToggleDuty(BuildContext context, WidgetRef ref, bool isOnline) async {
+    final hasActiveTrip = ref.read(riderTripProvider).hasActiveTrip;
+    if (isOnline && hasActiveTrip) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot go offline while you have an active in-flight delivery. Please complete or release the order first.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    final success = await ref.read(riderDutyProvider.notifier).toggleDuty();
+    if (!success && context.mounted) {
+      final error = ref.read(riderDutyProvider).error;
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: AppColors.error),
+        );
+      }
     }
   }
 }

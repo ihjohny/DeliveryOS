@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../../../dashboard/providers/duty_provider.dart';
 import '../../domain/trip_models.dart';
 import '../../providers/trip_provider.dart';
@@ -87,7 +88,7 @@ class IncomingTripModal extends ConsumerWidget {
                         style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white70),
                       ),
                       Text(
-                        '৳${trip.payout.toStringAsFixed(0)}',
+                        formatCurrency(trip.payout),
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white),
                       ),
                     ],
@@ -242,7 +243,7 @@ class IncomingTripModal extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'COD Safety Limit Reached (৳${dutyState.codCashInHand.toStringAsFixed(0)} / ৳${dutyState.cashSafetyLimit.toStringAsFixed(0)}). Deposit cash at the hub before taking new COD orders.',
+                        'COD Safety Limit Reached (${formatCurrency(dutyState.codCashInHand)} / ${formatCurrency(dutyState.cashSafetyLimit)}). Deposit cash at the hub before taking new COD orders.',
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,

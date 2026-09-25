@@ -163,10 +163,14 @@ class RiderAuthNotifier extends Notifier<RiderAuthState> {
 
       // Check if server rejected due to PENDING_APPROVAL
       if (statusCode == 403 || message.toString().toLowerCase().contains('approval')) {
-        final pendingProfile = RiderProfileData.pilotPending(
+        final pendingProfile = RiderProfileData(
+          id: '',
+          userId: '',
+          fullName: state.registrationFullName ?? 'Rider Applicant',
           phone: phone,
-          fullName: state.registrationFullName,
           vehicleType: state.registrationVehicleType,
+          status: AccountStatus.pendingApproval,
+          isOnline: false,
         );
         final storage = ref.read(localStorageProvider);
         await storage.setRiderProfileJson(jsonEncode(pendingProfile.toJson()));

@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../domain/auth_models.dart';
 import '../providers/auth_provider.dart';
 import 'otp_verification_screen.dart';
+import 'widgets/vehicle_type_selector.dart';
 
 class PhoneLoginScreen extends ConsumerStatefulWidget {
   const PhoneLoginScreen({super.key});
@@ -263,26 +264,9 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            _buildVehicleOption(
-                              type: VehicleType.motorcycle,
-                              icon: Icons.two_wheeler_rounded,
-                              label: 'Motorcycle',
-                            ),
-                            const SizedBox(width: 8),
-                            _buildVehicleOption(
-                              type: VehicleType.bicycle,
-                              icon: Icons.pedal_bike_rounded,
-                              label: 'Bicycle',
-                            ),
-                            const SizedBox(width: 8),
-                            _buildVehicleOption(
-                              type: VehicleType.car,
-                              icon: Icons.directions_car_rounded,
-                              label: 'Car',
-                            ),
-                          ],
+                        VehicleTypeSelector(
+                          selectedVehicle: _selectedVehicle,
+                          onVehicleSelected: (type) => setState(() => _selectedVehicle = type),
                         ),
                         const SizedBox(height: 16),
                       ],
@@ -414,44 +398,6 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                 ],
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVehicleOption({
-    required VehicleType type,
-    required IconData icon,
-    required String label,
-  }) {
-    final isSelected = _selectedVehicle == type;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedVehicle = type),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.1) : AppColors.background,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border,
-              width: isSelected ? 1.8 : 1.0,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: isSelected ? AppColors.primary : AppColors.textSecondary, size: 22),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                ),
-              ),
-            ],
           ),
         ),
       ),

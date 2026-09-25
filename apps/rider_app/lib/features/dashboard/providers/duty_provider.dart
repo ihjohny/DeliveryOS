@@ -25,7 +25,6 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
       _positionSubscription?.cancel();
     });
 
-    final sampleTrips = getPilotSampleTrips();
     final initialCodCash = profile?.cashInHand ?? 0.0;
     final initialTodayEarnings = profile?.earningsBalance ?? 0.0;
     final initialWeeklyEarnings = initialTodayEarnings;
@@ -39,7 +38,7 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
       weeklyEarnings: initialWeeklyEarnings,
       codCashInHand: initialCodCash,
       cashSafetyLimit: profile?.maxCashLimit ?? 5000.0,
-      completedTrips: sampleTrips,
+      completedTrips: const [],
       statusMessage: (isOnlineStored && (profile?.isApproved ?? false))
           ? 'Online • GPS Radar Active'
           : 'Offline • Tap switch to go Online',
@@ -54,45 +53,6 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
     }
 
     return initialState;
-  }
-
-  static List<RiderCompletedTrip> getPilotSampleTrips() {
-    final now = DateTime.now();
-    return [
-      RiderCompletedTrip(
-        orderId: 'demo-101',
-        orderNumber: 'ORD-8821',
-        storeName: 'Kacchi Bhai - Banani',
-        customerAddress: 'House 42, Road 11, Banani, Dhaka',
-        completedAt: now.subtract(const Duration(hours: 1, minutes: 20)),
-        payout: 60.0,
-        codCollected: 780.0,
-        isCod: true,
-        distanceKm: 2.8,
-      ),
-      RiderCompletedTrip(
-        orderId: 'demo-102',
-        orderNumber: 'ORD-8794',
-        storeName: 'Sultan\'s Dine - Gulshan 2',
-        customerAddress: 'Apt 5B, Road 45, Gulshan 2, Dhaka',
-        completedAt: now.subtract(const Duration(hours: 3, minutes: 45)),
-        payout: 75.0,
-        codCollected: 0.0,
-        isCod: false,
-        distanceKm: 3.5,
-      ),
-      RiderCompletedTrip(
-        orderId: 'demo-103',
-        orderNumber: 'ORD-8750',
-        storeName: 'Chillox - Banani',
-        customerAddress: 'Flat 2A, Road 7, Block D, Banani',
-        completedAt: now.subtract(const Duration(days: 1, hours: 2)),
-        payout: 50.0,
-        codCollected: 520.0,
-        isCod: true,
-        distanceKm: 1.9,
-      ),
-    ];
   }
 
   void stopBeaconing() {
@@ -304,9 +264,9 @@ class RiderDutyNotifier extends Notifier<RiderDutyState> {
         final todayEarnings = todayList.fold<double>(0.0, (sum, t) => sum + t.payout);
 
         state = state.copyWith(
-          completedTrips: trips.isNotEmpty ? trips : state.completedTrips,
-          todayTrips: todayList.isNotEmpty ? todayList.length : state.todayTrips,
-          todayEarnings: todayEarnings > 0 ? todayEarnings : state.todayEarnings,
+          completedTrips: trips,
+          todayTrips: todayList.length,
+          todayEarnings: todayEarnings,
         );
       }
     } catch (_) {

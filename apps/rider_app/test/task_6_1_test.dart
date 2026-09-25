@@ -13,6 +13,8 @@ import 'package:rider_app/features/dashboard/domain/duty_models.dart';
 import 'package:rider_app/features/dashboard/presentation/rider_dashboard_screen.dart';
 import 'package:rider_app/features/dashboard/providers/duty_provider.dart';
 
+import 'mock_dio_client.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -26,12 +28,7 @@ void main() {
 
   Widget createTestWidget({required Widget child, ProviderContainer? container}) {
     return UncontrolledProviderScope(
-      container: container ??
-          ProviderContainer(
-            overrides: [
-              localStorageProvider.overrideWithValue(storage),
-            ],
-          ),
+      container: container ?? createMockRiderContainer(storage: storage),
       child: MaterialApp(
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
@@ -66,9 +63,7 @@ void main() {
     });
 
     test('INVARIANT: Unapproved rider account (PENDING_APPROVAL) is strictly prevented from toggling online', () async {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createMockRiderContainer(storage: storage);
 
       // Initialize auth with pending profile
       final pendingProfile = RiderProfileData.pilotPending(
@@ -97,9 +92,7 @@ void main() {
     });
 
     test('Approved rider account toggles online and offline successfully with GPS beaconing', () async {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createMockRiderContainer(storage: storage);
 
       // Initialize auth with approved profile
       final approvedProfile = RiderProfileData.pilotApproved(
@@ -178,9 +171,7 @@ void main() {
     });
 
     testWidgets('PendingApprovalScreen renders pending status and lock explanation', (tester) async {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createMockRiderContainer(storage: storage);
       final pendingProfile = RiderProfileData.pilotPending(
         phone: '+8801700998877',
         fullName: 'Shafiqul Islam',
@@ -206,9 +197,7 @@ void main() {
     });
 
     testWidgets('RiderDashboardScreen renders sunlight-readable duty switch and radar', (tester) async {
-      final container = ProviderContainer(
-        overrides: [localStorageProvider.overrideWithValue(storage)],
-      );
+      final container = createMockRiderContainer(storage: storage);
       final approvedProfile = RiderProfileData.pilotApproved(
         phone: '+8801700112233',
         fullName: 'Tanvir Hossain',

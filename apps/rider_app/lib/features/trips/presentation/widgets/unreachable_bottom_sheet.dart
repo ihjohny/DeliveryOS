@@ -1,0 +1,173 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/native_launcher.dart';
+import '../../domain/trip_models.dart';
+
+class UnreachableBottomSheet extends StatefulWidget {
+  final TripOrder trip;
+  final Future<void> Function(String reason) onReportIssue;
+
+  const UnreachableBottomSheet({
+    super.key,
+    required this.trip,
+    required this.onReportIssue,
+  });
+
+  @override
+  State<UnreachableBottomSheet> createState() => _UnreachableBottomSheetState();
+}
+
+class _UnreachableBottomSheetState extends State<UnreachableBottomSheet> {
+  int _remainingSeconds = 300;
+  Timer? _timer;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    if (_timer != null) return;
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_remainingSeconds > 0 && mounted) {
+        setState(() => _remainingSeconds--);
+      } else {
+        t.cancel();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 24),
+                  SizedBox(width: 8),
+                  Text(
+                    'Customer Unreachable',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                  ),
+                ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () {
+                  _timer?.cancel();
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Standard Operating Procedure:\n'
+            '1. Call the customer at least twice.\n'
+            '2. Ring the doorbell / knock at door.\n'
+            '3. Wait minimum 5 minutes before reporting delivery failure.',
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.warningBackground,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'SOP Wait Timer:',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                Text(
+                  '$minutes:$seconds',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primary,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () {
+              _startTimer();
+              makeDirectPhoneCall(widget.trip.customer.phone);
+            },
+            icon: const Icon(Icons.phone_rounded, size: 18),
+            label: const Text('Call Customer'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.textPrimary,
+              side: const BorderSide(color: AppColors.borderStrong),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () async {
+              _timer?.cancel();
+              Navigator.of(context).pop();
+              await widget.onReportIssue('Customer unreachable at doorstep after 5 min wait');
+            },
+            icon: const Icon(Icons.report_problem_rounded, size: 18),
+            label: const Text(
+              'Report Unresponsive & Release Order',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void showUnreachableBottomSheet({
+  required BuildContext context,
+  required TripOrder trip,
+  required Future<void> Function(String reason) onReportIssue,
+}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (_) => UnreachableBottomSheet(
+      trip: trip,
+      onReportIssue: onReportIssue,
+    ),
+  );
+}
