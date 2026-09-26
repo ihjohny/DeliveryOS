@@ -1,34 +1,60 @@
 import { useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import kdsApi, { normalizeKDSOrder } from '../services/kdsApi';
+import kdsApi, { normalizeKDSOrder, RawBackendOrder } from '../services/kdsApi';
 import { getSocket } from '../services/socket';
-import { KDSOrder } from '../types/kds';
+import { KDSOrder, KDSOrderStatus } from '../types/kds';
 import { soundEngine } from '../utils/sound';
+
+interface SocketOrderPayload {
+  data?: RawBackendOrder;
+}
+
+interface SocketStatusChangedPayload {
+  data?: {
+    orderId?: string;
+    id?: string;
+    newStatus?: KDSOrderStatus;
+    status?: KDSOrderStatus;
+    prepTime?: number;
+    prepTimeMinutes?: number;
+  };
+  orderId?: string;
+  id?: string;
+  newStatus?: KDSOrderStatus;
+  status?: KDSOrderStatus;
+  prepTime?: number;
+  prepTimeMinutes?: number;
+}
+
+interface SocketOrderCancelledPayload {
+  data?: {
+    orderId?: string;
+    id?: string;
+  };
+  orderId?: string;
+  id?: string;
+}
 
 export const useKDSOrders = (vendorId?: string) => {
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => ['kds-live-orders', vendorId], [vendorId]);
 
-  // 1. Fetch live orders
   const { data: orders = [], isLoading, refetch } = useQuery<KDSOrder[]>({
     queryKey,
     queryFn: () => kdsApi.getLiveOrders(vendorId),
     refetchInterval: 15000, // Background poll every 15s as fallback
   });
 
-  // 2. Real-time WebSocket Listeners
   useEffect(() => {
     const socket = getSocket();
 
-    const handleNewOrder = (incoming: any) => {
-      // Start persistent looped audio alarm
+    const handleNewOrder = (incoming: SocketOrderPayload | RawBackendOrder) => {
       soundEngine.startOrderAlarm();
 
-      const raw = incoming?.data || incoming;
+      const raw = 'data' in incoming && incoming.data ? incoming.data : (incoming as RawBackendOrder);
       const newOrder = normalizeKDSOrder(raw);
       if (!newOrder || !newOrder.id) return;
 
-      // Update query cache
       queryClient.setQueryData<KDSOrder[]>(queryKey, (old = []) => {
         const safeOld = Array.isArray(old) ? old : [];
         const exists = safeOld.some((o) => o.id === newOrder.id);
@@ -39,7 +65,7 @@ export const useKDSOrders = (vendorId?: string) => {
       });
     };
 
-    const handleStatusChanged = (payload: any) => {
+    const handleStatusChanged = (payload: SocketStatusChangedPayload) => {
       const data = payload?.data || payload;
       const orderId = data?.orderId || data?.id;
       const newStatus = data?.newStatus || data?.status;
@@ -79,7 +105,7 @@ export const useKDSOrders = (vendorId?: string) => {
       }
     };
 
-    const handleOrderCancelled = (payload: any) => {
+    const handleOrderCancelled = (payload: SocketOrderCancelledPayload) => {
       const data = payload?.data || payload;
       const orderId = data?.orderId || data?.id;
       if (!orderId) return;
@@ -109,7 +135,6 @@ export const useKDSOrders = (vendorId?: string) => {
     };
   }, [queryClient, queryKey]);
 
-  // 3. Order Action Mutations
   const acceptMutation = useMutation({
     mutationFn: ({ orderId, prepTimeMinutes }: { orderId: string; prepTimeMinutes?: number }) =>
       kdsApi.acceptOrder(orderId, prepTimeMinutes),
@@ -169,7 +194,6 @@ export const useKDSOrders = (vendorId?: string) => {
     },
   });
 
-  // 4. Categorize Orders into 3 Kanban Lanes
   const safeOrders = useMemo(() => (Array.isArray(orders) ? orders : []), [orders]);
 
   const newOrders = useMemo(

@@ -127,6 +127,43 @@ export function normalizeKDSOrder(raw: RawBackendOrder): KDSOrder {
   };
 }
 
+export interface RawBackendCatalogVariant {
+  id: string;
+  productId: string;
+  name: string;
+  priceDelta?: number;
+  priceModifier?: number;
+  isInStock: boolean;
+}
+
+export interface RawBackendCatalogProduct {
+  id: string;
+  vendorId: string;
+  categoryId: string;
+  name: string;
+  description?: string | null;
+  basePrice: number;
+  unitType: string;
+  imageUrl?: string | null;
+  isInStock: boolean;
+  variants?: RawBackendCatalogVariant[];
+}
+
+export interface RawBackendCatalogCategory {
+  id: string;
+  vendorId: string;
+  name: string;
+  displayOrder: number;
+  products?: RawBackendCatalogProduct[];
+}
+
+export interface RawBackendCatalog {
+  vendorId?: string;
+  vendorName?: string;
+  defaultPrepTimeMinutes?: number;
+  categories?: RawBackendCatalogCategory[];
+}
+
 export const kdsApi = {
   /**
    * Fetch active kitchen orders queue
@@ -190,22 +227,45 @@ export const kdsApi = {
   async getOutletCatalog(vendorId?: string): Promise<OutletCatalog> {
     const params = vendorId && vendorId !== 'ALL' ? { vendorId } : undefined;
     const response = await apiClient.get('/api/v1/vendor/catalog', { params });
-    const payload = response.data?.data || response.data;
+    const payload: RawBackendCatalog | undefined = response.data?.data || response.data;
     if (!payload || !payload.categories) {
-      return payload || { vendorId: vendorId || '', vendorName: '', defaultPrepTimeMinutes: 20, categories: [] };
+      return {
+        vendorId: vendorId || '',
+        vendorName: payload?.vendorName || '',
+        defaultPrepTimeMinutes: payload?.defaultPrepTimeMinutes || 20,
+        categories: [],
+      };
     }
-    // Normalize variant price modifiers to priceDelta
-    const categories = payload.categories.map((cat: any) => ({
-      ...cat,
-      products: (cat.products || []).map((prod: any) => ({
-        ...prod,
-        variants: (prod.variants || []).map((v: any) => ({
-          ...v,
+    const categories: Category[] = payload.categories.map((cat: RawBackendCatalogCategory) => ({
+      id: cat.id,
+      vendorId: cat.vendorId,
+      name: cat.name,
+      displayOrder: cat.displayOrder,
+      products: (cat.products || []).map((prod: RawBackendCatalogProduct) => ({
+        id: prod.id,
+        vendorId: prod.vendorId,
+        categoryId: prod.categoryId,
+        name: prod.name,
+        description: prod.description,
+        basePrice: prod.basePrice,
+        unitType: prod.unitType,
+        imageUrl: prod.imageUrl,
+        isInStock: prod.isInStock,
+        variants: (prod.variants || []).map((v: RawBackendCatalogVariant) => ({
+          id: v.id,
+          productId: v.productId,
+          name: v.name,
+          isInStock: v.isInStock,
           priceDelta: Number(v.priceDelta ?? v.priceModifier) || 0,
         })),
       })),
     }));
-    return { ...payload, categories };
+    return {
+      vendorId: payload.vendorId || vendorId || '',
+      vendorName: payload.vendorName || '',
+      defaultPrepTimeMinutes: payload.defaultPrepTimeMinutes || 20,
+      categories,
+    };
   },
 
   /**

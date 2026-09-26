@@ -4,30 +4,26 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   FileText,
   Search,
-  Filter,
   RefreshCw,
   UserCheck,
   Bike,
   Clock,
-  MapPin,
-  Phone,
-  CheckCircle2,
-  AlertCircle,
   XCircle,
   Eye,
   ShoppingBag,
   MessageSquare,
   X,
 } from 'lucide-react';
-import adminApi, { AdminOrder, FleetRider } from '../../services/adminApi';
+import adminApi, { AdminOrder } from '../../services/adminApi';
 import { getSocket } from '../../services/socket';
 import { Table, Column } from '../../components/ui/Table';
 import { Badge, OrderStatusBadge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Alert } from '../../components/ui/Alert';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { PageHeader } from '../../components/common/PageHeader';
+import { EmptyState } from '../../components/common/EmptyState';
 
 export const AdminOrdersPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -43,7 +39,6 @@ export const AdminOrdersPage: React.FC = () => {
   const [cancelTargetOrder, setCancelTargetOrder] = useState<AdminOrder | null>(null);
   const [cancelReason, setCancelReason] = useState('');
 
-  // Details Modal State
   const [detailsOrder, setDetailsOrder] = useState<AdminOrder | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [autoHandledOrderNumber, setAutoHandledOrderNumber] = useState<string | null>(null);
@@ -54,7 +49,6 @@ export const AdminOrdersPage: React.FC = () => {
     refetchInterval: 30000,
   });
 
-  // Real-time WebSocket Order Invalidation
   useEffect(() => {
     const socket = getSocket();
 
@@ -78,14 +72,12 @@ export const AdminOrdersPage: React.FC = () => {
 
   const availableRiders = fleet.filter((r) => r.isOnline);
 
-  // Sync search input when URL query param changes
   useEffect(() => {
     if (orderNumberParam) {
       setSearchQuery(orderNumberParam);
     }
   }, [orderNumberParam]);
 
-  // Deep-link auto-opener: when orderNumber is in URL, auto-highlight and open force-assign if unassigned
   useEffect(() => {
     if (orderNumberParam && orders.length > 0 && autoHandledOrderNumber !== orderNumberParam) {
       const matched = orders.find(
@@ -93,13 +85,11 @@ export const AdminOrdersPage: React.FC = () => {
       );
       if (matched) {
         setAutoHandledOrderNumber(orderNumberParam);
-        // If unassigned or user explicitly jumped from dispatch radar, prefill assign modal
         if (matched.status !== 'DELIVERED' && matched.status !== 'CANCELLED') {
           setSelectedOrder(matched);
           setSelectedRiderId(matched.riderId || (availableRiders[0]?.id ?? ''));
           setIsAssignModalOpen(true);
         } else {
-          // Open details modal
           setDetailsOrder(matched);
           setIsDetailsModalOpen(true);
         }
@@ -177,7 +167,7 @@ export const AdminOrdersPage: React.FC = () => {
       render: (order) => (
         <div>
           <div className="font-medium text-slate-900 dark:text-slate-100">{order.vendorName}</div>
-          <div className="text-[11px] text-slate-500 truncate max-w-[150px]">{order.vendorAddress}</div>
+          <div className="text-[11px] text-slate-500 truncate max-w-[160px]">{order.vendorAddress}</div>
           <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
             <span>{order.items?.length || 0} item{order.items?.length === 1 ? '' : 's'}</span>
             {order.customerNotes && (
@@ -210,7 +200,7 @@ export const AdminOrdersPage: React.FC = () => {
       render: (order) =>
         order.riderName ? (
           <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
-            <Bike className="h-3.5 w-3.5 text-primary-600" />
+            <Bike className="h-3.5 w-3.5 text-primary-600 shrink-0" />
             <div>
               <span className="font-medium">{order.riderName}</span>
               <div className="text-[10px] text-slate-400">{order.riderPhone}</div>
@@ -236,18 +226,17 @@ export const AdminOrdersPage: React.FC = () => {
       key: 'id',
       header: 'Action',
       render: (order) => (
-        <div className="flex items-center justify-end gap-1.5">
+        <div className="inline-flex items-center justify-end gap-1.5">
           <Button
             variant="ghost"
             size="sm"
-            className="text-xs h-7 px-2 gap-1 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="text-xs h-7 px-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
             onClick={() => {
               setDetailsOrder(order);
               setIsDetailsModalOpen(true);
             }}
-            title="View full order details & line items"
+            leftIcon={<Eye className="h-3.5 w-3.5" />}
           >
-            <Eye className="h-3.5 w-3.5" />
             Details
           </Button>
 
@@ -256,29 +245,28 @@ export const AdminOrdersPage: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs h-7 px-2.5 gap-1"
+                className="text-xs h-7 px-2.5"
                 onClick={() => {
                   setSelectedOrder(order);
                   setSelectedRiderId(order.riderId || (availableRiders[0]?.id ?? ''));
                   setIsAssignModalOpen(true);
                 }}
+                leftIcon={<UserCheck className="h-3.5 w-3.5 text-primary-600" />}
               >
-                <UserCheck className="h-3.5 w-3.5 text-primary-600" />
                 {order.riderId ? 'Reassign' : 'Force Assign'}
               </Button>
               {order.status !== 'DISPATCHED' && (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-xs h-7 px-2 gap-1 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                  className="text-xs h-7 px-2 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40"
                   onClick={() => {
                     setCancelTargetOrder(order);
                     setCancelReason('');
                     setIsCancelModalOpen(true);
                   }}
-                  title="Force cancel this order"
+                  leftIcon={<XCircle className="h-3.5 w-3.5 text-rose-500" />}
                 >
-                  <XCircle className="h-3.5 w-3.5 text-rose-500" />
                   Cancel
                 </Button>
               )}
@@ -293,27 +281,23 @@ export const AdminOrdersPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
-            <FileText className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-            Live Order Lifecycle Monitor
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Real-time multi-stage order tracking with manual dispatch force-assignment override
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
+      <PageHeader
+        title="Live Order Lifecycle Monitor"
+        subtitle="Real-time multi-stage order tracking with manual dispatch force-assignment override"
+        icon={FileText}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            leftIcon={<RefreshCw className="h-4 w-4" />}
+          >
             Refresh Queue
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Stage Filter Buttons */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
         {[
           { id: 'ALL', label: 'All Orders' },
           { id: 'PLACED', label: '1. Placed' },
@@ -338,11 +322,10 @@ export const AdminOrdersPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Deep-link active notice banner */}
       {orderNumberParam && (
         <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 dark:bg-amber-950/30 dark:border-amber-900/60 dark:text-amber-200">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-amber-600" />
+            <Clock className="h-4 w-4 text-amber-600 shrink-0" />
             <span>
               Direct link filter active for Order: <strong className="font-semibold">{orderNumberParam}</strong>
             </span>
@@ -357,11 +340,10 @@ export const AdminOrdersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Table Container */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Filter by Order #, Store, Customer, Courier..."
@@ -372,7 +354,8 @@ export const AdminOrdersPage: React.FC = () => {
             {searchQuery && (
               <button
                 onClick={clearSearch}
-                className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+                aria-label="Clear search"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -385,27 +368,65 @@ export const AdminOrdersPage: React.FC = () => {
 
         {isLoading ? (
           <div className="py-16 text-center">
-            <LoadingSpinner size="lg" />
-            <p className="mt-2 text-xs text-slate-500">Synchronizing order lifecycle stream...</p>
+            <LoadingSpinner size="lg" label="Synchronizing order lifecycle stream..." />
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="py-16 text-center text-slate-500 text-xs">
-            No orders match the selected lifecycle criteria.
-          </div>
+          <EmptyState
+            message="No orders match the selected lifecycle criteria."
+            className="m-4"
+          />
         ) : (
           <Table data={filteredOrders} columns={columns} keyExtractor={(o) => o.id} />
         )}
       </div>
 
-      {/* Full Order Details & Line Items Modal */}
       {isDetailsModalOpen && detailsOrder && (
         <Modal
           isOpen={isDetailsModalOpen}
           onClose={() => setIsDetailsModalOpen(false)}
           title={`Order Details — #${detailsOrder.orderNumber}`}
+          footer={
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsDetailsModalOpen(false)}>
+                Close
+              </Button>
+              <div className="flex items-center gap-2">
+                {detailsOrder.status !== 'DELIVERED' && detailsOrder.status !== 'CANCELLED' && detailsOrder.status !== 'DISPATCHED' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-8 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-400"
+                    onClick={() => {
+                      setIsDetailsModalOpen(false);
+                      setCancelTargetOrder(detailsOrder);
+                      setCancelReason('');
+                      setIsCancelModalOpen(true);
+                    }}
+                    leftIcon={<XCircle className="h-3.5 w-3.5" />}
+                  >
+                    Force Cancel
+                  </Button>
+                )}
+                {detailsOrder.status !== 'DELIVERED' && detailsOrder.status !== 'CANCELLED' && (
+                  <Button
+                    size="sm"
+                    className="text-xs h-8"
+                    onClick={() => {
+                      setIsDetailsModalOpen(false);
+                      setSelectedOrder(detailsOrder);
+                      setSelectedRiderId(detailsOrder.riderId || (availableRiders[0]?.id ?? ''));
+                      setIsAssignModalOpen(true);
+                    }}
+                    leftIcon={<UserCheck className="h-3.5 w-3.5" />}
+                  >
+                    {detailsOrder.riderId ? 'Reassign Courier' : 'Force Assign'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          }
         >
           <div className="space-y-4">
-            {/* Status & Timing Banner */}
             <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700">
               <div>
                 <span className="text-xs text-slate-500 block mb-0.5">Order Status</span>
@@ -424,7 +445,6 @@ export const AdminOrdersPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Key Entities Info Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
                 <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-1">
@@ -446,7 +466,6 @@ export const AdminOrdersPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Courier Assignment */}
             <div className="rounded-lg border border-slate-200 p-3 text-xs dark:border-slate-800">
               <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-1">
                 Assigned Delivery Courier
@@ -463,13 +482,13 @@ export const AdminOrdersPage: React.FC = () => {
                   <Badge variant="info">Assigned</Badge>
                 </div>
               ) : (
-                <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-amber-600 dark:text-amber-400">
                   <span className="font-medium italic">No courier assigned yet (Waiting in dispatch pool)</span>
                   {detailsOrder.status !== 'DELIVERED' && detailsOrder.status !== 'CANCELLED' && (
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs h-7 px-2"
+                      className="text-xs h-7 px-2 self-start sm:self-auto"
                       onClick={() => {
                         setIsDetailsModalOpen(false);
                         setSelectedOrder(detailsOrder);
@@ -484,7 +503,6 @@ export const AdminOrdersPage: React.FC = () => {
               )}
             </div>
 
-            {/* Customer Special Cooking / Delivery Notes */}
             <div className="rounded-lg border border-slate-200 bg-amber-50/40 p-3 text-xs dark:border-amber-900/30 dark:bg-amber-950/20">
               <div className="flex items-center gap-1.5 font-semibold text-amber-900 dark:text-amber-300 mb-1">
                 <MessageSquare className="h-3.5 w-3.5" />
@@ -495,7 +513,6 @@ export const AdminOrdersPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Itemized Dish Breakdown */}
             <div>
               <div className="flex items-center justify-between text-xs font-semibold text-slate-900 dark:text-slate-100 mb-2">
                 <span className="flex items-center gap-1.5">
@@ -525,7 +542,6 @@ export const AdminOrdersPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Financial Summary */}
             <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs space-y-1.5 dark:border-slate-800 dark:bg-slate-800/50">
               <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Items Subtotal:</span>
@@ -548,56 +564,37 @@ export const AdminOrdersPage: React.FC = () => {
                 </span>
               </div>
             </div>
-
-            {/* Modal Actions */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-              <Button variant="outline" size="sm" onClick={() => setIsDetailsModalOpen(false)}>
-                Close
-              </Button>
-              <div className="flex items-center gap-2">
-                {detailsOrder.status !== 'DELIVERED' && detailsOrder.status !== 'CANCELLED' && detailsOrder.status !== 'DISPATCHED' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs h-8 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-400"
-                    onClick={() => {
-                      setIsDetailsModalOpen(false);
-                      setCancelTargetOrder(detailsOrder);
-                      setCancelReason('');
-                      setIsCancelModalOpen(true);
-                    }}
-                  >
-                    <XCircle className="h-3.5 w-3.5" />
-                    Force Cancel
-                  </Button>
-                )}
-                {detailsOrder.status !== 'DELIVERED' && detailsOrder.status !== 'CANCELLED' && (
-                  <Button
-                    size="sm"
-                    className="text-xs h-8"
-                    onClick={() => {
-                      setIsDetailsModalOpen(false);
-                      setSelectedOrder(detailsOrder);
-                      setSelectedRiderId(detailsOrder.riderId || (availableRiders[0]?.id ?? ''));
-                      setIsAssignModalOpen(true);
-                    }}
-                  >
-                    <UserCheck className="h-3.5 w-3.5" />
-                    {detailsOrder.riderId ? 'Reassign Courier' : 'Force Assign'}
-                  </Button>
-                )}
-              </div>
-            </div>
           </div>
         </Modal>
       )}
 
-      {/* Manual Force-Assign Rider Modal */}
       {selectedOrder && (
         <Modal
           isOpen={isAssignModalOpen}
           onClose={() => setIsAssignModalOpen(false)}
           title={`Manual Dispatch Override — #${selectedOrder.orderNumber}`}
+          footer={
+            <div className="flex justify-end gap-2 w-full">
+              <Button variant="outline" size="sm" onClick={() => setIsAssignModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={!selectedRiderId}
+                isLoading={forceAssignMutation.isPending}
+                onClick={() => {
+                  if (selectedOrder && selectedRiderId) {
+                    forceAssignMutation.mutate({
+                      orderId: selectedOrder.id,
+                      riderId: selectedRiderId,
+                    });
+                  }
+                }}
+              >
+                Confirm Dispatch Override
+              </Button>
+            </div>
+          }
         >
           <div className="space-y-4">
             <Alert
@@ -619,7 +616,6 @@ export const AdminOrdersPage: React.FC = () => {
                 <span className="font-semibold text-primary-600">৳{selectedOrder.totalAmount}</span>
               </div>
 
-              {/* Items summary */}
               {selectedOrder.items && selectedOrder.items.length > 0 && (
                 <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
                   <span className="text-slate-500 block mb-1 font-semibold">
@@ -636,7 +632,6 @@ export const AdminOrdersPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Cooking note */}
               {selectedOrder.customerNotes && (
                 <div className="pt-1.5 border-t border-slate-200 dark:border-slate-700 text-amber-700 dark:text-amber-400 text-[11px]">
                   <strong>Note:</strong> {selectedOrder.customerNotes}
@@ -694,37 +689,38 @@ export const AdminOrdersPage: React.FC = () => {
                 </div>
               )}
             </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <Button variant="outline" size="sm" onClick={() => setIsAssignModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                disabled={!selectedRiderId}
-                isLoading={forceAssignMutation.isPending}
-                onClick={() => {
-                  if (selectedOrder && selectedRiderId) {
-                    forceAssignMutation.mutate({
-                      orderId: selectedOrder.id,
-                      riderId: selectedRiderId,
-                    });
-                  }
-                }}
-              >
-                Confirm Dispatch Override
-              </Button>
-            </div>
           </div>
         </Modal>
       )}
 
-      {/* Force Cancel Modal */}
       {isCancelModalOpen && cancelTargetOrder && (
         <Modal
           isOpen={isCancelModalOpen}
           onClose={() => setIsCancelModalOpen(false)}
           title={`Force Cancel Order #${cancelTargetOrder.orderNumber}`}
+          footer={
+            <div className="flex justify-end gap-2 w-full">
+              <Button variant="outline" size="sm" onClick={() => setIsCancelModalOpen(false)}>
+                Dismiss
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                disabled={cancelReason.trim().length < 5}
+                isLoading={cancelMutation.isPending}
+                onClick={() => {
+                  if (cancelTargetOrder) {
+                    cancelMutation.mutate({
+                      orderId: cancelTargetOrder.id,
+                      reason: cancelReason.trim(),
+                    });
+                  }
+                }}
+              >
+                Confirm Force Cancellation
+              </Button>
+            </div>
+          }
         >
           <div className="space-y-4">
             <Alert
@@ -750,7 +746,6 @@ export const AdminOrdersPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Items summary */}
               {cancelTargetOrder.items && cancelTargetOrder.items.length > 0 && (
                 <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
                   <span className="text-slate-500 block mb-1 font-semibold">
@@ -779,28 +774,6 @@ export const AdminOrdersPage: React.FC = () => {
                 rows={3}
                 className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:border-rose-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <Button variant="outline" size="sm" onClick={() => setIsCancelModalOpen(false)}>
-                Dismiss
-              </Button>
-              <Button
-                size="sm"
-                variant="danger"
-                disabled={cancelReason.trim().length < 5}
-                isLoading={cancelMutation.isPending}
-                onClick={() => {
-                  if (cancelTargetOrder) {
-                    cancelMutation.mutate({
-                      orderId: cancelTargetOrder.id,
-                      reason: cancelReason.trim(),
-                    });
-                  }
-                }}
-              >
-                Confirm Force Cancellation
-              </Button>
             </div>
           </div>
         </Modal>

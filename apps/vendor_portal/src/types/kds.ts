@@ -24,12 +24,17 @@ export interface KDSOrderItem {
   id: string;
   productId: string;
   productName: string;
+  productNameSnapshot?: string;
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  totalPrice?: number;
   instructions?: string | null;
+  specialInstructions?: string | null;
   variant?: KDSOrderItemVariant | null;
+  variantSnapshot?: { id: string; name: string; priceModifier: number } | null;
   toppings?: KDSOrderItemTopping[];
+  addonsSnapshot?: Array<{ id: string; name: string; price: number }>;
 }
 
 export interface KDSCustomer {
@@ -44,6 +49,10 @@ export interface KDSRider {
   phone: string;
   latitude?: number | null;
   longitude?: number | null;
+  user?: {
+    fullName?: string;
+    phone?: string;
+  } | null;
 }
 
 export interface KDSOrder {
@@ -65,12 +74,15 @@ export interface KDSOrder {
   customerNotes?: string | null;
   prepTimeMinutes?: number | null;
   createdAt: string;
+  placedAt?: string;
   updatedAt: string;
   acceptedAt?: string | null;
   readyAt?: string | null;
   customer: KDSCustomer;
+  customerPhoneSnapshot?: string;
   rider?: KDSRider | null;
   items: KDSOrderItem[];
+  orderItems?: KDSOrderItem[];
 }
 
 export interface ProductVariant {

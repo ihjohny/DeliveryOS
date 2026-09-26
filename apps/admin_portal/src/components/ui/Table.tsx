@@ -17,7 +17,6 @@ export interface TableProps<T> {
   emptyMessage?: string;
   className?: string;
   onRowClick?: (item: T) => void;
-  // Optional pagination props
   page?: number;
   totalPages?: number;
   totalItems?: number;
@@ -40,14 +39,14 @@ export function Table<T>({
   return (
     <div className={cn('overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900', className)}>
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+        <table className="min-w-full w-full text-left text-sm text-slate-600 dark:text-slate-300">
           <thead className="border-b border-slate-200 bg-slate-50/75 text-xs uppercase font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-400">
             <tr>
               {columns.map((col) => (
                 <th
                   key={col.key}
                   scope="col"
-                  className={cn('px-6 py-3.5 whitespace-nowrap', col.headerClassName)}
+                  className={cn('px-4 sm:px-6 py-3.5 whitespace-nowrap', col.headerClassName)}
                 >
                   {col.header}
                 </th>
@@ -84,7 +83,7 @@ export function Table<T>({
                   )}
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className={cn('px-6 py-4 whitespace-nowrap', col.className)}>
+                    <td key={col.key} className={cn('px-4 sm:px-6 py-3.5 sm:py-4 whitespace-nowrap', col.className)}>
                       {col.render
                         ? col.render(item, index)
                         : (item as Record<string, unknown>)[col.key]?.toString() ?? '-'}
@@ -97,9 +96,8 @@ export function Table<T>({
         </table>
       </div>
 
-      {/* Pagination footer */}
       {totalPages !== undefined && totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-800/40">
+        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 bg-slate-50/50 px-4 sm:px-6 py-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 gap-2">
           <div>
             {totalItems !== undefined && <span>Total {totalItems} entries</span>}
           </div>
@@ -107,7 +105,7 @@ export function Table<T>({
             <button
               onClick={() => onPageChange && onPageChange((page || 1) - 1)}
               disabled={(page || 1) <= 1}
-              className="rounded px-2.5 py-1 font-medium hover:bg-slate-200 disabled:opacity-40 dark:hover:bg-slate-700"
+              className="rounded-lg px-2.5 py-1 font-medium hover:bg-slate-200 disabled:opacity-40 dark:hover:bg-slate-700 transition-colors"
             >
               Previous
             </button>
@@ -117,7 +115,7 @@ export function Table<T>({
             <button
               onClick={() => onPageChange && onPageChange((page || 1) + 1)}
               disabled={(page || 1) >= totalPages}
-              className="rounded px-2.5 py-1 font-medium hover:bg-slate-200 disabled:opacity-40 dark:hover:bg-slate-700"
+              className="rounded-lg px-2.5 py-1 font-medium hover:bg-slate-200 disabled:opacity-40 dark:hover:bg-slate-700 transition-colors"
             >
               Next
             </button>

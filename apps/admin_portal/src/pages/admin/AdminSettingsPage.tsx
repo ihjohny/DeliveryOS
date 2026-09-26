@@ -7,18 +7,18 @@ import {
   FileSpreadsheet,
   Download,
   CheckCircle2,
-  AlertCircle,
   Truck,
   Store,
   Layers,
 } from 'lucide-react';
-import adminApi, { SettlementStatement, SettlementBatchItem } from '../../services/adminApi';
+import adminApi from '../../services/adminApi';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Alert } from '../../components/ui/Alert';
 import { Modal } from '../../components/ui/Modal';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { PageHeader } from '../../components/common/PageHeader';
+import { StatCard } from '../../components/common/StatCard';
 
 export const AdminSettingsPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -32,18 +32,17 @@ export const AdminSettingsPage: React.FC = () => {
   const [settleNotes, setSettleNotes] = useState('');
   const [settleSuccessMessage, setSettleSuccessMessage] = useState<string | null>(null);
 
-  // Queries
-  const { data: settings, isLoading: isLoadingSettings } = useQuery({
+  const { data: settings } = useQuery({
     queryKey: ['admin-settings'],
     queryFn: adminApi.getSettings,
   });
 
-  const { data: settlements = [], isLoading: isLoadingSettlements } = useQuery({
+  const { data: settlements = [] } = useQuery({
     queryKey: ['admin-settlements'],
     queryFn: adminApi.getSettlementStatements,
   });
 
-  const { data: batches = [], isLoading: isLoadingBatches } = useQuery({
+  const { data: batches = [] } = useQuery({
     queryKey: ['admin-settlement-batches'],
     queryFn: adminApi.getSettlementBatches,
   });
@@ -57,7 +56,6 @@ export const AdminSettingsPage: React.FC = () => {
     }
   }, [settings]);
 
-  // Mutations
   const executeSettlementMutation = useMutation({
     mutationFn: (notes?: string) => adminApi.executeSettlementCycle(notes),
     onSuccess: (data) => {
@@ -108,9 +106,6 @@ export const AdminSettingsPage: React.FC = () => {
   };
 
   const currentFlowMode = settings?.orderFlow?.mode || 'RIDER_FIRST';
-  const currentFeeMode = settings?.deliveryFee?.mode || 'FIXED_FLAT';
-
-  // Settlement totals
   const totalGross = settlements.reduce((acc, s) => acc + s.grossSales, 0);
   const totalCommission = settlements.reduce((acc, s) => acc + s.platformCommission, 0);
   const totalPayable = settlements.reduce((acc, s) => acc + s.netVendorPayable, 0);
@@ -118,19 +113,13 @@ export const AdminSettingsPage: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
-          <Settings className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-          System Settings & Financial Settlements
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Configure real-time dispatch state machines, pricing pipelines, and export vendor payout statements
-        </p>
-      </div>
+      <PageHeader
+        title="System Settings & Financial Settlements"
+        subtitle="Configure real-time dispatch state machines, pricing pipelines, and export vendor payout statements"
+        icon={Settings}
+      />
 
-      {/* Section 1: Order Flow State Machine */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
         <div>
           <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Shuffle className="h-5 w-5 text-primary-600" />
@@ -142,10 +131,9 @@ export const AdminSettingsPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* RIDER_FIRST */}
           <div
             onClick={() => updateOrderFlowMutation.mutate({ mode: 'RIDER_FIRST' })}
-            className={`cursor-pointer rounded-xl border p-5 transition-all ${
+            className={`cursor-pointer rounded-xl border p-4 sm:p-5 transition-all ${
               currentFlowMode === 'RIDER_FIRST'
                 ? 'border-primary-600 bg-primary-50/50 dark:border-primary-500 dark:bg-primary-950/20 ring-2 ring-primary-500/20'
                 : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
@@ -153,7 +141,7 @@ export const AdminSettingsPage: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Truck className="h-5 w-5 text-primary-600" />
+                <Truck className="h-5 w-5 text-primary-600 shrink-0" />
                 <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
                   RIDER_FIRST (Zero Food Waste Mode)
                 </span>
@@ -168,10 +156,9 @@ export const AdminSettingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* VENDOR_FIRST */}
           <div
             onClick={() => updateOrderFlowMutation.mutate({ mode: 'VENDOR_FIRST' })}
-            className={`cursor-pointer rounded-xl border p-5 transition-all ${
+            className={`cursor-pointer rounded-xl border p-4 sm:p-5 transition-all ${
               currentFlowMode === 'VENDOR_FIRST'
                 ? 'border-primary-600 bg-primary-50/50 dark:border-primary-500 dark:bg-primary-950/20 ring-2 ring-primary-500/20'
                 : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
@@ -179,7 +166,7 @@ export const AdminSettingsPage: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Store className="h-5 w-5 text-emerald-600" />
+                <Store className="h-5 w-5 text-emerald-600 shrink-0" />
                 <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
                   VENDOR_FIRST (Traditional Retail Mode)
                 </span>
@@ -196,8 +183,7 @@ export const AdminSettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Section 2: Delivery Fee Pricing Economics */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -225,10 +211,9 @@ export const AdminSettingsPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* FIXED_FLAT */}
           <div
             onClick={() => setFeeModeInput('FIXED_FLAT')}
-            className={`cursor-pointer rounded-xl border p-5 transition-all ${
+            className={`cursor-pointer rounded-xl border p-4 sm:p-5 transition-all ${
               feeModeInput === 'FIXED_FLAT'
                 ? 'border-primary-600 bg-primary-50/50 dark:border-primary-500 dark:bg-primary-950/20 ring-2 ring-primary-500/20'
                 : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
@@ -236,7 +221,7 @@ export const AdminSettingsPage: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Layers className="h-5 w-5 text-primary-600" />
+                <Layers className="h-5 w-5 text-primary-600 shrink-0" />
                 <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
                   Fixed Flat Fee Mode
                 </span>
@@ -260,10 +245,9 @@ export const AdminSettingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* DISTANCE_TIERED */}
           <div
             onClick={() => setFeeModeInput('DISTANCE_TIERED')}
-            className={`cursor-pointer rounded-xl border p-5 transition-all ${
+            className={`cursor-pointer rounded-xl border p-4 sm:p-5 transition-all ${
               feeModeInput === 'DISTANCE_TIERED'
                 ? 'border-primary-600 bg-primary-50/50 dark:border-primary-500 dark:bg-primary-950/20 ring-2 ring-primary-500/20'
                 : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
@@ -271,7 +255,7 @@ export const AdminSettingsPage: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Truck className="h-5 w-5 text-emerald-600" />
+                <Truck className="h-5 w-5 text-emerald-600 shrink-0" />
                 <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
                   Distance-Tiered Dynamic Mode
                 </span>
@@ -281,7 +265,7 @@ export const AdminSettingsPage: React.FC = () => {
             <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
               Base fee for initial 1.5 km plus incremental per-kilometer charge computed via PostGIS / Haversine.
             </p>
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Base Fee (৳)
@@ -311,8 +295,7 @@ export const AdminSettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Section 3: Financial Settlements & CSV Statement Export */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-6">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -323,64 +306,67 @@ export const AdminSettingsPage: React.FC = () => {
               Platform commission ledger reconciliations (15% rate) and net payable calculations
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               variant="outline"
-              className="gap-2"
               isLoading={isExporting}
               onClick={handleExportCsv}
+              leftIcon={<Download className="h-4 w-4" />}
             >
-              <Download className="h-4 w-4" />
               Export Statement CSV
             </Button>
             <Button
               size="sm"
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white border-transparent"
               onClick={() => {
                 setSettleSuccessMessage(null);
                 setSettleNotes('');
                 setIsSettleModalOpen(true);
               }}
+              leftIcon={<CheckCircle2 className="h-4 w-4" />}
             >
-              <CheckCircle2 className="h-4 w-4" />
               Run Settlement Cycle
             </Button>
           </div>
         </div>
 
-        {/* Financial KPI Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-          <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Settled Orders</span>
-            <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{totalOrders}</div>
-          </div>
-          <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Gross Sales Volume</span>
-            <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">৳{totalGross.toFixed(2)}</div>
-          </div>
-          <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Platform Cut (15%)</span>
-            <div className="mt-1 text-2xl font-bold text-primary-600 dark:text-primary-400">৳{totalCommission.toFixed(2)}</div>
-          </div>
-          <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Net Vendor Payable</span>
-            <div className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">৳{totalPayable.toFixed(2)}</div>
-          </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Settled Orders"
+            value={totalOrders}
+            subtitle="lifecycle completed"
+          />
+          <StatCard
+            title="Gross Sales Volume"
+            value={`৳${totalGross.toFixed(2)}`}
+            subtitle="total order values"
+          />
+          <StatCard
+            title="Platform Cut (15%)"
+            value={`৳${totalCommission.toFixed(2)}`}
+            subtitle="platform earnings"
+            iconColorClass="text-primary-600 bg-primary-50 dark:bg-primary-950/50"
+          />
+          <StatCard
+            title="Net Vendor Payable"
+            value={`৳${totalPayable.toFixed(2)}`}
+            subtitle="pending disbursement"
+            iconColorClass="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50"
+          />
         </div>
 
-        {/* Settlements Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="min-w-[640px] w-full text-left text-xs">
             <thead className="border-b border-slate-100 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
               <tr>
-                <th className="py-3 px-3 font-semibold">Store Outlet</th>
-                <th className="py-3 px-3 font-semibold">Brand</th>
-                <th className="py-3 px-3 font-semibold text-center">Orders</th>
-                <th className="py-3 px-3 font-semibold text-right">Gross Sales</th>
-                <th className="py-3 px-3 font-semibold text-right">Commission (15%)</th>
-                <th className="py-3 px-3 font-semibold text-right">Net Payable</th>
-                <th className="py-3 px-3 font-semibold text-center">Status</th>
+                <th className="py-3 px-3 font-semibold whitespace-nowrap">Store Outlet</th>
+                <th className="py-3 px-3 font-semibold whitespace-nowrap">Brand</th>
+                <th className="py-3 px-3 font-semibold text-center whitespace-nowrap">Orders</th>
+                <th className="py-3 px-3 font-semibold text-right whitespace-nowrap">Gross Sales</th>
+                <th className="py-3 px-3 font-semibold text-right whitespace-nowrap">Commission (15%)</th>
+                <th className="py-3 px-3 font-semibold text-right whitespace-nowrap">Net Payable</th>
+                <th className="py-3 px-3 font-semibold text-center whitespace-nowrap">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -392,26 +378,26 @@ export const AdminSettingsPage: React.FC = () => {
                 </tr>
               ) : (
                 settlements.map((statement) => (
-                  <tr key={statement.vendorId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                    <td className="py-3.5 px-3 font-semibold text-slate-900 dark:text-slate-100">
+                  <tr key={statement.vendorId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td className="py-3.5 px-3 font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                       {statement.vendorName}
                     </td>
-                    <td className="py-3.5 px-3 text-slate-600 dark:text-slate-400">
+                    <td className="py-3.5 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                       {statement.brandName}
                     </td>
-                    <td className="py-3.5 px-3 text-center font-medium">
+                    <td className="py-3.5 px-3 text-center font-medium whitespace-nowrap">
                       {statement.totalOrders}
                     </td>
-                    <td className="py-3.5 px-3 text-right font-medium text-slate-900 dark:text-slate-100">
+                    <td className="py-3.5 px-3 text-right font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
                       ৳{statement.grossSales.toFixed(2)}
                     </td>
-                    <td className="py-3.5 px-3 text-right text-rose-600 dark:text-rose-400 font-medium">
+                    <td className="py-3.5 px-3 text-right text-rose-600 dark:text-rose-400 font-medium whitespace-nowrap">
                       -৳{statement.platformCommission.toFixed(2)}
                     </td>
-                    <td className="py-3.5 px-3 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3.5 px-3 text-right font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                       ৳{statement.netVendorPayable.toFixed(2)}
                     </td>
-                    <td className="py-3.5 px-3 text-center">
+                    <td className="py-3.5 px-3 text-center whitespace-nowrap">
                       <Badge variant="success">Reconciled</Badge>
                     </td>
                   </tr>
@@ -421,7 +407,6 @@ export const AdminSettingsPage: React.FC = () => {
           </table>
         </div>
 
-        {/* Historical Settlement Batches */}
         <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
           <div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -434,16 +419,16 @@ export const AdminSettingsPage: React.FC = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="min-w-[700px] w-full text-left text-xs">
               <thead className="border-b border-slate-100 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                 <tr>
-                  <th className="py-2.5 px-3 font-semibold">Batch Number</th>
-                  <th className="py-2.5 px-3 font-semibold text-center">Orders</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Vendor Payout</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Rider Payout</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Platform Margin</th>
-                  <th className="py-2.5 px-3 font-semibold text-center">Status</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Executed At</th>
+                  <th className="py-2.5 px-3 font-semibold whitespace-nowrap">Batch Number</th>
+                  <th className="py-2.5 px-3 font-semibold text-center whitespace-nowrap">Orders</th>
+                  <th className="py-2.5 px-3 font-semibold text-right whitespace-nowrap">Vendor Payout</th>
+                  <th className="py-2.5 px-3 font-semibold text-right whitespace-nowrap">Rider Payout</th>
+                  <th className="py-2.5 px-3 font-semibold text-right whitespace-nowrap">Platform Margin</th>
+                  <th className="py-2.5 px-3 font-semibold text-center whitespace-nowrap">Status</th>
+                  <th className="py-2.5 px-3 font-semibold text-right whitespace-nowrap">Executed At</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -455,26 +440,26 @@ export const AdminSettingsPage: React.FC = () => {
                   </tr>
                 ) : (
                   batches.map((batch) => (
-                    <tr key={batch.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                      <td className="py-3 px-3 font-mono font-semibold text-primary-600 dark:text-primary-400">
+                    <tr key={batch.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="py-3 px-3 font-mono font-semibold text-primary-600 dark:text-primary-400 whitespace-nowrap">
                         {batch.batchNumber}
                       </td>
-                      <td className="py-3 px-3 text-center font-medium">
+                      <td className="py-3 px-3 text-center font-medium whitespace-nowrap">
                         {batch.totalOrders}
                       </td>
-                      <td className="py-3 px-3 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                      <td className="py-3 px-3 text-right font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                         ৳{Number(batch.totalVendorPayout).toFixed(2)}
                       </td>
-                      <td className="py-3 px-3 text-right font-medium text-blue-600 dark:text-blue-400">
+                      <td className="py-3 px-3 text-right font-medium text-sky-600 dark:text-sky-400 whitespace-nowrap">
                         ৳{Number(batch.totalRiderPayout).toFixed(2)}
                       </td>
-                      <td className="py-3 px-3 text-right font-bold text-slate-900 dark:text-slate-100">
+                      <td className="py-3 px-3 text-right font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                         ৳{Number(batch.totalPlatformMargin).toFixed(2)}
                       </td>
-                      <td className="py-3 px-3 text-center">
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
                         <Badge variant="success">{batch.status}</Badge>
                       </td>
-                      <td className="py-3 px-3 text-right text-slate-500">
+                      <td className="py-3 px-3 text-right text-slate-500 whitespace-nowrap">
                         {new Date(batch.executedAt).toLocaleString()}
                       </td>
                     </tr>
@@ -486,11 +471,27 @@ export const AdminSettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal: Run Settlement Cycle */}
       <Modal
         isOpen={isSettleModalOpen}
         onClose={() => setIsSettleModalOpen(false)}
         title="Execute Financial Settlement Cycle"
+        footer={
+          <div className="flex justify-end gap-2 w-full">
+            <Button variant="outline" size="sm" onClick={() => setIsSettleModalOpen(false)}>
+              {settleSuccessMessage ? 'Close' : 'Cancel'}
+            </Button>
+            {!settleSuccessMessage && (
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white border-transparent"
+                isLoading={executeSettlementMutation.isPending}
+                onClick={() => executeSettlementMutation.mutate(settleNotes)}
+              >
+                Confirm & Run Cycle
+              </Button>
+            )}
+          </div>
+        }
       >
         <div className="space-y-4">
           <p className="text-xs text-slate-600 dark:text-slate-300">
@@ -514,22 +515,6 @@ export const AdminSettingsPage: React.FC = () => {
               onChange={(e) => setSettleNotes(e.target.value)}
               placeholder="e.g. Weekly vendor payout cycle for Sep 24"
             />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <Button variant="outline" size="sm" onClick={() => setIsSettleModalOpen(false)}>
-              {settleSuccessMessage ? 'Close' : 'Cancel'}
-            </Button>
-            {!settleSuccessMessage && (
-              <Button
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                isLoading={executeSettlementMutation.isPending}
-                onClick={() => executeSettlementMutation.mutate(settleNotes)}
-              >
-                Confirm & Run Cycle
-              </Button>
-            )}
           </div>
         </div>
       </Modal>

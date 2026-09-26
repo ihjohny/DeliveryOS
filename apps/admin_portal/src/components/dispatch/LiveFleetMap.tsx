@@ -21,20 +21,17 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
 
-  // Default Pilot coordinates: Gulshan / Banani, Dhaka
   const defaultCenter: [number, number] = [23.7925, 90.4078];
 
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Initialize Leaflet map instance
     const map = L.map(mapContainerRef.current, {
       center: defaultCenter,
       zoom: 13,
       zoomControl: true,
     });
 
-    // Free OpenStreetMap tile layer (zero API key required)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
@@ -44,13 +41,17 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
     markersLayerRef.current = layerGroup;
     mapInstanceRef.current = map;
 
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+
     return () => {
+      clearTimeout(timer);
       map.remove();
       mapInstanceRef.current = null;
     };
   }, []);
 
-  // Update Markers whenever fleet or unassigned orders change
   useEffect(() => {
     const map = mapInstanceRef.current;
     const layer = markersLayerRef.current;
@@ -59,9 +60,7 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
     layer.clearLayers();
     const bounds: L.LatLngExpression[] = [];
 
-    // 1. Render Courier Markers
     fleet.forEach((rider) => {
-      // Default to Banani/Gulshan offset if no GPS coordinates
       const lat = rider.latitude || 23.7937;
       const lng = rider.longitude || 90.4066;
       bounds.push([lat, lng]);
@@ -95,7 +94,7 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
             cursor: pointer;
           ">
             <span style="font-size: 14px;">🛵</span>
-            ${isTrip ? `<span style="position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background-color: #38bdf8; border: 2px solid white; border-radius: 50%; animate: pulse;"></span>` : ''}
+            ${isTrip ? `<span style="position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background-color: #38bdf8; border: 2px solid white; border-radius: 50%;"></span>` : ''}
           </div>
         `,
         iconSize: [32, 32],
@@ -127,11 +126,13 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
       marker.addTo(layer);
     });
 
-    // 2. Render Unassigned Order Pickup Targets
-    unassignedOrders.forEach((order) => {
-      // Default to restaurant cluster coordinates if snapshot coords absent
-      const lat = 23.7915;
-      const lng = 90.4042;
+    const baseLat = 23.7915;
+    const baseLng = 90.4042;
+    unassignedOrders.forEach((order, index) => {
+      const offsetAngle = (index * 2 * Math.PI) / Math.max(1, unassignedOrders.length);
+      const radius = 0.002 + (index % 3) * 0.001;
+      const lat = baseLat + radius * Math.sin(offsetAngle);
+      const lng = baseLng + radius * Math.cos(offsetAngle);
       bounds.push([lat, lng]);
 
       const orderIcon = L.divIcon({
@@ -148,7 +149,6 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-            animation: bounce 1.5s infinite;
           ">
             <span style="font-size: 13px;">📦</span>
           </div>
@@ -188,17 +188,15 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
       marker.addTo(layer);
     });
 
-    // Fit bounds if multiple points exist
     if (bounds.length > 1 && !selectedRiderId) {
       map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40], maxZoom: 15 });
     }
   }, [fleet, unassignedOrders, selectedRiderId, onSelectRider, navigate]);
 
   return (
-    <div className="relative w-full h-[400px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-inner">
+    <div className="relative w-full h-[300px] sm:h-[380px] lg:h-[440px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-inner">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
-      {/* Map Legend Overlay */}
-      <div className="absolute bottom-3 left-3 z-10 bg-white/90 backdrop-blur-sm dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 shadow-sm text-[11px] space-y-1.5">
+      <div className="absolute bottom-3 left-3 z-[500] bg-white/95 backdrop-blur-sm dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 shadow-md text-[11px] space-y-1.5">
         <div className="font-semibold text-slate-700 dark:text-slate-300">Fleet Legend</div>
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />

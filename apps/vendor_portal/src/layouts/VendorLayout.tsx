@@ -65,14 +65,14 @@ const VendorLayoutInner: React.FC = () => {
     soundEngine.setMuted(nextMuted);
     setIsMuted(nextMuted);
     if (!nextMuted) {
-      soundEngine.playChime(); // Audio test confirmation chime
+      soundEngine.playChime();
     }
   };
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Sidebar Desktop */}
-      <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:flex">
+      {/* Desktop Sidebar */}
+      <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:flex shrink-0">
         <div className="flex h-16 items-center gap-3 border-b border-slate-100 px-6 dark:border-slate-800">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500 text-white shadow-md">
             <UtensilsCrossed className="h-5 w-5" />
@@ -95,9 +95,9 @@ const VendorLayoutInner: React.FC = () => {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-all ${
+                className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
                   active
-                    ? 'bg-amber-50 text-amber-800 shadow-sm dark:bg-amber-950/50 dark:text-amber-400 font-semibold'
+                    ? 'bg-amber-50 text-amber-800 shadow-sm dark:bg-amber-950/50 dark:text-amber-400 font-bold'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
                 }`}
               >
@@ -108,7 +108,6 @@ const VendorLayoutInner: React.FC = () => {
           })}
         </nav>
 
-        {/* Outlet Scope & User Info */}
         <div className="border-t border-slate-100 p-4 dark:border-slate-800">
           <div className="mb-3 space-y-1">
             {user?.outletScope === 'ALL_OUTLETS_MASTER' ? (
@@ -122,7 +121,7 @@ const VendorLayoutInner: React.FC = () => {
             )}
           </div>
           <div className="flex items-center gap-3 mb-3">
-            <div className="h-8 w-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
+            <div className="h-9 w-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0">
               {user?.fullName?.charAt(0) || 'V'}
             </div>
             <div className="flex-1 truncate">
@@ -132,7 +131,7 @@ const VendorLayoutInner: React.FC = () => {
           </div>
           <button
             onClick={logout}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30 transition-colors"
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30 transition-colors"
           >
             <LogOut className="h-4 w-4" />
             <span>{t('common.logout')}</span>
@@ -140,28 +139,26 @@ const VendorLayoutInner: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         {/* Top Navbar */}
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:px-6">
-          <div className="flex items-center gap-3">
+        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-3 sm:px-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 lg:hidden"
+              className="rounded-xl p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 lg:hidden shrink-0"
+              aria-label="Toggle Navigation Menu"
             >
               {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            {/* Dynamic Outlet Switcher in Navbar */}
             <OutletSwitcher />
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4">
-            {/* 1-Click Rush Hour Pause Toggle Button */}
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {activeOutlet && activeOutlet.id !== 'ALL' && (
               <button
                 onClick={toggleRushPause}
                 disabled={isTogglingRush}
-                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all border shadow-sm ${
+                className={`flex items-center gap-1.5 rounded-xl px-2.5 sm:px-3 py-1.5 min-h-[38px] text-xs font-bold transition-all border shadow-xs ${
                   activeOutlet.isBusy
                     ? 'border-amber-500 bg-amber-500 text-slate-950 hover:bg-amber-400'
                     : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
@@ -174,8 +171,8 @@ const VendorLayoutInner: React.FC = () => {
               >
                 {activeOutlet.isBusy ? (
                   <>
-                    <Flame className="h-3.5 w-3.5 text-slate-950 animate-bounce" />
-                    <span>{isTogglingRush ? 'Resuming...' : 'Rush Paused (Resume)'}</span>
+                    <Flame className="h-3.5 w-3.5 text-slate-950 animate-pulse" />
+                    <span>{isTogglingRush ? 'Resuming...' : 'Rush Paused'}</span>
                   </>
                 ) : (
                   <>
@@ -186,10 +183,9 @@ const VendorLayoutInner: React.FC = () => {
               </button>
             )}
 
-            {/* Audio Alert Trigger / Toggle Button */}
             <button
               onClick={toggleSound}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors border ${
+              className={`flex items-center gap-1.5 rounded-xl px-2.5 sm:px-3 py-1.5 min-h-[38px] text-xs font-semibold transition-colors border ${
                 isMuted
                   ? 'border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
                   : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
@@ -197,15 +193,16 @@ const VendorLayoutInner: React.FC = () => {
               title={isMuted ? 'Click to enable order sound chimes' : 'Sound active. Click to mute'}
             >
               {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">
+              <span className="hidden md:inline">
                 {isMuted ? t('kds.audioAlertMuted') : t('kds.audioAlertActive')}
               </span>
             </button>
 
             <button
               onClick={() => soundEngine.playChime()}
-              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
               title="Test chime tone"
+              aria-label="Test chime tone"
             >
               <BellRing className="h-4 w-4" />
             </button>
@@ -214,26 +211,26 @@ const VendorLayoutInner: React.FC = () => {
           </div>
         </header>
 
-        {/* Emergency Pause Active Warning Banner */}
+        {/* Emergency Pause Warning Banner */}
         {activeOutlet?.isBusy && (
-          <div className="flex items-center justify-between bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-inner">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-inner gap-2">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
+              <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>
                 Emergency Rush Hour Pause Active for {activeOutlet.name} — Incoming customer orders are temporarily blocked.
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={toggleRushPause}
                 disabled={isTogglingRush}
-                className="rounded bg-slate-950 text-white px-2.5 py-1 text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
+                className="rounded-lg bg-slate-950 text-white px-3 py-1.5 text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
               >
                 {isTogglingRush ? 'Resuming...' : 'Resume Orders Now'}
               </button>
               <Link
                 to="/settings"
-                className="rounded bg-slate-950/20 px-2 py-1 text-slate-950 hover:bg-slate-950/30 transition-colors"
+                className="rounded-lg bg-slate-950/15 px-2.5 py-1.5 text-slate-950 hover:bg-slate-950/25 transition-colors font-semibold"
               >
                 Manage
               </Link>
@@ -243,7 +240,7 @@ const VendorLayoutInner: React.FC = () => {
 
         {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
-          <div className="border-b border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 lg:hidden">
+          <div className="border-b border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 lg:hidden shadow-lg">
             <nav className="space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -253,9 +250,9 @@ const VendorLayoutInner: React.FC = () => {
                     key={item.href}
                     to={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium ${
+                    className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium ${
                       active
-                        ? 'bg-amber-50 text-amber-700 font-semibold'
+                        ? 'bg-amber-50 text-amber-800 font-bold'
                         : 'text-slate-600 hover:bg-slate-50'
                     }`}
                   >
@@ -269,7 +266,7 @@ const VendorLayoutInner: React.FC = () => {
                   setIsMobileMenuOpen(false);
                   logout();
                 }}
-                className="flex w-full items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50"
+                className="flex w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50"
               >
                 <LogOut className="h-4 w-4" />
                 <span>{t('common.logout')}</span>
@@ -278,7 +275,7 @@ const VendorLayoutInner: React.FC = () => {
           </div>
         )}
 
-        {/* Page Content */}
+        {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>

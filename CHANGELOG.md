@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.2] - 2026-09-26
+
+### Added
+- **Reusable Web Component Suite**:
+  - Extracted standardized `PageHeader`, `StatCard`, and `EmptyState` across `apps/admin_portal`.
+  - Extracted standardized `PageHeader`, `StatCard`, and accessible `StockToggleSwitch` across `apps/vendor_portal`.
+
+### Fixed
+- **Super Admin Console Layout & Map Overlay**:
+  - Refactored `Modal.tsx` to prevent viewport clipping and support smooth internal body scrolling.
+  - Wrapped tabular views in `overflow-x-auto` to prevent column squishing on mobile and tablet screens.
+  - Added slide-over navigation drawer in `AdminLayout.tsx` for responsive mobile usage.
+  - Fixed `LiveFleetMap.tsx` legend overlay z-index (`z-[500]`), container resize invalidation, and radial marker jitter for overlapping coordinates.
+- **Vendor Kitchen Display System (KDS) Touch Ergonomics**:
+  - Transformed 3-Lane Kanban pipeline into a horizontally scrollable snap-track with minimum lane widths for tablet devices (768px-1024px) plus mobile quick-lane switcher tabs.
+  - Upgraded kitchen action buttons, timers, and prep-time selectors to touch-friendly heights (`>= 44px`).
+  - Added text truncation and responsive constraints to `OutletSwitcher` to eliminate top bar header overflows.
+
+### Changed
+- Enforced strict TypeScript with zero raw `any` types across both web portals.
+- Configured Rollup manual chunking in `apps/admin_portal/vite.config.ts`, eliminating oversized bundle warnings.
+- Cleaned trivial code comments across all portal components per AGENT_RULES.md § 3.6.
+
+---
+
 ## [1.4.1] - 2026-09-26
 
 ### Fixed

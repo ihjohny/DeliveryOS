@@ -4,15 +4,8 @@ import {
   Store,
   Plus,
   Users,
-  ShieldCheck,
-  CheckCircle2,
-  AlertTriangle,
-  Phone,
-  Clock,
-  Percent,
   Edit2,
   Power,
-  MapPin,
 } from 'lucide-react';
 import adminApi, { AdminVendor } from '../../services/adminApi';
 import { Badge } from '../../components/ui/Badge';
@@ -20,11 +13,12 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { PageHeader } from '../../components/common/PageHeader';
+import { EmptyState } from '../../components/common/EmptyState';
 
 export const AdminVendorsPage: React.FC = () => {
   const queryClient = useQueryClient();
 
-  // Create Vendor State
   const [isCreateVendorModalOpen, setIsCreateVendorModalOpen] = useState(false);
   const [vendorName, setVendorName] = useState('');
   const [addressText, setAddressText] = useState('');
@@ -34,7 +28,6 @@ export const AdminVendorsPage: React.FC = () => {
   const [latitude, setLatitude] = useState('23.7925');
   const [longitude, setLongitude] = useState('90.4078');
 
-  // Edit Vendor State
   const [editingVendor, setEditingVendor] = useState<AdminVendor | null>(null);
   const [editName, setEditName] = useState('');
   const [editContactPhone, setEditContactPhone] = useState('');
@@ -42,19 +35,16 @@ export const AdminVendorsPage: React.FC = () => {
   const [editDefaultPrepTime, setEditDefaultPrepTime] = useState('20');
   const [editDeliveryRadius, setEditDeliveryRadius] = useState('5');
 
-  // Assign Staff State
   const [isAssignStaffModalOpen, setIsAssignStaffModalOpen] = useState(false);
   const [selectedVendorForStaff, setSelectedVendorForStaff] = useState<AdminVendor | null>(null);
   const [staffUserId, setStaffUserId] = useState('');
   const [staffScope, setStaffScope] = useState<'PARTICULAR_OUTLET' | 'ALL_OUTLETS_MASTER'>('PARTICULAR_OUTLET');
 
-  // Queries
   const { data: vendors = [], isLoading } = useQuery({
     queryKey: ['admin-vendors'],
     queryFn: adminApi.getVendors,
   });
 
-  // Mutations
   const createVendorMutation = useMutation({
     mutationFn: adminApi.createVendor,
     onSuccess: () => {
@@ -112,31 +102,40 @@ export const AdminVendorsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
-            <Store className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-            Merchant Outlets & Staff Governance
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Onboard new physical outlets, set commission terms, and assign multi-tier management scopes
-          </p>
-        </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setIsCreateVendorModalOpen(true)}>
-          <Plus className="h-4 w-4" /> Onboard New Outlet
-        </Button>
-      </div>
+      <PageHeader
+        title="Merchant Outlets & Staff Governance"
+        subtitle="Onboard new physical outlets, set commission terms, and assign multi-tier management scopes"
+        icon={Store}
+        actions={
+          <Button
+            size="sm"
+            onClick={() => setIsCreateVendorModalOpen(true)}
+            leftIcon={<Plus className="h-4 w-4" />}
+          >
+            Onboard New Outlet
+          </Button>
+        }
+      />
 
-      {/* Grid of Outlets */}
       {isLoading ? (
         <div className="py-16 text-center">
-          <LoadingSpinner size="lg" />
+          <LoadingSpinner size="lg" label="Loading merchant outlets..." />
         </div>
       ) : vendors.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 p-12 text-center text-xs text-slate-500">
-          No merchant outlets found.
-        </div>
+        <EmptyState
+          icon={Store}
+          title="No merchant outlets"
+          message="No merchant outlets registered yet. Onboard your first outlet to start serving customers."
+          action={
+            <Button
+              size="sm"
+              onClick={() => setIsCreateVendorModalOpen(true)}
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              Onboard Outlet
+            </Button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {vendors.map((vendor) => (
@@ -155,7 +154,7 @@ export const AdminVendorsPage: React.FC = () => {
                     )}
                     <p className="mt-1 text-xs text-slate-500">{vendor.addressText}</p>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1 shrink-0">
                     {vendor.isActive ? (
                       <Badge variant="success">Active</Badge>
                     ) : (
@@ -167,7 +166,6 @@ export const AdminVendorsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Terms Bar */}
                 <div className="mt-4 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-2.5 text-center text-xs dark:bg-slate-800/50">
                   <div>
                     <span className="text-slate-400 block text-[10px]">Commission</span>
@@ -183,7 +181,6 @@ export const AdminVendorsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Staff Governance Section */}
                 <div className="mt-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
@@ -193,7 +190,7 @@ export const AdminVendorsPage: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-xs h-6 px-2 text-primary-600"
+                      className="text-xs h-6 px-2 text-primary-600 dark:text-primary-400"
                       onClick={() => {
                         setSelectedVendorForStaff(vendor);
                         setIsAssignStaffModalOpen(true);
@@ -236,11 +233,11 @@ export const AdminVendorsPage: React.FC = () => {
                   <span className="mx-2">•</span>
                   <span>{vendor.totalProducts} Catalog Dishes</span>
                 </div>
-                <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                <div className="inline-flex items-center gap-1.5 self-end sm:self-auto">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 px-2 text-xs gap-1"
+                    className="h-7 px-2 text-xs"
                     onClick={() => {
                       setEditingVendor(vendor);
                       setEditName(vendor.name);
@@ -249,17 +246,17 @@ export const AdminVendorsPage: React.FC = () => {
                       setEditDefaultPrepTime(String(vendor.defaultPrepTimeMinutes));
                       setEditDeliveryRadius(String(vendor.deliveryRadiusKm || 5));
                     }}
+                    leftIcon={<Edit2 className="h-3 w-3" />}
                   >
-                    <Edit2 className="h-3 w-3" />
                     Edit
                   </Button>
                   <Button
                     variant={vendor.isActive ? 'outline' : 'primary'}
                     size="sm"
-                    className={`h-7 px-2 text-xs gap-1 ${
+                    className={`h-7 px-2 text-xs ${
                       vendor.isActive
                         ? 'border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent'
                     }`}
                     isLoading={toggleStatusMutation.isPending && toggleStatusMutation.variables?.vendorId === vendor.id}
                     onClick={() =>
@@ -268,8 +265,8 @@ export const AdminVendorsPage: React.FC = () => {
                         isActive: !vendor.isActive,
                       })
                     }
+                    leftIcon={<Power className="h-3 w-3" />}
                   >
-                    <Power className="h-3 w-3" />
                     {vendor.isActive ? 'Suspend' : 'Activate'}
                   </Button>
                 </div>
@@ -279,11 +276,35 @@ export const AdminVendorsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal: Onboard New Outlet */}
       <Modal
         isOpen={isCreateVendorModalOpen}
         onClose={() => setIsCreateVendorModalOpen(false)}
         title="Onboard New Merchant Outlet"
+        footer={
+          <div className="flex justify-end gap-2 w-full">
+            <Button variant="outline" size="sm" onClick={() => setIsCreateVendorModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={!vendorName || !addressText || !contactPhone}
+              isLoading={createVendorMutation.isPending}
+              onClick={() =>
+                createVendorMutation.mutate({
+                  name: vendorName,
+                  addressText,
+                  contactPhone,
+                  commissionRate: parseFloat(commissionRate) || 15,
+                  defaultPrepTimeMinutes: parseInt(defaultPrepTime, 10) || 20,
+                  latitude: parseFloat(latitude) || 23.7925,
+                  longitude: parseFloat(longitude) || 90.4078,
+                })
+              }
+            >
+              Onboard Outlet
+            </Button>
+          </div>
+        }
       >
         <div className="space-y-4">
           <div>
@@ -308,7 +329,7 @@ export const AdminVendorsPage: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Store Phone
@@ -332,7 +353,7 @@ export const AdminVendorsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 GPS Latitude
@@ -354,39 +375,37 @@ export const AdminVendorsPage: React.FC = () => {
               />
             </div>
           </div>
-
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <Button variant="outline" size="sm" onClick={() => setIsCreateVendorModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              disabled={!vendorName || !addressText || !contactPhone}
-              isLoading={createVendorMutation.isPending}
-              onClick={() =>
-                createVendorMutation.mutate({
-                  name: vendorName,
-                  addressText,
-                  contactPhone,
-                  commissionRate: parseFloat(commissionRate) || 15,
-                  defaultPrepTimeMinutes: parseInt(defaultPrepTime, 10) || 20,
-                  latitude: parseFloat(latitude) || 23.7925,
-                  longitude: parseFloat(longitude) || 90.4078,
-                })
-              }
-            >
-              Onboard Outlet
-            </Button>
-          </div>
         </div>
       </Modal>
 
-      {/* Modal: Assign Staff */}
       {selectedVendorForStaff && (
         <Modal
           isOpen={isAssignStaffModalOpen}
           onClose={() => setIsAssignStaffModalOpen(false)}
           title={`Assign Staff User — ${selectedVendorForStaff.name}`}
+          footer={
+            <div className="flex justify-end gap-2 w-full">
+              <Button variant="outline" size="sm" onClick={() => setIsAssignStaffModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={!staffUserId}
+                isLoading={assignStaffMutation.isPending}
+                onClick={() =>
+                  assignStaffMutation.mutate({
+                    vendorId: selectedVendorForStaff.id,
+                    data: {
+                      userId: staffUserId,
+                      scope: staffScope,
+                    },
+                  })
+                }
+              >
+                Assign Staff Scope
+              </Button>
+            </div>
+          }
         >
           <div className="space-y-4">
             <div>
@@ -406,10 +425,10 @@ export const AdminVendorsPage: React.FC = () => {
               </label>
               <div className="space-y-2">
                 <label
-                  className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer ${
+                  className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-colors ${
                     staffScope === 'PARTICULAR_OUTLET'
                       ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/20'
-                      : 'border-slate-200 hover:bg-slate-50'
+                      : 'border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <input
@@ -431,10 +450,10 @@ export const AdminVendorsPage: React.FC = () => {
                 </label>
 
                 <label
-                  className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer ${
+                  className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-colors ${
                     staffScope === 'ALL_OUTLETS_MASTER'
                       ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/20'
-                      : 'border-slate-200 hover:bg-slate-50'
+                      : 'border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <input
@@ -456,38 +475,40 @@ export const AdminVendorsPage: React.FC = () => {
                 </label>
               </div>
             </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <Button variant="outline" size="sm" onClick={() => setIsAssignStaffModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                disabled={!staffUserId}
-                isLoading={assignStaffMutation.isPending}
-                onClick={() =>
-                  assignStaffMutation.mutate({
-                    vendorId: selectedVendorForStaff.id,
-                    data: {
-                      userId: staffUserId,
-                      scope: staffScope,
-                    },
-                  })
-                }
-              >
-                Assign Staff Scope
-              </Button>
-            </div>
           </div>
         </Modal>
       )}
 
-      {/* Modal: Edit Merchant Outlet */}
       {editingVendor && (
         <Modal
           isOpen={Boolean(editingVendor)}
           onClose={() => setEditingVendor(null)}
           title={`Edit Outlet: ${editingVendor.name}`}
+          footer={
+            <div className="flex justify-end gap-2 w-full">
+              <Button variant="outline" size="sm" onClick={() => setEditingVendor(null)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                isLoading={updateVendorMutation.isPending}
+                onClick={() =>
+                  updateVendorMutation.mutate({
+                    vendorId: editingVendor.id,
+                    data: {
+                      name: editName,
+                      contactPhone: editContactPhone,
+                      commissionRate: parseFloat(editCommissionRate),
+                      defaultPrepTimeMinutes: parseInt(editDefaultPrepTime, 10),
+                      deliveryRadiusKm: parseFloat(editDeliveryRadius),
+                    },
+                  })
+                }
+              >
+                Save Changes
+              </Button>
+            </div>
+          }
         >
           <div className="space-y-4">
             <div>
@@ -512,7 +533,7 @@ export const AdminVendorsPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Commission (%)
@@ -546,30 +567,6 @@ export const AdminVendorsPage: React.FC = () => {
                   placeholder="5"
                 />
               </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <Button variant="outline" size="sm" onClick={() => setEditingVendor(null)}>
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                isLoading={updateVendorMutation.isPending}
-                onClick={() =>
-                  updateVendorMutation.mutate({
-                    vendorId: editingVendor.id,
-                    data: {
-                      name: editName,
-                      contactPhone: editContactPhone,
-                      commissionRate: parseFloat(editCommissionRate),
-                      defaultPrepTimeMinutes: parseInt(editDefaultPrepTime, 10),
-                      deliveryRadiusKm: parseFloat(editDeliveryRadius),
-                    },
-                  })
-                }
-              >
-                Save Changes
-              </Button>
             </div>
           </div>
         </Modal>

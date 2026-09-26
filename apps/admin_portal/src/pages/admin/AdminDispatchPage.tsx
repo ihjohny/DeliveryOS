@@ -7,13 +7,10 @@ import {
   UserCheck,
   AlertTriangle,
   CheckCircle2,
-  DollarSign,
   Bike,
   RefreshCw,
   Search,
-  Filter,
   ArrowRight,
-  ShieldAlert,
   Clock,
 } from 'lucide-react';
 import adminApi, { FleetRider } from '../../services/adminApi';
@@ -25,6 +22,9 @@ import { Modal } from '../../components/ui/Modal';
 import { Alert } from '../../components/ui/Alert';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { LiveFleetMap } from '../../components/dispatch/LiveFleetMap';
+import { PageHeader } from '../../components/common/PageHeader';
+import { StatCard } from '../../components/common/StatCard';
+import { EmptyState } from '../../components/common/EmptyState';
 
 export const AdminDispatchPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -53,7 +53,6 @@ export const AdminDispatchPage: React.FC = () => {
     refetchInterval: 30000,
   });
 
-  // Real-time WebSocket Listeners for Dispatch and Fleet Updates
   useEffect(() => {
     const socket = getSocket();
 
@@ -128,95 +127,69 @@ export const AdminDispatchPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
-            <Navigation className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-            Live Fleet Radar & Dispatch
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Real-time courier GPS oversight, active trips, and COD cash safety thresholds
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
+      <PageHeader
+        title="Live Fleet Radar & Dispatch"
+        subtitle="Real-time courier GPS oversight, active trips, and COD cash safety thresholds"
+        icon={Navigation}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            leftIcon={<RefreshCw className="h-4 w-4" />}
+          >
             Refresh Fleet
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Metric Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Online Riders</span>
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{onlineCount}</span>
-            <span className="text-xs text-slate-500">/ {fleet.length} total</span>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">On Delivery</span>
-            <Bike className="h-4 w-4 text-sky-500" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-sky-600 dark:text-sky-400">{onTripCount}</span>
-            <span className="text-xs text-slate-500">moving orders</span>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Idle & Ready</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{idleCount}</span>
-            <span className="text-xs text-slate-500">for dispatch</span>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cash Warnings</span>
-            <AlertTriangle className={`h-4 w-4 ${safetyWarningsCount > 0 ? 'text-amber-500 animate-bounce' : 'text-slate-400'}`} />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className={`text-2xl font-bold ${safetyWarningsCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-slate-100'}`}>
-              {safetyWarningsCount}
-            </span>
-            <span className="text-xs text-slate-500">near limit</span>
-          </div>
-        </div>
-
-        <div
-          onClick={() => setApprovalFilter('PENDING')}
-          className={`rounded-xl border p-4 shadow-sm cursor-pointer transition-all ${
-            approvalFilter === 'PENDING'
-              ? 'border-amber-400 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20'
-              : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800/60'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Applicants</span>
-            <Users className="h-4 w-4 text-amber-500" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">{pendingApplicantsCount}</span>
-            <span className="text-xs text-slate-500">pending review</span>
-          </div>
-        </div>
+        <StatCard
+          title="Online Riders"
+          value={onlineCount}
+          subtitle={`/ ${fleet.length} total`}
+          icon={Bike}
+          iconColorClass="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50"
+          isLoading={isLoading}
+        />
+        <StatCard
+          title="On Delivery"
+          value={onTripCount}
+          subtitle="moving orders"
+          icon={Bike}
+          iconColorClass="text-sky-600 bg-sky-50 dark:bg-sky-950/50"
+          isLoading={isLoading}
+        />
+        <StatCard
+          title="Idle & Ready"
+          value={idleCount}
+          subtitle="for dispatch"
+          icon={CheckCircle2}
+          iconColorClass="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50"
+          isLoading={isLoading}
+        />
+        <StatCard
+          title="Cash Warnings"
+          value={safetyWarningsCount}
+          subtitle="near limit"
+          icon={AlertTriangle}
+          iconColorClass={safetyWarningsCount > 0 ? 'text-amber-600 bg-amber-50 dark:bg-amber-950/50' : 'text-slate-400 bg-slate-100 dark:bg-slate-800'}
+          isLoading={isLoading}
+        />
+        <StatCard
+          title="Applicants"
+          value={pendingApplicantsCount}
+          subtitle="pending review"
+          icon={Users}
+          iconColorClass="text-amber-600 bg-amber-50 dark:bg-amber-950/50"
+          active={approvalFilter === 'PENDING'}
+          onClick={() => setApprovalFilter(approvalFilter === 'PENDING' ? 'ALL' : 'PENDING')}
+          isLoading={isLoading}
+        />
       </div>
 
-      {/* Live Geographic Fleet Radar Map */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-center justify-between mb-4">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <div>
             <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Navigation className="h-4 w-4 text-primary-600" />
@@ -226,7 +199,7 @@ export const AdminDispatchPage: React.FC = () => {
               Real-time telemetry showing {onlineCount} active couriers and {unassignedOrders.length} unassigned order pickup targets.
             </p>
           </div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800 self-start sm:self-auto">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Live Telemetry
           </span>
@@ -254,14 +227,11 @@ export const AdminDispatchPage: React.FC = () => {
         />
       </div>
 
-      {/* Main Grid: Interactive Map Radar & Telemetry Table */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left 2 Cols: Live Fleet List & Telemetry */}
         <div className="lg:col-span-2 space-y-4">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            {/* Filter Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-              <div className="flex flex-wrap items-center gap-1.5 pb-1 sm:pb-0">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {(['ALL', 'ONLINE', 'ON_TRIP', 'OFFLINE'] as const).map((s) => (
                   <button
                     key={s}
@@ -299,7 +269,7 @@ export const AdminDispatchPage: React.FC = () => {
               </div>
 
               <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search name, phone, vehicle..."
@@ -312,48 +282,48 @@ export const AdminDispatchPage: React.FC = () => {
 
             {isLoading ? (
               <div className="py-16 text-center">
-                <LoadingSpinner size="lg" />
-                <p className="mt-2 text-xs text-slate-500">Contacting fleet satellites...</p>
+                <LoadingSpinner size="lg" label="Contacting fleet satellites..." />
               </div>
             ) : filteredFleet.length === 0 ? (
-              <div className="py-12 text-center text-slate-500 text-xs">
-                No couriers match the current filter criteria.
-              </div>
+              <EmptyState
+                message="No couriers match the current filter criteria."
+                className="my-4"
+              />
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="min-w-full w-full text-left text-xs">
                   <thead className="border-b border-slate-100 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                     <tr>
-                      <th className="py-2.5 px-3 font-semibold">Courier</th>
-                      <th className="py-2.5 px-3 font-semibold">Vehicle</th>
-                      <th className="py-2.5 px-3 font-semibold">Approval</th>
-                      <th className="py-2.5 px-3 font-semibold">Status</th>
-                      <th className="py-2.5 px-3 font-semibold">Active Trip</th>
-                      <th className="py-2.5 px-3 font-semibold">Cash in Hand</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Actions</th>
+                      <th className="py-2.5 px-3 font-semibold whitespace-nowrap">Courier</th>
+                      <th className="py-2.5 px-3 font-semibold whitespace-nowrap">Vehicle</th>
+                      <th className="py-2.5 px-3 font-semibold whitespace-nowrap">Approval</th>
+                      <th className="py-2.5 px-3 font-semibold whitespace-nowrap">Status</th>
+                      <th className="py-2.5 px-3 font-semibold whitespace-nowrap">Active Trip</th>
+                      <th className="py-2.5 px-3 font-semibold whitespace-nowrap">Cash in Hand</th>
+                      <th className="py-2.5 px-3 font-semibold text-right whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {filteredFleet.map((rider) => (
                       <tr key={rider.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3 whitespace-nowrap">
                           <div className="font-semibold text-slate-900 dark:text-slate-100">{rider.riderName}</div>
                           <div className="text-[11px] text-slate-500">{rider.phone}</div>
                         </td>
-                        <td className="py-3 px-3 capitalize">
+                        <td className="py-3 px-3 capitalize whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             <Bike className="h-3.5 w-3.5 text-slate-400" />
                             <span>{rider.vehicleType}</span>
                           </div>
                         </td>
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3 whitespace-nowrap">
                           {rider.isApproved !== false ? (
                             <Badge variant="success">Approved</Badge>
                           ) : (
                             <Badge variant="warning">Pending Review</Badge>
                           )}
                         </td>
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3 whitespace-nowrap">
                           {rider.status === 'ONLINE' && (
                             <Badge variant="success">Idle & Ready</Badge>
                           )}
@@ -364,7 +334,7 @@ export const AdminDispatchPage: React.FC = () => {
                             <Badge variant="default">Offline</Badge>
                           )}
                         </td>
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3 whitespace-nowrap">
                           {rider.activeOrder ? (
                             <div className="text-[11px]">
                               <span className="font-semibold text-primary-600 dark:text-primary-400">
@@ -376,7 +346,7 @@ export const AdminDispatchPage: React.FC = () => {
                             <span className="text-slate-400 italic">None</span>
                           )}
                         </td>
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3 whitespace-nowrap">
                           <div className="flex items-center gap-1">
                             <span className={`font-semibold ${rider.cashSafetyWarning ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
                               ৳{rider.cashInHand}
@@ -387,8 +357,8 @@ export const AdminDispatchPage: React.FC = () => {
                             <span className="text-[10px] text-amber-500 font-medium">Near Limit</span>
                           )}
                         </td>
-                        <td className="py-3 px-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="py-3 px-3 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center justify-end gap-1.5">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -423,7 +393,7 @@ export const AdminDispatchPage: React.FC = () => {
                               {rider.isApproved !== false ? (
                                 'Suspend'
                               ) : (
-                                <span className="flex items-center gap-1">
+                                <span className="inline-flex items-center gap-1">
                                   <UserCheck className="h-3 w-3" />
                                   Approve Courier
                                 </span>
@@ -440,7 +410,6 @@ export const AdminDispatchPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Col: Unassigned Orders & Quick Dispatch Feed */}
         <div className="space-y-4">
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between mb-3">
@@ -452,10 +421,10 @@ export const AdminDispatchPage: React.FC = () => {
             </p>
 
             {unassignedOrders.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500 dark:border-slate-800">
-                <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500 mb-2" />
-                All placed orders are currently secured by delivery riders!
-              </div>
+              <EmptyState
+                icon={CheckCircle2}
+                message="All placed orders are currently secured by delivery riders!"
+              />
             ) : (
               <div className="space-y-3">
                 {unassignedOrders.map((order) => (
@@ -470,7 +439,7 @@ export const AdminDispatchPage: React.FC = () => {
                     <div className="text-slate-600 dark:text-slate-400 truncate mb-1">{order.vendorName}</div>
                     <div className="text-[11px] text-slate-500 truncate mb-2">To: {order.deliveryAddress}</div>
                     <Link
-                      to={`/orders?orderNumber=${order.orderNumber}`}
+                      to={`/orders?orderNumber=${encodeURIComponent(order.orderNumber)}`}
                       className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 hover:text-amber-800 dark:text-amber-400"
                     >
                       Assign Rider Now <ArrowRight className="h-3 w-3" />
@@ -481,13 +450,12 @@ export const AdminDispatchPage: React.FC = () => {
             )}
           </div>
 
-          {/* Unassigned Dispatch Radar Card */}
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
               <Clock className="h-4 w-4 text-amber-500" />
               Unassigned Dispatch Radar
             </h3>
-            <div className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
+            <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-400">
               <div className="flex justify-between">
                 <span>Waiting Orders:</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{unassignedOrders.length} orders</span>
@@ -511,12 +479,30 @@ export const AdminDispatchPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Adjust Cash Safety Limit Modal */}
       {selectedRider && (
         <Modal
           isOpen={isCashModalOpen}
           onClose={() => setIsCashModalOpen(false)}
           title={`Adjust Cash Safety Limit — ${selectedRider.riderName}`}
+          footer={
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsCashModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                isLoading={updateCashLimitMutation.isPending}
+                onClick={() => {
+                  const limit = parseFloat(newCashLimit);
+                  if (!isNaN(limit) && limit > 0) {
+                    updateCashLimitMutation.mutate({ id: selectedRider.id, limit });
+                  }
+                }}
+              >
+                Save Threshold
+              </Button>
+            </div>
+          }
         >
           <div className="space-y-4">
             <p className="text-xs text-slate-500">
@@ -542,24 +528,6 @@ export const AdminDispatchPage: React.FC = () => {
                 onChange={(e) => setNewCashLimit(e.target.value)}
                 placeholder="5000"
               />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setIsCashModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                isLoading={updateCashLimitMutation.isPending}
-                onClick={() => {
-                  const limit = parseFloat(newCashLimit);
-                  if (!isNaN(limit) && limit > 0) {
-                    updateCashLimitMutation.mutate({ id: selectedRider.id, limit });
-                  }
-                }}
-              >
-                Save Threshold
-              </Button>
             </div>
           </div>
         </Modal>

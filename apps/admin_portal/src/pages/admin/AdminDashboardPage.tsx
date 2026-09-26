@@ -18,6 +18,8 @@ import { Alert } from '../../components/ui/Alert';
 import { Modal } from '../../components/ui/Modal';
 import { Table, Column } from '../../components/ui/Table';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { PageHeader } from '../../components/common/PageHeader';
+import { StatCard } from '../../components/common/StatCard';
 
 type DashboardOrder = AdminOverview['recentOrders'][number];
 
@@ -33,7 +35,6 @@ export const AdminDashboardPage: React.FC = () => {
     refetchInterval: 30000,
   });
 
-  // Real-time WebSocket Listeners
   useEffect(() => {
     const socket = getSocket();
 
@@ -138,31 +139,26 @@ export const AdminDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            {t('admin.title')}
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {t('admin.subtitle')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
-          >
-            Refresh
-          </Button>
-          <Badge variant="purple" size="md">
-            <Shuffle className="h-3 w-3 mr-1" />
-            Dispatch: RIDER_FIRST
-          </Badge>
-        </div>
-      </div>
+      <PageHeader
+        title={t('admin.title')}
+        subtitle={t('admin.subtitle')}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
+            >
+              Refresh
+            </Button>
+            <Badge variant="purple" size="md">
+              <Shuffle className="h-3 w-3 mr-1" />
+              Dispatch: RIDER_FIRST
+            </Badge>
+          </>
+        }
+      />
 
       <Alert
         type="info"
@@ -170,38 +166,23 @@ export const AdminDashboardPage: React.FC = () => {
         message="Active multi-tenant cluster operating across Dhaka central zones. Redis Geospatial indexing and WebSocket tracking gateway active."
       />
 
-      {/* Metrics Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={stat.title}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {stat.title}
-                </span>
-                <div className={`rounded-xl p-2.5 ${stat.color}`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="mt-3">
-                <span className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">
-                  {isLoading ? '...' : stat.value}
-                </span>
-                <p className="mt-1 text-xs text-slate-500">{stat.change}</p>
-              </div>
-            </div>
-          );
-        })}
+        {stats.map((stat) => (
+          <StatCard
+            key={stat.title}
+            title={stat.title}
+            value={stat.value}
+            subtitle={stat.change}
+            icon={stat.icon}
+            iconColorClass={stat.color}
+            isLoading={isLoading}
+          />
+        ))}
       </div>
 
-      {/* Orders Table */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Recent Live Orders</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">Recent Live Orders</h3>
           <span className="text-xs text-slate-500">Auto-updates in real time via WebSocket</span>
         </div>
 
@@ -219,7 +200,6 @@ export const AdminDashboardPage: React.FC = () => {
         )}
       </div>
 
-      {/* Details Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -233,14 +213,14 @@ export const AdminDashboardPage: React.FC = () => {
       >
         {selectedOrder && (
           <div className="space-y-4 text-sm">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <span className="text-xs text-slate-500">Outlet</span>
                 <p className="font-semibold text-slate-900 dark:text-slate-100">{selectedOrder.outletName}</p>
               </div>
               <div>
                 <span className="text-xs text-slate-500">Status</span>
-                <div>
+                <div className="mt-0.5">
                   <OrderStatusBadge status={selectedOrder.status} />
                 </div>
               </div>
@@ -253,7 +233,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <p className="font-semibold text-slate-900 dark:text-slate-100">{selectedOrder.paymentMethod}</p>
               </div>
               {selectedOrder.riderName && (
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <span className="text-xs text-slate-500">Assigned Courier</span>
                   <p className="font-semibold text-slate-900 dark:text-slate-100">{selectedOrder.riderName}</p>
                 </div>
@@ -265,4 +245,3 @@ export const AdminDashboardPage: React.FC = () => {
     </div>
   );
 };
-
