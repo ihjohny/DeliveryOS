@@ -2,7 +2,7 @@
 
 > **AI AGENT USAGE**: Read this file first to locate the **exact file** you need. Do NOT load the entire documentation directory into context.  
 > **ENGINEERING PROTOCOL**: Every code modification must follow the 3-Phase Spec-Driven Development Workflow:  
-> 👉 **[`SPEC_DRIVEN_WORKFLOW.md`](./SPEC_DRIVEN_WORKFLOW.md)**
+> 👉 **[`README.md#spec-driven-development-workflow-3-phase-protocol`](../README.md#-spec-driven-development-workflow-3-phase-protocol)**
 
 ---
 
@@ -12,9 +12,9 @@
 | :--- | :--- | :--- |
 | **Phase 1: Plan & Grounding** | Spec alignment & ambiguity clearance | Context Router lookup ➔ Check ADRs/BRDs/TIDs ➔ Formulate plan ➔ Zero assumptions (`/grill-me`) |
 | **Phase 2: Implementation** | Production-ready execution | Strict typing (`"strict": true`, 0 `any`) ➔ Design system tokens (`AppColors`, `AppTypography`, `AppSpacing`, Tailwind semantic classes) ➔ Zero mock shortcuts ➔ Minimal comments (§ 3.6) |
-| **Phase 3: Verification & Sync** | Quality gate & living docs synchronization | Automated tests (`npm test`, `flutter test`) ➔ Static analysis (`tsc`, `flutter analyze`) ➔ Update `FEATURES.md`, `CHANGELOG.md`, `WORK_BREAKDOWN.md` ➔ Await explicit commit command |
+| **Phase 3: Verification & Sync** | Quality gate & living docs synchronization | Automated tests (`npm test`, `flutter test`) ➔ Static analysis (`tsc`, `flutter analyze`) ➔ Update `FEATURES.md`, `CHANGELOG.md` ➔ Await explicit commit command |
 
-👉 For full workflow details and repeatable checklists, see [`SPEC_DRIVEN_WORKFLOW.md`](./SPEC_DRIVEN_WORKFLOW.md).
+👉 For full workflow details and repeatable checklists, see [root README.md](../README.md#-spec-driven-development-workflow-3-phase-protocol).
 
 ---
 
@@ -22,11 +22,10 @@
 
 | If Your Task Involves... | Load ONLY These Documents |
 | :--- | :--- |
-| **3-Phase Spec-Driven Development Workflow** | [`SPEC_DRIVEN_WORKFLOW.md`](./SPEC_DRIVEN_WORKFLOW.md) |
+| **3-Phase Spec-Driven Development Workflow** | [`README.md (Spec-Driven Workflow)`](../README.md#-spec-driven-development-workflow-3-phase-protocol) |
 | **Master AI Engineering Rules, Standards & DoD** | [`AGENT_RULES.md`](./AGENT_RULES.md) |
 | **Granular Master System Feature Catalog** | [`FEATURES.md`](../FEATURES.md) |
-| **Version History & Changelog Tracking** | [`CHANGELOG.md`](../CHANGELOG.md) |
-| **Engineering Roadmap & Step-by-Step WBS** | [`WORK_BREAKDOWN.md`](../WORK_BREAKDOWN.md) |
+| **Engineering Roadmap, Milestones & Changelog** | [`CHANGELOG.md`](../CHANGELOG.md) |
 | **Non-Technical Master Product Overview** | `BRD-00` (`00-master-product-overview.md`) |
 | **Architecture Decision Records (ADR Index)** | [`ADR Index`](./architecture-decision-records/README.md) (`ADR-001` through `ADR-011`) |
 | **Monorepo Topology, Ingress & Routing** | `ADR-001`, `ADR-005` + `TID-01`, `TID-07` |
@@ -43,7 +42,7 @@
 | **Immutable JSONB Snapshots & Financial Ledgers** | `ADR-008`, `ADR-009` + `TID-02` + `BRD-03` |
 | **Multi-Gateway Payment & Webhook Idempotency** | `ADR-011` + `TID-03` (Sec 7) + `TID-04` |
 | **Financial Settlement Cycles & Net COD Cash Offset**| `ADR-009` + `TID-03` (Sec 6.6) + `BRD-07` |
-| **AI Governance, Invariants & No-Auto-Commits** | `ADR-010` + `AGENT_RULES.md` + `SPEC_DRIVEN_WORKFLOW.md` |
+| **AI Governance, Invariants & No-Auto-Commits** | `ADR-010` + `AGENT_RULES.md` + `README.md` |
 | **Authentication, OTP, JWT, Role Guards** | `TID-03` (API Specs: Sec 2) + `TID-02` (Users table) |
 | **Customer App UI, Cart, Banners, Coupons** | `BRD-04` (Customer Journey) + `TID-03` (API Specs: Sec 3) |
 | **Customer Search Direct Add & Cart Conflict Modal** | `BRD-04` (Sec 3) + `apps/customer_app` |

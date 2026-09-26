@@ -116,7 +116,7 @@ DeliveryOS/
 │   └── backend_api/            # NestJS Backend API (Port 4000)
 │       └── src/modules/        # auth, users, vendors, orders, dispatch, tracking, billing
 ├── deploy/                     # Docker Compose, Nginx ingress config, PostGIS SQL scripts
-└── context_docs/               # Authoritative BRDs, TIDs, ADRs, and WBS documentation
+└── context_docs/               # Authoritative BRDs, TIDs, ADRs, and Spec-Driven Workflow documentation
 ```
 
 ---

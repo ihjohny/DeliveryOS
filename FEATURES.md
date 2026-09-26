@@ -61,7 +61,7 @@ This document provides a line-level, granular breakdown of every operational fea
   - Elimination of hardcoded arbitrary hex classes (`text-[#...]`) and inline `style={{ ... }}` attributes.
 
 ### 1.6. Spec-Driven Engineering & Quality Governance
-- **3-Phase Engineering Protocol**: Plan & Grounding ➔ Implementation ➔ Verification & Living Docs Sync ([`SPEC_DRIVEN_WORKFLOW.md`](context_docs/SPEC_DRIVEN_WORKFLOW.md)).
+- **3-Phase Engineering Protocol**: Plan & Grounding ➔ Implementation ➔ Verification & Living Docs Sync ([`README.md#spec-driven-development-workflow-3-phase-protocol`](README.md#-spec-driven-development-workflow-3-phase-protocol)).
 - **Strict Typing Invariant**: `"strict": true` across backend and web portals with zero raw `any` types.
 - **Production Realism**: Zero mock shortcuts, zero placeholder fallbacks, zero deleted failing tests.
 - **Clean Code Standard**: Zero trivial comments on obvious logic per `AGENT_RULES.md § 3.6`.

@@ -14,12 +14,14 @@ Before implementing, modifying, or refactoring any code in this repository, you 
 ```
 context_docs/
 ├── AGENT_RULES.md                                # This document (Master AI Engineering Rules)
+├── QUICK_REFERENCE.md                            # Token-saving task-to-document context router
 │
 ├── architecture-decision-records/                # Permanent architectural & engineering decisions
 │   ├── README.md                                # Master ADR Index, lifecycle & AI protocol
-│   └── ADR-001 through ADR-010                  # System, FSM, GIS, Concurrency & Governance ADRs
+│   └── ADR-001 through ADR-011                  # System, FSM, GIS, Concurrency, Governance & Payment ADRs
 │
 ├── business-requirements-documents/             # Business logic, user journeys & operations
+│   ├── 00-master-product-overview.md            # Plain-English platform guide & commercial model
 │   ├── 01-executive-summary-and-vision.md       # High-level vision & multi-vertical model
 │   ├── 02-stakeholder-roles-and-personas.md     # Customer, Merchant, Rider, Super Admin personas
 │   ├── 03-core-business-rules-and-workflows.md  # Order FSM, fees, commissions, COD ledgers

@@ -1,9 +1,87 @@
-# Changelog
+# DeliveryOS — Engineering Roadmap, Milestones & Changelog
 
-All notable changes to the **DeliveryOS** platform will be documented in this file.
+All engineering roadmap milestones, architectural tracks, and versioned releases of the **DeliveryOS** platform are maintained in this single authoritative living document.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The release history adheres to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## 🗺️ Part 1: Master Engineering Roadmap & Milestones Status
+
+### 1.1. High-Level Engineering Lifecycle
+
+```mermaid
+graph TD
+    P1["Phase 1: Foundation & PostGIS DB"] ──► P2["Phase 2: Core Backend Modules"]
+    P2 ──► P3["Phase 3: Realtime Engine & Dispatch FSM"]
+    P3 ──► P4["Phase 4: Dedicated Web Portals (Admin & KDS)"]
+    P3 ──► P5["Phase 5: Customer Mobile App (Flutter)"]
+    P3 ──► P6["Phase 6: Rider Mobile App (Flutter)"]
+    P4 & P5 & P6 ──► P7["Phase 7: End-to-End Testing & Integration"]
+    P7 ──► PR["Production Readiness & Hardening Tracks"]
+    PR ──► PL["Pilot Launch & Production VPS"]
+```
+
+---
+
+### 1.2. Core Foundation & Platform Milestones (Phases 1–7)
+
+| Milestone / Phase | Objectives & Key Deliverables | Quality & Verification Gate | Status |
+| :--- | :--- | :--- | :---: |
+| **Phase 1: Foundation & Database** | Monorepo layout, Docker Compose (PostgreSQL 16 + PostGIS, Redis 7), 22 Prisma models, spatial GiST indexes, idempotent seed script (`seed.ts`). | `docker compose up -d`, `prisma migrate dev`, `prisma db seed` pass cleanly. | **Completed** (`[x]`) |
+| **Phase 2: Core Backend Modules** | Phone OTP auth (`AuthModule`), spatial store discovery (`VendorModule`, `GeoModule`), coupon & pricing engine (`BannerModule`, `CouponModule`), ACID order checkout (`OrderModule`), vendor staff & rider APIs. | REST endpoints conform to standard JSON envelope; double-entry ledgers balance to 0.00 BDT. | **Completed** (`[x]`) |
+| **Phase 3: Realtime & Dispatch** | Socket.IO gateway (`TrackingGateway`), room subscriptions, dual dispatch sequences (`RIDER_FIRST` vs `VENDOR_FIRST`), Redis mutex lock (`SET NX EX 45`), throttled live GPS coordinate streaming. | Concurrent claim test yields 1 OK + 1 Conflict (409); live coordinates broadcast under 200ms. | **Completed** (`[x]`) |
+| **Phase 4: Dedicated Web Portals** | Super Admin Portal (Port 3000, Indigo theme) with Leaflet live fleet radar; Vendor KDS Portal (Port 3001, Amber theme) with 3-lane Kanban, in-memory Web Audio chime, stock toggles. | Subpath proxying `/` vs `/vendor/` via Nginx; `npm run build` exits 0 with 0 errors across both apps. | **Completed** (`[x]`) |
+| **Phase 5: Customer Mobile App** | Flutter 3.19+ app, interactive Google Map pin picker, debounced instant search, single-vendor cart guard, geofence radius check, 6-stage order tracking stepper, 1-tap re-order. | `flutter analyze` (0 errors), `flutter test` (100% pass), responsive on 320px–430px viewports. | **Completed** (`[x]`) |
+| **Phase 6: Rider Mobile App** | Courier onboarding, shift duty switch with in-flight lock, 45s broadcast alert modal with haptic feedback, 3-step fulfillment, native maps navigation handoff, COD safety limit. | `flutter analyze` (0 errors), `flutter test` (100% pass), background GPS beaconing verified. | **Completed** (`[x]`) |
+| **Phase 7: End-to-End Testing** | Automated multi-role simulation covering customer order, dual dispatch, store KDS prep, rider delivery, and double-entry accounting ledger balance. | 11 backend test suites pass 100%; financial double-entry equations balance to the penny. | **Completed** (`[x]`) |
+
+---
+
+### 1.3. Production Readiness & Market Launch Tracks
+
+| Hardening Track | Key Features & Invariants Implemented | Verification Method | Status |
+| :--- | :--- | :--- | :---: |
+| **Track 1: Trust & Correctness** | Centralized Order FSM guard (`order-state.machine.ts`); unified economics (`delivery_economics` setting); deterministic Redis order numbering (`ORD-YYYYMMDD-XXXX`); real GPS mobile de-mocking. | `npm run db:test`, `npm run e2e:test`, mobile unit/widget test suites. | **Completed** (`[x]`) |
+| **Track 2: Realtime & Telemetry** | Resilient Flutter Socket.IO clients; Redis `GEOADD` coordinate indexing; Google Maps bearing rotation; Leaflet Admin Radar; 3-tier dispatch timeout escalation; FCM notification triggers. | `npm run ws:test`, `npm run dispatch:test`, `npm run tracking:test`, `npm run escalation:test`. | **Completed** (`[x]`) |
+| **Track 3: Payments & Settlements** | Multi-gateway payment engine (bKash, SSLCommerz, Sandbox) with HMAC-SHA256 signatures; payment-gated dispatch; automated batch settlement cycles (`POST /admin/finance/settle-cycle`). | `npm run payment:test`, `npm run settlement:test` (100% pass). | **Completed** (`[x]`) |
+| **Track 4: Cancellation & Refunds** | Pre-prep customer self-cancellation guard (`PLACED`/`RIDER_ASSIGNED`); vendor rejection with reason codes; admin force-cancel; atomic financial & coupon rollback; multi-platform cancellation UI. | `npm run cancel:test` (4/4 suites pass), Customer & Rider cancel listeners. | **Completed** (`[x]`) |
+| **Track 5: Business Integrity** | Store operating hours and busy pause checkout guard; physical COD cash deposit submission (`PENDING_APPROVAL`) and admin verification; net COD offset in settlements; mid-delivery duty lock. | `npm run track1:test` (100% pass covering all 5 core integrity checks). | **Completed** (`[x]`) |
+| **Track 6: Design System & UI** | Centralized design tokens (`AppColors`, `AppTypography`, `AppSpacing`, `AppRadius`); Tailwind semantic palettes; zero arbitrary inline styling invariant; responsive touch-friendly KDS & Admin. | `flutter test test/design_system_test.dart`, `npm run build` across portals. | **Completed** (`[x]`) |
+| **Track 7: Spec-Driven Architecture** | Authoritative 3-phase engineering protocol embedded directly in [`README.md`](README.md#-spec-driven-development-workflow-3-phase-protocol); task-to-file Context Router (`QUICK_REFERENCE.md`); granular capability catalog (`FEATURES.md`). | Complete living documentation sync and cross-referencing audit. | **Completed** (`[x]`) |
+
+---
+
+### 1.4. Active Horizons & Upcoming Milestones
+
+- [ ] **Milestone 8.1: 10-Vendor Pilot Launch Execution**:
+  - [x] Seed 10 initial pilot merchant catalogs (7 restaurants, 3 supermarkets) with operating schedules.
+  - [x] Configure dedicated counter tablet consoles with Web Audio API order alarms.
+  - [x] Onboard and approve 5–8 active couriers in designated 3–5 km pilot zone.
+  - [ ] Execute 1-month live operational pilot test run; monitor zero food waste SLA and weekly payout statements.
+- [ ] **Milestone 8.2: Cloud Infrastructure & SSL Hardening**:
+  - [x] Local multi-container Docker Compose orchestration with Nginx reverse proxy.
+  - [x] Automated daily PostgreSQL backup script with 7-day retention (`scripts/backup-db.sh`).
+  - [ ] Provision production cloud server (VPS/Kubernetes), bind domains, and configure Let's Encrypt automated SSL certificate renewal.
+
+---
+
+## 📜 Part 2: Platform Release History
+
+## [1.4.5] - 2026-09-26
+
+### Changed
+- **Documentation Unification & Token Optimization**:
+  - Merged the standalone Work Breakdown Structure (`WORK_BREAKDOWN.md`) and `CHANGELOG.md` into this unified living document, eliminating file proliferation and reducing documentation token overhead by over 40 KB.
+  - Consolidated the Spec-Driven Development Workflow and repeatable engineering checklists directly into root [`README.md`](README.md#-spec-driven-development-workflow-3-phase-protocol) and deleted `context_docs/SPEC_DRIVEN_WORKFLOW.md`, further reducing document overhead.
+  - Formatted Part 1 as an executive Master Engineering Roadmap and Milestones Tracker with status tables, deliverables, and test gates for all core phases and hardening tracks.
+  - Updated living document synchronization references across `README.md`, `AGENTS.md`, `context_docs/QUICK_REFERENCE.md`, `FEATURES.md`, and `TID-01`.
+
+### Fixed
+- **Documentation Data Gaps**:
+  - Updated `context_docs/AGENT_RULES.md` directory hierarchy to include `QUICK_REFERENCE.md` and `ADR-001 through ADR-011`.
+  - Removed obsolete `WBS` references from `context_docs/technical-implementation-documents/01-system-architecture-and-tech-stack.md`.
+  - Streamlined Master Documentation Index in `README.md` and `AGENTS.md` to reflect unified roadmap and changelog governance.
 
 ---
 

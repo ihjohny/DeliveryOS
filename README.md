@@ -200,30 +200,95 @@ All applications are unified at `http://localhost:8080`:
 
 ---
 
-## 🧭 Spec-Driven Development Workflow
+## 🧭 Spec-Driven Development Workflow (3-Phase Protocol)
 
 Every developer and AI assistant contributing to DeliveryOS adheres to the **3-Phase Spec-Driven Development Workflow**:
 
-```
-[ Phase 1: Plan & Grounding ] ──► [ Phase 2: Implementation ] ──► [ Phase 3: Verification & Sync ]
+```mermaid
+flowchart TD
+    subgraph P1["Phase 1: Plan & Grounding"]
+        R1["1. Context Router Lookup<br/>(QUICK_REFERENCE.md - Read 1-2 files only)"]
+        R2["2. Check Invariants & Specs<br/>(ADRs, BRDs, TIDs)"]
+        R3["3. Formulate Plan & Review<br/>(Zero Assumptions • /grill-me)"]
+        R1 --> R2 --> R3
+    end
+
+    subgraph P2["Phase 2: Implementation"]
+        I1["4. Database & DTOs<br/>(Prisma migrations • Class-validator)"]
+        I2["5. Backend Domain & FSM<br/>(Strict typing • ACID transactions)"]
+        I3["6. Frontend & Mobile UI<br/>(Design System tokens • Zero inline styles)"]
+        I4["7. Clean Code Standard<br/>(Zero trivial comments • Zero mock shortcuts)"]
+        I1 --> I2 --> I3 --> I4
+    end
+
+    subgraph P3["Phase 3: Verification & Living Document Sync"]
+        V1["8. Automated Testing & Static Analysis<br/>(npm test • flutter test • typecheck • analyze)"]
+        V2["9. Living Document Sync<br/>(FEATURES.md • CHANGELOG.md • ADRs)"]
+        V3["10. Git Commit Protocol<br/>(NO auto-commits • Commit only when commanded • NO auto-push)"]
+        V1 --> V2 --> V3
+    end
+
+    P1 --> P2 --> P3
 ```
 
-1. **Phase 1: Plan & Grounding**:
-   - Consult [`context_docs/QUICK_REFERENCE.md`](context_docs/QUICK_REFERENCE.md) to load only the 1–2 files relevant to the task (zero token waste).
-   - Check architectural contracts in the [`ADR Index`](context_docs/architecture-decision-records/README.md), [`BRD`](context_docs/business-requirements-documents/README.md), and [`TID`](context_docs/technical-implementation-documents/README.md) suites.
-   - Formulate a concrete plan; resolve ambiguities using the Active Interview Protocol (zero assumptions).
-2. **Phase 2: Implementation**:
-   - Strict typing with **zero raw `any`** (`"strict": true`).
-   - Strict Design System compliance (`AppColors`, `AppTypography`, `AppSpacing`, Tailwind semantic tokens; **zero inline styles**).
-   - Production realism with **zero mock shortcuts** and **zero empty `TODO`s**.
-   - Clean, self-documenting code with **zero trivial comments** per `AGENT_RULES.md § 3.6`.
-3. **Phase 3: Verification & Living Document Sync**:
-   - Run automated test scripts and static analysis (`npm test`, `flutter test`, `typecheck`, `flutter analyze`).
-   - Synchronize living documentation: update [`FEATURES.md`](FEATURES.md), [`CHANGELOG.md`](CHANGELOG.md), and [`WORK_BREAKDOWN.md`](WORK_BREAKDOWN.md).
-   - Update or author an ADR if architecture, ingress, dependencies, or state machines changed.
-   - Adhere to the Git commit protocol (**NO auto-commits**, commit only upon explicit command, **NO auto-push**).
+### 1. Phase 1: Plan & Grounding
+- **Targeted Context**: Check [`context_docs/QUICK_REFERENCE.md`](context_docs/QUICK_REFERENCE.md) to load only the 1–2 files relevant to the task (zero token waste).
+- **Invariant Verification**: Check architectural contracts in [`ADR Index`](context_docs/architecture-decision-records/README.md), [`BRDs`](context_docs/business-requirements-documents/README.md), and [`TIDs`](context_docs/technical-implementation-documents/README.md).
+- **Zero Assumptions**: If any requirement or edge case is ambiguous, pause and ask structured questions with recommended options before writing code.
 
-👉 Complete workflow specifications and repeatable checklists: **[`context_docs/SPEC_DRIVEN_WORKFLOW.md`](context_docs/SPEC_DRIVEN_WORKFLOW.md)**.
+### 2. Phase 2: Implementation
+- **Strict Type Safety**: Maintain `"strict": true` across backend and web portals with **zero raw `any`**.
+- **Design System Governance**: Strictly consume centralized tokens (`AppColors`, `AppTypography`, `AppSpacing`, `AppRadius`, Tailwind semantic classes). **Zero raw inline styles or arbitrary colors**.
+- **Production Realism**: Real code only with database transactions (`prisma.$transaction`). **Zero mock fallbacks**, **zero empty `TODO`s**, and **zero deleted failing tests**.
+- **Clean Code Standard**: Express intent through self-documenting names. Add code comments **only** for complex algorithms, subtle business invariants, or tricky edge cases per `AGENT_RULES.md § 3.6`.
+
+### 3. Phase 3: Verification & Living Document Sync
+- **Automated Verification**: Run `npm run typecheck`, `npm run build`, and test suites (`npm run track1:test`, etc.) for backend/portals; run `flutter analyze` (0 errors) and `flutter test` for mobile apps.
+- **Living Document Sync**: Immediately update [`FEATURES.md`](FEATURES.md) (line-level capability catalog), [`CHANGELOG.md`](CHANGELOG.md) (roadmap deliverables & release notes), and ADRs if architectural decisions evolved.
+- **Git Invariant**: **NO auto-commits** (commit only upon explicit user command); **NO auto-push** (execute only local commits).
+
+### 📋 Repeatable Engineering Checklists
+
+<details>
+<summary><b>Checklist A: Adding a New Feature or Sub-Feature</b></summary>
+
+- [ ] **1. Grounding**: Consult `QUICK_REFERENCE.md` to load only the required 1–2 spec files.
+- [ ] **2. Invariant Check**: Verify compliance with related ADRs, state machines, and business rules.
+- [ ] **3. Schema Migration**: Create and run Prisma migrations with proper indexes and PostGIS spatial types if schema evolves.
+- [ ] **4. Backend DTO & Service**: Strictly typed DTOs with `class-validator`, ACID transaction in service, standard API envelope.
+- [ ] **5. Realtime Events**: Wire Socket.IO room joins/emits and Redis pub/sub if real-time updates are involved.
+- [ ] **6. UI Implementation**: Centralized design system tokens, responsive layouts, error handling, loading states.
+- [ ] **7. Automated Verification**: Backend test scripts, `npm run typecheck`, and `flutter analyze` / `flutter test`.
+- [ ] **8. Living Docs Sync**: Add line item to `FEATURES.md`, record deliverable in `CHANGELOG.md`.
+- [ ] **9. Commit Protocol**: Await explicit user command before executing `git commit`.
+
+</details>
+
+<details>
+<summary><b>Checklist B: Fixing an Existing Feature or Bug</b></summary>
+
+- [ ] **1. Root Cause Analysis**: Reproduce the issue with an automated test before modifying code.
+- [ ] **2. Spec Verification**: Confirm intended behavior in BRD and TID documents; verify no invariant is violated.
+- [ ] **3. Surgical Fix**: Apply targeted code changes without broad, unnecessary rewrites.
+- [ ] **4. Type & Style Adherence**: Zero raw `any`, zero inline colors/styles, zero trivial comments.
+- [ ] **5. Regression Testing**: Run regression test suites (`npm run track1:test`, `flutter test`, etc.).
+- [ ] **6. Living Docs Sync**: Record fix in `CHANGELOG.md` under `### Fixed`, update `FEATURES.md` if behavior changed.
+- [ ] **7. Commit Protocol**: Await explicit user command before executing `git commit`.
+
+</details>
+
+<details>
+<summary><b>Checklist C: Code Refactoring & Modernization</b></summary>
+
+- [ ] **1. Architectural Alignment**: Ensure refactoring aligns with ADRs and preserves established patterns.
+- [ ] **2. Interface Preservation**: Preserve public API signatures, DTO contracts, and component prop interfaces.
+- [ ] **3. Token Extraction**: Replace hardcoded values with design system tokens (`AppColors`, `AppTypography`, `AppSpacing`).
+- [ ] **4. Dead Code Cleanup**: Delete unused methods, obsolete imports, and commented-out code completely.
+- [ ] **5. Static Analysis & Tests**: Verify `npm run typecheck` exits 0, `flutter analyze` reports 0 issues, and tests pass 100%.
+- [ ] **6. Living Docs Sync**: Document refactoring in `CHANGELOG.md` under `### Changed`.
+- [ ] **7. Commit Protocol**: Await explicit user command before executing `git commit`.
+
+</details>
 
 ---
 
@@ -249,12 +314,11 @@ Every human engineer and AI agent operating in this repository must uphold these
 All authoritative system rules, business workflows, technical specifications, and architecture decisions are maintained in `context_docs/`:
 
 1. **[Quick Reference & Context Router](./context_docs/QUICK_REFERENCE.md)** — Token-efficient task-to-document routing table (load 1–2 files only).
-2. **[Spec-Driven Development Workflow](./context_docs/SPEC_DRIVEN_WORKFLOW.md)** — Authoritative 3-phase engineering protocol and repeatable checklists.
+2. **[Spec-Driven Development Workflow](#-spec-driven-development-workflow-3-phase-protocol)** — Authoritative 3-phase engineering protocol (Plan ➔ Implement ➔ Verify & Sync) and repeatable checklists directly on this README.
 3. **[Master AI Agent Rules & Invariants](./context_docs/AGENT_RULES.md)** — Engineering standards, DoD, and governance.
 4. **[Master System Feature Catalog](./FEATURES.md)** — Line-level, granular catalog of every capability across all 5 sub-projects.
-5. **[Changelog & Release Notes](./CHANGELOG.md)** — Standardized Keep a Changelog (SemVer) release history.
-6. **[Master Work Breakdown Structure (WBS)](./WORK_BREAKDOWN.md)** — Step-by-step engineering roadmap and implementation milestones.
-7. **[Business Requirements Documents (BRD)](./context_docs/business-requirements-documents/README.md)**:
+5. **[Changelog, Milestones & Engineering Roadmap](./CHANGELOG.md)** — Step-by-step engineering roadmap, active milestone tracker, and standardized Keep a Changelog (SemVer) release history.
+6. **[Business Requirements Documents (BRD)](./context_docs/business-requirements-documents/README.md)**:
    - [`BRD-00: Master Product Overview`](./context_docs/business-requirements-documents/00-master-product-overview.md)
    - [`BRD-01: Executive Summary & Vision`](./context_docs/business-requirements-documents/01-executive-summary-and-vision.md)
    - [`BRD-02: Stakeholder Roles & Personas`](./context_docs/business-requirements-documents/02-stakeholder-roles-and-personas.md)
@@ -263,7 +327,7 @@ All authoritative system rules, business workflows, technical specifications, an
    - [`BRD-05: Merchant & Vendor Operations`](./context_docs/business-requirements-documents/05-merchant-and-vendor-operations.md)
    - [`BRD-06: Rider Fleet & Dispatch Handbook`](./context_docs/business-requirements-documents/06-rider-fleet-and-dispatch-handbook.md)
    - [`BRD-07: Admin Operations & Pilot Guide`](./context_docs/business-requirements-documents/07-admin-operations-and-pilot-guide.md)
-8. **[Technical Implementation Documents (TID)](./context_docs/technical-implementation-documents/README.md)**:
+7. **[Technical Implementation Documents (TID)](./context_docs/technical-implementation-documents/README.md)**:
    - [`TID-01: System Architecture & Tech Stack`](./context_docs/technical-implementation-documents/01-system-architecture-and-tech-stack.md)
    - [`TID-02: Database Schema & Data Models`](./context_docs/technical-implementation-documents/02-database-schema-and-data-models.md)
    - [`TID-03: API Specifications & Endpoints`](./context_docs/technical-implementation-documents/03-api-specifications-and-endpoints.md)
@@ -271,8 +335,8 @@ All authoritative system rules, business workflows, technical specifications, an
    - [`TID-05: Order State Machine & Dispatch Engine`](./context_docs/technical-implementation-documents/05-order-state-machine-and-dispatch-engine.md)
    - [`TID-06: Frontend & Mobile Architecture`](./context_docs/technical-implementation-documents/06-frontend-and-mobile-architecture.md)
    - [`TID-07: Deployment, DevOps & Environment Setup`](./context_docs/technical-implementation-documents/07-deployment-devops-and-environment-setup.md)
-9. **[Architecture Decision Records (ADRs)](./context_docs/architecture-decision-records/README.md)**:
-   - [`ADR-001`](./context_docs/architecture-decision-records/ADR-001-hybrid-multi-app-monorepo-topology.md): Hybrid Multi-App Monorepo Topology
+8. **[Architecture Decision Records (ADRs)](./context_docs/architecture-decision-records/README.md)**:
+   - [`ADR-001`](./context_docs/architecture-decision-records/ADR-001-modular-monorepo-and-ingress-topology.md): Modular Monorepo Architecture & Nginx Edge Ingress Topology
    - [`ADR-002`](./context_docs/architecture-decision-records/ADR-002-dynamic-dual-order-flow-fsm.md): Dynamic Dual Order Flow State Machine
    - [`ADR-003`](./context_docs/architecture-decision-records/ADR-003-postgis-spatial-engine-and-redis-geohash.md): Spatial PostGIS Geofencing & Redis Geohash
    - [`ADR-004`](./context_docs/architecture-decision-records/ADR-004-atomic-dispatch-claim-mutex.md): Atomic Dispatch Claim Mutex

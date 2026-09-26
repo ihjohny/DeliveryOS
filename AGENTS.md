@@ -8,7 +8,7 @@ Before loading large documentation files, inspect the **Context Router** to iden
 
 🧭 **MANDATORY ENGINEERING WORKFLOW**:  
 Every feature, bug fix, or refactor must follow the 3-Phase Spec-Driven Development Workflow:  
-👉 **[`context_docs/SPEC_DRIVEN_WORKFLOW.md`](./context_docs/SPEC_DRIVEN_WORKFLOW.md)**
+👉 **[`README.md#spec-driven-development-workflow-3-phase-protocol`](./README.md#-spec-driven-development-workflow-3-phase-protocol)**
 
 ---
 
@@ -16,15 +16,14 @@ Every feature, bug fix, or refactor must follow the 3-Phase Spec-Driven Developm
 
 All authoritative system rules, business workflows, technical specifications, and architecture decisions are maintained in `context_docs/`:
 
-1. **[Spec-Driven Development Workflow](./context_docs/SPEC_DRIVEN_WORKFLOW.md)** — Authoritative 3-phase engineering protocol (Plan ➔ Implement ➔ Verify & Sync) and repeatable checklists.
+1. **[Spec-Driven Development Workflow](./README.md#-spec-driven-development-workflow-3-phase-protocol)** — Authoritative 3-phase engineering protocol (Plan ➔ Implement ➔ Verify & Sync) and repeatable checklists directly on root README.
 2. **[Master AI Agent Rules & Invariants](./context_docs/AGENT_RULES.md)** — Authoritative engineering standards, DoD, and governance.
 3. **[Quick Reference & Context Router](./context_docs/QUICK_REFERENCE.md)** — Token-efficient task-to-document routing table (load 1–2 files only).
 4. **[Master System Feature Catalog](./FEATURES.md)** — Line-level, granular breakdown of every capability across all 5 sub-projects.
-5. **[Master Work Breakdown Structure (WBS)](./WORK_BREAKDOWN.md)** — Step-by-step engineering roadmap and milestone tracker.
-6. **[Changelog & Release Notes](./CHANGELOG.md)** — Standardized Keep a Changelog (SemVer) release history.
-7. **[Architecture Decision Records (ADR)](./context_docs/architecture-decision-records/README.md)** — Permanent architectural contracts and state machines (`ADR-001` through `ADR-011`).
-8. **[Business Requirements Documents (BRD)](./context_docs/business-requirements-documents/README.md)** — Core business rules, user journeys, and personas (`BRD-00` through `BRD-07`).
-9. **[Technical Implementation Documents (TID)](./context_docs/technical-implementation-documents/README.md)** — System architecture, schemas, APIs, and devops (`TID-01` through `TID-07`).
+5. **[Changelog, Milestones & Engineering Roadmap](./CHANGELOG.md)** — Step-by-step engineering roadmap, active milestone tracker, and standardized Keep a Changelog (SemVer) release history.
+6. **[Architecture Decision Records (ADR)](./context_docs/architecture-decision-records/README.md)** — Permanent architectural contracts and state machines (`ADR-001` through `ADR-011`).
+7. **[Business Requirements Documents (BRD)](./context_docs/business-requirements-documents/README.md)** — Core business rules, user journeys, and personas (`BRD-00` through `BRD-07`).
+8. **[Technical Implementation Documents (TID)](./context_docs/technical-implementation-documents/README.md)** — System architecture, schemas, APIs, and devops (`TID-01` through `TID-07`).
 
 ---
 
@@ -39,7 +38,7 @@ To prevent command misinterpretation or skipped instructions, every AI agent mus
 | **Type Safety** | **ZERO RAW `any`**: Maintain strict typing (`"strict": true`). Declare explicit DTOs, interfaces, or Prisma types; never cast to `any`. | [Backend & Frontend Standards (§ 3)](./context_docs/AGENT_RULES.md#3-technology-stack--architectural-standards) & [ADR-010](./context_docs/architecture-decision-records/ADR-010-ai-driven-engineering-governance-and-no-auto-commits.md) |
 | **Design System Invariant** | **ZERO INLINE STYLING**: Never use hardcoded inline colors (e.g. `Color(0x...)`, `Colors.amber`), arbitrary un-themed Tailwind values (`text-[#...]`), or scattered ad-hoc text styles. Use centralized tokens (`AppColors`, `AppTypography`, `AppSpacing`, Tailwind semantic classes). | [Design System Standard (§ 3.7)](./context_docs/AGENT_RULES.md#37-design-system-standards-zero-arbitrary-inline-styles) |
 | **Production Realism** | **ZERO PLACEHOLDER SHORTCUTS**: Implement real production code without mock fallbacks, empty `TODO`s, or deleted failing tests. | [Definition of Done (§ 5)](./context_docs/AGENT_RULES.md#5-definition-of-done-dod) |
-| **Spec-Driven Workflow** | **MANDATORY 3-PHASE WORKFLOW**: Always execute Plan & Grounding ➔ Implementation ➔ Verification & Living Docs Sync. | [Spec-Driven Workflow](./context_docs/SPEC_DRIVEN_WORKFLOW.md) |
+| **Spec-Driven Workflow** | **MANDATORY 3-PHASE WORKFLOW**: Always execute Plan & Grounding ➔ Implementation ➔ Verification & Living Docs Sync. | [Spec-Driven Workflow](./README.md#-spec-driven-development-workflow-3-phase-protocol) |
 | **Architectural Sync** | **ADR SYNCHRONIZATION**: Any modification to dependencies, state machines, storage, or ingress requires an ADR update or creation. | [Pattern Consistency (§ 8.4)](./context_docs/AGENT_RULES.md#8-pattern-consistency--living-documentation-protocol) & [ADR Index](./context_docs/architecture-decision-records/README.md) |
 | **Lean Documentation** | **CONCISE & USEFUL ONLY**: Keep all documentation clear, concise, and understandable. Do not over-populate with verbose prose or speculative filler. | [Living Docs Standard (§ 8.5)](./context_docs/AGENT_RULES.md#8-pattern-consistency--living-documentation-protocol) |
 | **Code Commenting** | **NO TRIVIAL COMMENTS**: Do not add comments on basic code, obvious functions, simple UI widgets, or routine boilerplate. Code must be self-documenting. Add comments **only** for complex algorithms, subtle business invariants, or tricky edge cases. | [Clean Code & Minimal Comments (§ 3.6)](./context_docs/AGENT_RULES.md#36-code-cleanliness--commenting-standards) |
