@@ -1,19 +1,19 @@
 # 06 — Frontend & Mobile Architecture
 
-This document specifies the client-side architectural standards for the **Flutter Mobile Applications** (Customer & Rider Apps) and the **React.js Single Page Application Web Portals** (Admin & Vendor Dashboards).
+Client-side architectures, directory layouts, native device handoffs, state management, and audio synthesis specifications for Flutter mobile apps and React 18 SPAs.
 
 ---
 
 ## 1. Flutter Mobile Architecture (Customer & Rider Apps)
 
-Both the Customer and Rider apps are built with **Flutter 3.19+** using a **Feature-First Clean Architecture** with **Riverpod 3.3.2** for reactive state management.
+Built on **Flutter 3.19+** using a **Feature-First Clean Architecture** with **Riverpod 3.3.2** for reactive state management.
 
 ### 1.1 Customer App Architecture (`apps/customer_app`)
 
 ```
 apps/customer_app/lib/
 ├── core/
-│   ├── constants/           # Colors, assets, typography, API endpoints
+│   ├── constants/           # Colors, assets, typography, API constants
 │   ├── network/             # Dio client, JWT auth interceptor, retry interceptor
 │   ├── localization/        # In-code localized string lookups & LanguageNotifier
 │   ├── storage/             # SharedPreferences local storage wrapper
@@ -22,7 +22,7 @@ apps/customer_app/lib/
     ├── addresses/           # AddressBookScreen, AddressNotifier, CustomerAddressModel
     ├── auth/                # PhoneInputScreen, OtpVerificationScreen, AuthProvider
     ├── banners/             # BannerCarousel, PromoBannerModel
-    ├── cart/                # Single-vendor CartScreen, CartNotifier, Guarded Checkout
+    ├── cart/                # CartScreen, CartNotifier, Guarded Checkout
     ├── discovery/           # SearchScreen, SearchNotifier, CategoryChips
     ├── home/                # HomeScreen, NearbyVendorsFeed, Sticky Category Bar
     ├── location/            # MapLocationPickerScreen, LocationNotifier
@@ -47,12 +47,10 @@ apps/rider_app/lib/
     ├── dashboard/           # RiderDashboardScreen, RiderDutyNotifier, TelemetryBeacon
     ├── earnings/            # RiderEarningsScreen, TimeframeToggle, CashDepositModal
     └── trips/               # ActiveTripScreen (3-Step Stepper), IncomingTripModal (45s Chime),
-                             # Doorstep Unresponsive SOP Modal (5-min Timer)
+                             # Doorstep Unresponsive SOP Modal (5-min Countdown)
 ```
 
-### 1.3 Device Native Handoff & Background Capabilities
-
-To ensure battery efficiency, low network latency, and zero external licensing overhead, native capabilities are integrated directly:
+### 1.3 Native Device Handoffs & Telemetry
 
 ```dart
 // 1. Direct Native Phone Calling
@@ -76,13 +74,13 @@ Future<void> openNativeTurnByTurnNavigation(double lat, double lng) async {
 }
 ```
 
-- **Android Foreground Location Service**: Configured in `AndroidManifest.xml` via `FOREGROUND_SERVICE_LOCATION` permission, enabling persistent 10-meter GPS beaconing even when the app is in the background.
+- **Foreground Telemetry Service**: Configured in `AndroidManifest.xml` via `FOREGROUND_SERVICE_LOCATION`, streaming 10-meter GPS updates via WebSockets when in the background.
 
 ---
 
-## 2. Dedicated React.js SPA Architecture (Admin & Vendor Portals)
+## 2. React 18 SPA Architecture (Admin & Vendor Portals)
 
-The web tier consists of two independent Single Page Applications (SPAs) built with **Vite**, **React 18**, **Tailwind CSS**, and **TanStack Query** behind Nginx subpath routing ([ADR-005](context_docs/architecture-decision-records/ADR-005-micro-frontends-and-subpath-routing.md)):
+Two independent Single Page Applications built with **Vite**, **React 18**, **Tailwind CSS**, and **TanStack Query** behind Nginx subpath routing ([ADR-005](context_docs/architecture-decision-records/ADR-005-micro-frontends-and-subpath-routing.md)):
 
 ```
 apps/
@@ -120,7 +118,7 @@ apps/
 ### 2.1 Role-Based Access Control (RBAC) Route Registries
 
 ```tsx
-// In admin_portal/src/routes/AppRoutes.tsx:
+// admin_portal/src/routes/AppRoutes.tsx:
 <Route element={<RoleGuard allowedRoles={[UserRole.SUPER_ADMIN]}><AdminLayout /></RoleGuard>}>
   <Route path="/" element={<AdminDashboardPage />} />
   <Route path="/dispatch" element={<AdminDispatchPage />} />
@@ -130,7 +128,7 @@ apps/
   <Route path="/settings" element={<AdminSettingsPage />} />
 </Route>
 
-// In vendor_portal/src/routes/AppRoutes.tsx:
+// vendor_portal/src/routes/AppRoutes.tsx:
 <Route element={<RoleGuard allowedRoles={[UserRole.VENDOR_ADMIN]}><VendorLayout /></RoleGuard>}>
   <Route path="/" element={<VendorDashboardPage />} />
   <Route path="/kds" element={<VendorDashboardPage />} />
@@ -141,8 +139,6 @@ apps/
 ```
 
 ### 2.2 Synthesized Kitchen Audio Alert Engine (ADR-007)
-
-External audio files (`.mp3`) are prone to network latency and 404 path mismatches under subpath reverse proxies. The Vendor KDS synthesizes dual-tone bell alarms directly in browser memory using the Web Audio API:
 
 ```typescript
 // apps/vendor_portal/src/utils/sound.ts
@@ -180,11 +176,10 @@ export function playOrderAlarmChime(): void {
 }
 ```
 
-- **Loop Invariant**: In `useKDSOrders.ts`, when an incoming order arrives, `startOrderAlarm()` repeats this chime every 3 seconds. The loop is cleared **only when zero unaccepted orders remain in Lane 1**.
+- **Silence Invariant**: `useKDSOrders.ts` triggers this sound every 3 seconds while new orders exist in Lane 1, stopping strictly when all orders have been accepted or rejected.
 
-### 2.3 Live Fleet Radar Engine (Leaflet + OpenStreetMap)
+### 2.3 Live Fleet Radar Engine (Leaflet OSM)
 
-Implemented in `apps/admin_portal/src/components/dispatch/LiveFleetMap.tsx`:
-- Zero external Google Maps API key requirements or per-tile billing costs.
-- Custom Leaflet `DivIcon` markers colored dynamically: Emerald (Idle), Sky (On Trip), Amber (Approaching Cash Limit), Slate (Offline).
-- Marker popups provide direct SPA links (`navigate('/orders?orderNumber=...')`), preserving the active WebSocket connection without reloading the page.
+- Implemented in `apps/admin_portal/src/components/dispatch/LiveFleetMap.tsx`.
+- Custom `DivIcon` markers styled with Tailwind: Emerald (Idle), Sky (Delivering), Amber ($\ge 80\%$ Cash Limit), Slate (Offline).
+- Marker popups provide direct SPA navigation links (`navigate('/orders?orderNumber=...')`), preserving active WebSocket connections.

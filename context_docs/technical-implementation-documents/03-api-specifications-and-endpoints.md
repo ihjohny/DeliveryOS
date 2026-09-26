@@ -1,312 +1,161 @@
 # 03 — API Specifications & Endpoints
 
-This document specifies the authoritative RESTful API contracts for the **DeliveryOS** backend (`/api/v1`). All endpoints follow standardized JSON envelopes, HTTP status codes, and strict TypeScript DTO definitions.
+RESTful API contracts, request/response DTO schemas, authentication guards, and error formats for the **DeliveryOS** backend (`/api/v1`).
 
 ---
 
-## 1. Global API Standards
+## 1. Global API Standards & Envelopes
 
 - **Base URL**: `https://api.domain.com/api/v1` (locally `http://localhost:8080/api/v1`)
-- **Content-Type**: `application/json`
-- **Authentication**: Bearer Token in `Authorization: Bearer <jwt_access_token>`
-
-### Standard Success Response Envelope:
-```json
-{
-  "success": true,
-  "statusCode": 200,
-  "message": "Operation successful",
-  "data": {}
-}
-```
-
-### Standard Error Response Envelope:
-```json
-{
-  "success": false,
-  "statusCode": 400,
-  "error": "BAD_REQUEST",
-  "message": "Detailed human-readable error description",
-  "timestamp": "2026-10-01T12:00:00.000Z"
-}
-```
+- **Headers**: `Content-Type: application/json`, `Authorization: Bearer <jwt_access_token>`
+- **Standard Response Envelopes**:
+  - *Success (200/201)*:
+    ```json
+    { "success": true, "statusCode": 200, "message": "Operation successful", "data": {} }
+    ```
+  - *Error (4xx/5xx)*:
+    ```json
+    { "success": false, "statusCode": 400, "error": "BAD_REQUEST", "message": "Reason description", "timestamp": "ISO-8601" }
+    ```
 
 ---
 
-## 2. Authentication & User Profile Module (`/auth`)
+## 2. Granular API Endpoints Catalog
 
-### 2.1 Request Phone OTP
-- **Endpoint**: `POST /auth/phone-login`
-- **Access**: Public (Rate-limited: 5 requests / 15 min per IP/phone)
-- **Request Body**:
-```json
-{
-  "phone": "+8801700000000",
-  "role": "CUSTOMER" // "CUSTOMER" | "RIDER" | "VENDOR_ADMIN"
-}
-```
-- **Response**: `{ "success": true, "message": "OTP sent successfully", "data": { "referenceId": "otp-uuid" } }`
+### 2.1 Authentication & User Session Module (`/auth`)
+- **`POST /auth/phone-login`**
+  - *Guard*: Public (Throttled: 3 req / 15 min).
+  - *Body*: `{ "phone": "+8801700000000", "role": "CUSTOMER" }` (role: `CUSTOMER` | `RIDER` | `VENDOR_ADMIN`).
+  - *Response*: `{ "referenceId": "otp-uuid" }`.
+- **`POST /auth/verify-otp`**
+  - *Guard*: Public.
+  - *Body*: `{ "phone": "+8801700000000", "otp": "123456" }`.
+  - *Response*: `{ "accessToken": "jwt...", "refreshToken": "jwt...", "user": { "id": "...", "phone": "...", "role": "..." } }`.
+- **`GET /auth/me`**
+  - *Guard*: `JwtAuthGuard`.
+  - *Response*: Hydrated user session with permissions, scopes, and profile data.
+- **`POST /auth/device-token`**
+  - *Guard*: `JwtAuthGuard`.
+  - *Body*: `{ "fcmToken": "fcm-string", "devicePlatform": "ANDROID" | "IOS" | "WEB" }`.
 
-### 2.2 Verify Phone OTP & Issue JWT
-- **Endpoint**: `POST /auth/verify-otp`
-- **Access**: Public
-- **Request Body**:
-```json
-{
-  "phone": "+8801700000000",
-  "otp": "123456"
-}
-```
-- **Response**: Returns `{ "accessToken": "jwt...", "user": { "id": "...", "phone": "...", "role": "..." } }`
-
-### 2.3 Get Current User Session
-- **Endpoint**: `GET /auth/me`
-- **Access**: Authenticated (`JwtAuthGuard`)
-- **Response**: Returns current authenticated user record with permissions and profile metadata.
-
-### 2.4 Register FCM Device Token
-- **Endpoint**: `POST /auth/device-token`
-- **Access**: Authenticated (`JwtAuthGuard`)
-- **Request Body**:
-```json
-{
-  "fcmToken": "fcm-registration-token-string",
-  "devicePlatform": "ANDROID" // "ANDROID" | "IOS" | "WEB"
-}
-```
-
----
-
-## 3. Customer Discovery, Cart & Checkout Module (`/vendors`, `/orders`, `/coupons`, `/banners`)
-
-### 3.1 Get Active Promotional Banners
-- **Endpoint**: `GET /banners/active`
-- **Access**: Public
-- **Response**: Returns sorted list of active banners with `imageUrl`, `title`, and deep-link target metadata.
-
-### 3.2 Get Nearby Outlets by Location
-- **Endpoint**: `GET /vendors/nearby`
-- **Access**: Public / Authenticated
-- **Query Params**: `lat` (required), `lng` (required), `vertical` (optional: `FOOD` | `GROCERY` | `SUPER_SHOP` | `PHARMACY`)
-- **Action**: Queries PostGIS using `ST_DWithin` returning active outlets within their `delivery_radius_km`.
-
-### 3.3 Search Outlets & Menu Items
-- **Endpoint**: `GET /vendors/search`
-- **Access**: Public / Authenticated
-- **Query Params**: `q` (keyword query), `lat` (optional), `lng` (optional)
-- **Response**: Matches outlet names and individual dish/item names available within range.
-
-### 3.4 Get Public Storefront Catalog
-- **Endpoint**: `GET /vendors/:id/catalog`
-- **Access**: Public / Authenticated
-- **Response**: Returns categories and products marked `isInStock = true`.
-
-### 3.5 Validate Address Delivery Coverage
-- **Endpoint**: `POST /vendors/validate-address-coverage`
-- **Access**: Authenticated (`CUSTOMER`)
-- **Request Body**:
-```json
-{
-  "vendorId": "vendor-uuid",
-  "addressId": "address-uuid"
-}
-```
-- **Response**: `{ "isWithinCoverage": true, "distanceKm": 2.4, "deliveryFee": 50.0 }`
-
-### 3.6 Validate Promotional Coupon
-- **Endpoint**: `POST /coupons/validate`
-- **Access**: Authenticated (`CUSTOMER`)
-- **Request Body**:
-```json
-{
-  "code": "WELCOME50",
-  "cartSubtotal": 500.0,
-  "vendorId": "vendor-uuid"
-}
-```
-
-### 3.7 Place Order Checkout
-- **Endpoint**: `POST /orders/checkout`
-- **Access**: Authenticated (`CUSTOMER`)
-- **Request Body**:
-```json
-{
-  "vendorId": "vendor-uuid",
-  "deliveryAddressId": "address-uuid",
-  "deliveryMethod": "HOME_DELIVERY",
-  "paymentMethod": "CASH_ON_DELIVERY", // or "ONLINE_GATEWAY"
-  "couponCode": "WELCOME50",
-  "customerNotes": "Please do not ring bell",
-  "items": [
+### 2.2 Customer Discovery, Cart & Checkout (`/vendors`, `/orders`, `/coupons`, `/banners`)
+- **`GET /banners/active`**
+  - *Guard*: Public.
+  - *Response*: Array of `{ "id": "...", "title": "...", "imageUrl": "...", "linkType": "OUTLET" | "CATEGORY", "targetId": "..." }`.
+- **`GET /vendors/nearby`**
+  - *Guard*: Public.
+  - *Query*: `lat` (float), `lng` (float), `vertical` (optional: `FOOD` | `GROCERY` | `SUPER_SHOP` | `PHARMACY`).
+  - *Action*: Executes PostGIS `ST_DWithin` returning outlets where user is within `delivery_radius_km`.
+- **`GET /vendors/search`**
+  - *Guard*: Public.
+  - *Query*: `q` (string), `lat` (float), `lng` (float).
+  - *Response*: Matched vendors and dishes available in range.
+- **`GET /vendors/:id/catalog`**
+  - *Guard*: Public.
+  - *Response*: Outlet categories and active products with `isInStock = true`.
+- **`POST /vendors/validate-address-coverage`**
+  - *Guard*: `JwtAuthGuard` (`CUSTOMER`).
+  - *Body*: `{ "vendorId": "uuid", "addressId": "uuid" }`.
+  - *Response*: `{ "isWithinCoverage": true, "distanceKm": 2.4, "deliveryFee": 50.0 }`.
+- **`POST /coupons/validate`**
+  - *Guard*: `JwtAuthGuard` (`CUSTOMER`).
+  - *Body*: `{ "code": "PILOT50", "cartSubtotal": 500.0, "vendorId": "uuid" }`.
+  - *Response*: `{ "isValid": true, "discountAmount": 50.0, "discountType": "FLAT" }`.
+- **`POST /orders/checkout`**
+  - *Guard*: `JwtAuthGuard` (`CUSTOMER`).
+  - *Body*:
+    ```json
     {
-      "productId": "product-uuid",
-      "quantity": 2,
-      "variantId": "variant-uuid",
-      "addonIds": ["addon-uuid-1"]
+      "vendorId": "uuid",
+      "deliveryAddressId": "uuid",
+      "deliveryMethod": "HOME_DELIVERY",
+      "paymentMethod": "CASH_ON_DELIVERY",
+      "couponCode": "PILOT50",
+      "customerNotes": "Don't ring bell",
+      "items": [{ "productId": "uuid", "quantity": 2, "variantId": "uuid", "addonIds": ["uuid"] }]
     }
-  ]
-}
-```
+    ```
+  - *Response*: `{ "orderId": "uuid", "orderNumber": "ORD-20261001-0042", "totalAmount": 500.0, "status": "PLACED" }`.
+- **`POST /orders/validate-reorder`**
+  - *Guard*: `JwtAuthGuard` (`CUSTOMER`).
+  - *Body*: `{ "previousOrderId": "uuid" }`.
+  - *Response*: `{ "isStoreOpen": true, "unavailableItemIds": [], "updatedItems": [...] }`.
+- **`GET /orders/history`**
+  - *Guard*: `JwtAuthGuard` (`CUSTOMER`).
+  - *Response*: Chronological list of user's past order receipts.
+- **`GET /orders/:id/live-tracking`**
+  - *Guard*: `JwtAuthGuard` (`CUSTOMER`).
+  - *Response*: Current status, stepper step, courier coordinates (`lat`, `lng`, `bearing`), and ETA.
+- **`POST /orders/:id/switch-cod`**
+  - *Guard*: `JwtAuthGuard` (`CUSTOMER`).
+  - *Action*: Converts pending/failed online gateway order to COD and releases to kitchen/dispatch.
+- **`POST /orders/:id/cancel`**
+  - *Guard*: `JwtAuthGuard` (`CUSTOMER`).
+  - *Condition*: Allowed only in `PLACED` or `RIDER_ASSIGNED` states.
 
-### 3.8 Validate Past Order for Re-Order
-- **Endpoint**: `POST /orders/validate-reorder`
-- **Access**: Authenticated (`CUSTOMER`)
-- **Request Body**: `{ "previousOrderId": "order-uuid" }`
-- **Response**: Returns store open status, unavailable item list, and price changes.
+### 2.3 Vendor Store & Kitchen Console Module (`/vendor`)
+- **`GET /vendor/me`**: Returns vendor staff profile, assigned outlet, and permission scope.
+- **`GET /vendor/outlets`**: Lists accessible outlets for brand owner switcher (`ALL_OUTLETS_MASTER`).
+- **`GET /vendor/orders/live?vendorId=...`**: Fetches active KDS orders grouped across 3 kanban lanes.
+- **`PATCH /vendor/orders/:id/accept`**
+  - *Body*: `{ "prepTimeMinutes": 25 }`.
+  - *Action*: Transitions order directly to `PREPARING` per ADR-002, setting `accepted_at = NOW()`.
+- **`POST /vendor/orders/:id/reject`**
+  - *Body*: `{ "reasonCode": "OUT_OF_STOCK" | "KITCHEN_OVERLOAD" | "STORE_CLOSING_SOON" | "OTHER", "reasonNotes": "..." }`.
+  - *Action*: Transitions order to `CANCELLED`.
+- **`PATCH /vendor/orders/:id/ready`**: Transitions order to `READY_FOR_PICKUP`.
+- **`PATCH /vendor/orders/:id/handover`**: Transitions order to `DISPATCHED` upon physical courier pickup.
+- **`GET /vendor/catalog?vendorId=...`**: Returns full catalog retaining sold-out items with total/in-stock counts.
+- **`PATCH /vendor/products/:id/stock`**: Body `{ "isInStock": boolean }`.
+- **`PATCH /vendor/products/variants/:id/stock`**: Body `{ "isInStock": boolean }`.
+- **`GET /vendor/settings?vendorId=...`**: Returns operating hours, default prep duration, and rush pause state.
+- **`PATCH /vendor/settings`**: Body `{ "vendorId": "uuid", "isBusy": boolean, "defaultPrepTimeMinutes": 20 }`.
+- **`PUT /vendor/operating-hours`**: Body `{ "operatingHours": [{ "dayOfWeek": 0, "openTime": "09:00", "closeTime": "22:00", "isClosed": false }] }`.
+- **`GET /vendor/sales?vendorId=...&dateFilter=TODAY`**: Returns sales volume, completed orders, commission, and net payable.
 
-### 3.9 Customer Order History & Tracking
-- **List Orders**: `GET /orders/history` (sorted with newest orders first)
-- **Order Details**: `GET /orders/:id`
-- **Live Tracking**: `GET /orders/:id/live-tracking` (returns stage, assigned courier coordinates, and ETA)
-- **Switch to Cash on Delivery (COD)**: `POST /orders/:id/switch-cod` (converts failed or pending online payments to cash)
-- **Cancel Order**: `POST /orders/:id/cancel` (permitted in `PLACED` or `RIDER_ASSIGNED` stages)
+### 2.4 Rider Fleet Operations Module (`/riders`, `/orders`)
+- **`GET /riders/profile`**: Returns courier status, vehicle, cash in hand, and max safety limit.
+- **`PATCH /riders/duty`**
+  - *Body*: `{ "isOnline": boolean, "latitude": 23.7808, "longitude": 90.4190 }`.
+  - *Invariant*: Returns `400 Bad Request` if attempting to go offline with an active delivery.
+- **`POST /riders/orders/:id/claim`**
+  - *Action*: Acquires atomic Redis mutex `SET lock:order_claim:${id} ${riderId} NX EX 45`.
+  - *Success*: Assigns courier, updates status (`RIDER_ASSIGNED`), and alerts kitchen.
+- **`POST /orders/:id/pickup`**: Confirms parcel pickup at store; transitions order to `DISPATCHED`.
+- **`POST /orders/:id/deliver`**
+  - *Body*: `{ "codCashCollected": boolean, "amountCollected": 500.0 }`.
+  - *Action*: Validates COD cash receipt, transitions order to `DELIVERED`, and updates ledgers.
+- **`POST /orders/:id/issue`**
+  - *Body*: `{ "reason": "Customer unreachable at doorstep after 5 min wait" }`.
+  - *Action*: Unlocks courier, reports doorstep failure, and alerts Dispatch HQ.
+- **`GET /riders/trips?timeframe=TODAY`**: Returns completed deliveries, payout earnings, and collected cash.
+- **`POST /riders/deposit-cash`**: Body `{ "amount": 2500.0, "referenceNo": "DEP-104", "note": "Banani Hub" }`.
 
----
+### 2.5 Super Admin Master Governance Module (`/admin`)
+- **`GET /admin/overview`**: Platform KPIs (gross revenue, active orders, online fleet, pending applicants).
+- **`GET /admin/orders`**: Paginated orders monitor filterable by status, outlet, date range, or `orderNumber`.
+- **`POST /admin/orders/:id/force-assign`**: Body `{ "riderId": "uuid" }` (bypasses automated dispatch).
+- **`POST /admin/orders/:id/cancel`**: Body `{ "reason": "Min 5 char audit reason" }` (reverses ledger and voids holds).
+- **`GET /admin/riders`**: Fleet list and radar feed (`approvalStatus=ALL | PENDING | APPROVED`).
+- **`PATCH /admin/riders/:id/approval`**: Body `{ "isApproved": boolean }`.
+- **`PATCH /admin/riders/:id/cash-limit`**: Body `{ "maxCashLimit": 8000.0 }`.
+- **`GET /admin/vendors`** / **`POST /admin/vendors`** / **`PATCH /admin/vendors/:id`**: Complete vendor CRUD.
+- **`GET /admin/banners`** / **`POST /admin/banners`** / **`PATCH /admin/banners/:id`** / **`DELETE /admin/banners/:id`**: Banner CRUD.
+- **`GET /admin/coupons`** / **`POST /admin/coupons`** / **`PATCH /admin/coupons/:id`** / **`DELETE /admin/coupons/:id`**: Coupon CRUD.
+- **`GET /admin/settings`**: Returns current FSM mode and delivery fee pricing mode.
+- **`PATCH /admin/settings/order-flow`**: Body `{ "mode": "RIDER_FIRST" | "VENDOR_FIRST" }`.
+- **`PATCH /admin/settings/delivery-fee`**: Body `{ "mode": "FIXED_FLAT" | "DISTANCE_TIERED", "flatRate": 50.0, ... }`.
+- **`GET /admin/finance/settlement-export?format=csv`**: Downloads RFC 4180 CSV settlement file.
+- **`POST /admin/finance/settlement-cycle`**: Triggers batch settlement cycle for pending orders.
+- **`PATCH /admin/finance/cash-deposits/:id/verify`**: Body `{ "status": "APPROVED" | "REJECTED" }`.
 
-## 4. Vendor Store & Kitchen Console Module (`/vendor`)
+### 2.6 Payments Module (`/payments`)
+- **`POST /payments/initiate`**: Body `{ "orderId": "uuid", "gateway": "BKASH" | "MOYASAR" | "STRIPE" }`. Returns redirect URL.
+- **`POST /payments/webhook/:gateway`**: Public HMAC verified webhook endpoint. Idempotently marks payment `PAID`.
+- **`GET /payments/status/:transactionId`**: Checks status of transaction session.
 
-> **Access Control**: Authenticated `VENDOR_ADMIN` or `SUPER_ADMIN`. Multi-branch operations enforce `PARTICULAR_OUTLET` vs `ALL_OUTLETS_MASTER` scopes ([ADR-005](context_docs/architecture-decision-records/ADR-005-micro-frontends-and-subpath-routing.md)).
-
-### 4.1 Merchant Profile & Outlets
-- **Get Staff Profile**: `GET /vendor/me` (returns assigned outlet ID and scope)
-- **List Accessible Outlets**: `GET /vendor/outlets` (returns outlet list for brand switcher)
-
-### 4.2 KDS Live Queue & Progression
-- **Get Live KDS Orders**: `GET /vendor/orders/live?vendorId=...`
-- **Accept Incoming Order**: `PATCH /vendor/orders/:id/accept`
-  - Request Body: `{ "prepTimeMinutes": 25 }` (transitions directly to `PREPARING` per ADR-002)
-- **Reject Incoming Order**: `POST /vendor/orders/:id/reject`
-  - Request Body: `{ "reasonCode": "OUT_OF_STOCK", "reasonNotes": "Ran out of ingredients" }`
-- **Mark Order Ready**: `PATCH /vendor/orders/:id/ready` (transitions to `READY_FOR_PICKUP`)
-- **Confirm Handover**: `PATCH /vendor/orders/:id/handover` (transitions to `DISPATCHED`)
-
-### 4.3 Merchant Menu Catalog & Instant Stock Toggles
-- **Get Full Merchant Catalog**: `GET /vendor/catalog?vendorId=...`
-  - *Invariant*: Retains all items including out-of-stock items, returning `totalInStock` vs `totalOutOfStock`.
-- **Toggle Product Stock**: `PATCH /vendor/products/:id/stock`
-  - Request Body: `{ "isInStock": false }`
-- **Toggle Variant Stock**: `PATCH /vendor/products/variants/:id/stock`
-  - Request Body: `{ "isInStock": false }`
-
-### 4.4 Operational Timings & Rush Hour Controls
-- **Get Store Operations Settings**: `GET /vendor/settings?vendorId=...`
-- **Update Store Operations**: `PATCH /vendor/settings`
-  - Request Body: `{ "vendorId": "...", "isBusy": true, "defaultPrepTimeMinutes": 25 }`
-- **Save Weekly Operating Schedule**: `PUT /vendor/operating-hours`
-  - Request Body: Array of 7 day schedules with `dayOfWeek`, `openTime`, `closeTime`, `isClosed`.
-
-### 4.5 Sales Ledgers & Performance
-- **Get Sales Ledger**: `GET /vendor/sales?vendorId=...&dateFilter=TODAY` (or `ALL_TIME`)
-  - Response: Completed orders count, gross volume, commission deducted, net payable, and itemized receipts.
-
----
-
-## 5. Rider Operations Module (`/riders`, `/orders`)
-
-### 5.1 Courier Duty & Profile
-- **Get Rider Profile**: `GET /riders/profile` (returns active status, vehicle, cash in hand, safety limit)
-- **Toggle Shift Duty**: `PATCH /riders/duty`
-  - Request Body: `{ "isOnline": true, "latitude": 23.7925, "longitude": 90.4078 }`
-  - *Invariant*: Returns `400 Bad Request` if attempting to go offline while carrying an active delivery (`RIDER_ASSIGNED` or `DISPATCHED`).
-
-### 5.2 Dispatch Claim Mutex
-- **Claim Broadcasted Order**: `POST /riders/orders/:id/claim`
-  - Backed by atomic Redis `SET resource_lock token NX EX 45` ([ADR-004](context_docs/architecture-decision-records/ADR-004-atomic-dispatch-claim-mutex.md)).
-
-### 5.3 3-Step Sequential Fulfillment
-- **Step 1 — Confirm Pickup**: `POST /orders/:id/pickup` (transitions to `DISPATCHED`)
-- **Step 2 — Doorstep Arrival**: Handled via mobile UI progression to handover step.
-- **Step 3 — Confirm Delivery & COD**: `POST /orders/:id/deliver`
-  - Request Body: `{ "codCashCollected": true, "amountCollected": 500.0 }` (transitions to `DELIVERED`)
-
-### 5.4 Doorstep Failure Reporting (5-Minute SOP)
-- **Report Delivery Issue**: `POST /orders/:id/issue`
-  - Request Body: `{ "reason": "Customer unreachable at doorstep after 5 min wait" }`
-  - Action: Unlocks courier, returns order to Dispatch HQ, and logs failure audit trail.
-
-### 5.5 Shift Earnings & COD Cash Settlement
-- **Get Daily Trips & Earnings**: `GET /riders/trips?timeframe=TODAY` (or `THIS_WEEK`)
-- **Submit Cash Deposit at Hub**: `POST /riders/deposit-cash`
-  - Request Body: `{ "amount": 2500.0, "referenceNo": "HUB-DEP-9821", "note": "Cash deposit at Banani Hub" }`
-
----
-
-## 6. Super Admin Master Governance Module (`/admin`)
-
-### 6.1 Platform Operational Overview
-- **Get Operational Overview**: `GET /admin/overview` (active orders, revenue, active couriers, pending applicants)
-- **List All Orders**: `GET /admin/orders` (filterable by `status`, `dateRange`, `search`)
-- **Force-Assign Courier**: `POST /admin/orders/:id/force-assign`
-  - Request Body: `{ "riderId": "rider-uuid" }`
-- **Force-Cancel Order**: `POST /admin/orders/:id/cancel`
-  - Request Body: `{ "reason": "Fraudulent address reported by customer support" }` (min 5 chars)
-
-### 6.2 Courier Fleet Governance
-- **List Fleet & Radar**: `GET /admin/riders?approvalStatus=ALL` (or `PENDING`, `APPROVED`)
-- **Toggle Courier Approval**: `PATCH /admin/riders/:id/approval`
-  - Request Body: `{ "isApproved": true }`
-- **Update Cash Safety Limit**: `PATCH /admin/riders/:id/cash-limit`
-  - Request Body: `{ "maxCashLimit": 8000.0 }`
-
-### 6.3 Vendor Management & Onboarding
-- **List Vendors**: `GET /admin/vendors`
-- **Create Vendor Directly**: `POST /admin/vendors`
-- **Update Vendor Details**: `PATCH /admin/vendors/:id`
-- **Update Vendor Status**: `PATCH /admin/vendors/:id/status` (`ACTIVE`, `SUSPENDED`, `PENDING_APPROVAL`)
-- **Assign Vendor Staff**: `POST /admin/vendors/:id/staff`
-
-### 6.4 Promotions & Master Catalog
-- **Banner CRUD**: `GET /admin/banners`, `POST /admin/banners`, `PATCH /admin/banners/:id`, `DELETE /admin/banners/:id`
-- **Coupon CRUD**: `GET /admin/coupons`, `POST /admin/coupons`, `PATCH /admin/coupons/:id`, `DELETE /admin/coupons/:id`
-- **Central Categories**: `GET /admin/catalog/categories`, `POST /admin/catalog/categories`
-
-### 6.5 System Settings & Engine Configuration
-- **Get System Settings**: `GET /admin/settings`
-- **Update Order Flow FSM**: `PATCH /admin/settings/order-flow` (`RIDER_FIRST` vs `VENDOR_FIRST`)
-- **Update Delivery Fee Mode**: `PATCH /admin/settings/delivery-fee` (`FIXED_FLAT` vs `DISTANCE_TIERED`)
-
-### 6.6 Financial Accounting & Settlements
-- **Export Settlements (CSV / JSON)**: `GET /admin/finance/settlement-export?format=csv` (or `format=json`)
-- **List Historical Settlement Batches**: `GET /admin/finance/settlement-batches`
-- **Execute Settlement Cycle**: `POST /admin/finance/settlement-cycle`
-  - Request Body: `{ "notes": "Weekly settlement payout cycle" }`
-- **List Cash Deposits**: `GET /admin/finance/cash-deposits`
-- **Verify Cash Deposit**: `PATCH /admin/finance/cash-deposits/:id/verify`
-  - Request Body: `{ "status": "APPROVED" }`
-
----
-
-## 7. Online Payment Gateways Module (`/payments`)
-
-### 7.1 Initiate Payment Session
-- **Endpoint**: `POST /payments/initiate`
-- **Guards**: `JwtAuthGuard`
-- **Request Body**: `{ "orderId": "order-uuid", "gateway": "BKASH" }` (or `MOYASAR`, `STRIPE`)
-- **Response**: `{ "paymentUrl": "https://gateway.com/pay/...", "transactionId": "TXN-...", "amount": 450.0 }`
-
-### 7.2 Webhook Ingress (Cryptographic IPN)
-- **Endpoint**: `POST /payments/webhook/:gateway`
-- **Guards**: HMAC signature validation (`x-webhook-signature`)
-- **Action**: Idempotent database transaction lock; updates `payments.status = PAID` and triggers order progression.
-
-### 7.3 Payment Status Check
-- **Endpoint**: `GET /payments/status/:transactionId`
-- **Guards**: `JwtAuthGuard`
-- **Response**: `{ "status": "PAID", "paidAt": "2026-09-25T12:00:00Z" }`
-
----
-
-## 8. Customer Saved Addresses Module (`/addresses`)
-
-- **List Addresses**: `GET /addresses`
-- **Create Address**: `POST /addresses`
-- **Update Address**: `PUT /addresses/:id`
-- **Delete Address**: `DELETE /addresses/:id`
-- **Set Default Address**: `PATCH /addresses/:id/default`
-
----
-
-## 9. Infrastructure & Health Module (`/health`, `/geo`)
-
-- **Health Probe**: `GET /health` (returns database connection status and Redis ping)
-- **Reverse Geocoding**: `GET /geo/reverse-geocode?lat=23.7925&lng=90.4078` (backed by OSM Nominatim with 24-hour Redis caching)
+### 2.7 Saved Addresses & Utilities (`/addresses`, `/health`, `/geo`)
+- **`GET /addresses`** / **`POST /addresses`** / **`PUT /addresses/:id`** / **`DELETE /addresses/:id`**: Full address book CRUD.
+- **`PATCH /addresses/:id/default`**: Sets default address.
+- **`GET /health`**: Health check probe returning PostgreSQL and Redis connection status.
+- **`GET /geo/reverse-geocode?lat=...&lng=...`**: Reverse geocoding cached in Redis for 24 hours.

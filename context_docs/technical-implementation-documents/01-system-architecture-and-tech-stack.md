@@ -1,16 +1,16 @@
 # 01 — System Architecture & Technology Stack
 
-This document defines the high-level system topology, software architectural patterns, directory structure, and technical dependencies for the **DeliveryOS** platform.
+Technical topology, software architecture patterns, repository directory layout, dependencies, and role-based security boundaries for DeliveryOS.
 
 ---
 
-## 1. System Topology & Component Diagram
+## 1. System Topology & Ingress Architecture
 
 ```mermaid
 graph TD
-    subgraph Clients["Client Applications"]
-        CA["Customer Mobile App<br/>Flutter iOS & Android"]
-        RA["Rider Mobile App<br/>Flutter iOS & Android"]
+    subgraph Clients["Client Applications Tier"]
+        CA["Customer Mobile App<br/>Flutter 3.19+ (iOS / Android)"]
+        RA["Rider Mobile App<br/>Flutter 3.19+ (iOS / Android)"]
         AP["Super Admin Web Portal<br/>React 18+ Vite SPA"]
         VP["Vendor KDS Web Portal<br/>React 18+ Vite SPA"]
     end
@@ -19,27 +19,27 @@ graph TD
         NGINX["Nginx 1.25+ Reverse Proxy<br/>Port 8080 Ingress / SSL / Subpath Routing"]
     end
 
-    subgraph WebServices["Web App Services (Docker Containers)"]
+    subgraph WebServices["Web Frontends Tier"]
         AP_SVC["Admin Portal Container<br/>Port 3000 / Root Path /"]
         VP_SVC["Vendor Portal Container<br/>Port 3001 / Subpath /vendor/"]
     end
 
-    subgraph AppTier["Application Tier"]
-        API["NestJS 10.x REST API<br/>Node.js 20 LTS TypeScript"]
-        WSS["Socket.IO 4.x WebSocket Gateway<br/>Real-Time Tracking & Alerts"]
+    subgraph AppTier["Application Services Tier"]
+        API["NestJS 10.x REST API<br/>Port 4000 / Subpath /api/v1/"]
+        WSS["Socket.IO 4.x WebSocket Gateway<br/>Port 4000 / Subpath /events"]
     end
 
-    subgraph DataTier["Data & Caching Tier"]
-        DB[("PostgreSQL 16 + PostGIS 3.4<br/>ACID Data Store & Spatial Indexes")]
-        CACHE[("Redis 7.2 In-Memory<br/>Geo Coordinates & Pub/Sub Bus")]
-        STORAGE[("AWS S3 / Cloudflare R2<br/>Static Assets & Photos")]
+    subgraph DataTier["Data & Cache Tier"]
+        DB[("PostgreSQL 16 + PostGIS 3.4<br/>ACID Relational & Spatial Storage")]
+        CACHE[("Redis 7.2 In-Memory<br/>Geo Indexes, Mutexes & Pub/Sub")]
+        STORAGE[("AWS S3 / Cloudflare R2<br/>Media & Photos Storage")]
     end
 
-    subgraph Integrations["External Provider Integrations"]
-        GMAPS["Google Maps Platform<br/>Places Autocomplete & Geocoding"]
+    subgraph ExternalServices["External Providers"]
+        GMAPS["Google Maps Platform<br/>Places & Reverse Geocoding"]
         FCM["Firebase Cloud Messaging<br/>Push Notifications"]
-        SMS["SMS Gateway API<br/>Twilio / Local SMS Gateway"]
-        PAY["Payment Gateway SDKs<br/>Moyasar / bKash / SSLCommerz"]
+        SMS["SMS Gateway (Twilio / Local)<br/>OTP Verification"]
+        PAY["Payment Gateways<br/>bKash / Moyasar / Stripe"]
     end
 
     CA -->|HTTPS / WSS| NGINX
@@ -66,118 +66,68 @@ graph TD
 
 ---
 
-## 2. Technology Stack & Version Matrix
+## 2. Technology Stack & Version Specifications
 
-| Tier | Technology | Version | Purpose & Rationale |
-| :--- | :--- | :--- | :--- |
-| **Mobile Apps** | **Flutter / Dart** | Flutter 3.19+ / Dart 3.3+ | Single codebase targeting iOS and Android with 60fps rendering, Google Maps SDK, native background geolocation, and RTL Arabic auto-mirroring. |
-| **Admin Portal** | **React.js + Vite** | React 18.2+ / Vite 5+ | Super Admin Master Console with authoritative Enterprise Indigo/Slate theme, fleet radar, dispatch override, and settings. |
-| **Vendor Portal** | **React.js + Vite** | React 18.2+ / Vite 5+ | Dedicated Merchant & Kitchen Console (KDS) with warm Amber/Orange culinary theme, audio alarm, and catalog stock toggles. |
-| **Backend API** | **NestJS** | NestJS 10.x / Node.js 20 LTS | Enterprise TypeScript framework with modular architecture, strict dependency injection, and auto-generated Swagger/OpenAPI specifications. |
-| **Primary Database** | **PostgreSQL** | PostgreSQL 16.x | Relational ACID database ensuring financial integrity, foreign key cascades, and complex order transaction isolation. |
-| **Spatial Engine** | **PostGIS** | PostGIS 3.4+ | Spatial indexing (`ST_DWithin`, `ST_MakePoint`) for millisecond-speed geofence restaurant discovery and boundary checks. |
-| **Cache & Realtime**| **Redis** | Redis 7.2+ | Sub-millisecond rider location caching (`GEOADD`, `GEORADIUS`), distributed locks for order dispatch, and WebSocket session state. |
-| **WebSockets** | **Socket.IO** | Socket.IO 4.7+ | Bidirectional real-time communication for kitchen sound alerts, order state change broadcasts, and live rider map tracking. |
-| **Reverse Proxy** | **Nginx** | 1.25+ (Alpine) | SSL/TLS termination, request buffering, static asset serving, and WebSocket proxying (`Upgrade: websocket`). |
+- **Mobile Client Applications**:
+  - **Framework**: Flutter 3.19+ / Dart 3.3+.
+  - **State Management**: Riverpod 3.3.2 (Feature-first architecture).
+  - **Networking & Storage**: Dio with JWT interceptors; secure shared preferences.
+  - **Hardware Integrations**: Android Foreground Location Service, native dialer (`tel:`), native turn-by-turn navigation (`google.navigation:` / `maps.apple.com`).
+  - **Localization**: Built-in RTL auto-mirroring (Arabic `ar`), English (`en`), Bengali (`bn`).
+- **Web Applications**:
+  - **Framework**: React 18.2+ / Vite 5+ SPA.
+  - **Styling**: Tailwind CSS 3.4+ (Admin: Enterprise Indigo/Slate; Vendor: Warm Amber/Orange).
+  - **State & Data**: TanStack Query 5.x with Socket.IO cache invalidation; Zustand auth session.
+  - **Audio Engine**: Web Audio API oscillator synthesis (D5 587.33 Hz + A5 880 Hz).
+  - **Mapping Engine**: Leaflet 1.9+ with OpenStreetMap tiles (Zero API cost).
+- **Backend Application Services**:
+  - **Runtime & Framework**: Node.js 20 LTS / NestJS 10.x with TypeScript 5.x.
+  - **API Protocols**: RESTful JSON API (`/api/v1`) with Swagger/OpenAPI; Socket.IO 4.7+ (`/events`).
+  - **Concurrency Engine**: Redis distributed mutex (`SET NX EX 45`) for atomic order claiming.
+- **Data & Storage Tier**:
+  - **Relational Database**: PostgreSQL 16.x (ACID transactions, foreign key cascades).
+  - **Spatial Engine**: PostGIS 3.4+ (`GEOGRAPHY(Point, 4326)`, `ST_DWithin`, GiST indexing).
+  - **In-Memory Cache & Pub/Sub**: Redis 7.2+ (`GEOADD`, `GEOSEARCH`, Pub/Sub bus).
+  - **Object Storage**: AWS S3 / Cloudflare R2 for dish photos and merchant banners.
+- **Edge Ingress**:
+  - **Reverse Proxy**: Nginx 1.25+ Alpine (Port 8080 local ingress, subpath routing, WebSocket upgrades).
 
 ---
 
-## 3. Recommended Repository & Directory Structure
-
-To maximize engineering efficiency, the project is organized as a clean modular monorepo:
+## 3. Monorepo Directory Organization
 
 ```
 DeliveryOS/
 ├── apps/
 │   ├── customer_app/           # Flutter Customer App (iOS & Android)
-│   │   ├── lib/
-│   │   │   ├── core/           # Constants, themes, network, localization (en/ar/bn)
-│   │   │   ├── features/       # auth, home, store, cart, checkout, tracking, reorder
-│   │   │   └── main.dart
-│   │   └── pubspec.yaml
-│   │
+│   │   ├── lib/core/           # Constants, networking, themes, i18n (en/ar/bn), storage
+│   │   └── lib/features/       # auth, discovery, store, cart, checkout, tracking, reorder
 │   ├── rider_app/              # Flutter Rider App (iOS & Android)
-│   │   ├── lib/
-│   │   │   ├── core/           # Background location service, audio alerts, network
-│   │   │   ├── features/       # duty_toggle, order_broadcast, fulfillment, wallet
-│   │   │   └── main.dart
-│   │   └── pubspec.yaml
-│   │
-│   ├── admin_portal/           # React.js SPA (Vite + TailwindCSS - Enterprise Indigo)
-│   │   ├── src/
-│   │   │   ├── components/     # UI components (Button, Modal, Table, LanguageSelector)
-│   │   │   ├── pages/admin/    # Dashboard, Vendors, Dispatch, Orders, Promotions, Settings
-│   │   │   ├── routes/         # RoleGuard & Super Admin routing
-│   │   │   ├── layouts/        # AdminLayout & AuthLayout
-│   │   │   └── main.tsx
-│   │   └── package.json
-│   │
-│   └── vendor_portal/          # React.js SPA (Vite + TailwindCSS - Warm Amber/Orange)
-│       ├── src/
-│       │   ├── components/     # KDSOrderCard, CountdownTimer, OutletSwitcher, UI
-│       │   ├── pages/vendor/   # KDS Kitchen Console, Catalog & Stock, Settings, Orders Ledger
-│       │   ├── routes/         # RoleGuard & Vendor Admin routing
-│       │   ├── layouts/        # VendorLayout & AuthLayout
-│       │   └── main.tsx
-│       └── package.json
-│
+│   │   ├── lib/core/           # Background location service, audio alerts, networking
+│   │   └── lib/features/       # auth, dashboard, trips (3-step fulfillment), earnings
+│   ├── admin_portal/           # React 18 Vite SPA (Enterprise Indigo theme - Port 3000)
+│   │   ├── src/components/     # LiveFleetMap (Leaflet), UI primitives, Modals
+│   │   └── src/pages/admin/    # Dashboard, Dispatch, Orders, Promotions, Vendors, Settings
+│   └── vendor_portal/          # React 18 Vite SPA (Warm Amber culinary theme - Port 3001)
+│       ├── src/components/     # KDSOrderCard, CountdownTimer, OutletSwitcher
+│       ├── src/pages/vendor/   # KDS Kitchen Console, Catalog & Stock, Settings, Orders
+│       └── src/utils/sound.ts  # Web Audio API in-memory oscillator chime
 ├── services/
-│   └── backend_api/            # NestJS Backend API
-│       ├── src/
-│       │   ├── common/         # Guards, decorators, filters, interceptors, utils
-│       │   ├── config/         # Environment configuration (SAR/BDT, Gateways)
-│       │   ├── database/       # Prisma or TypeORM schema & PostGIS migrations
-│       │   ├── modules/
-│       │   │   ├── auth/       # Phone OTP, JWT, Role guards
-│       │   │   ├── users/      # Customers, Vendors, Riders, Admins
-│       │   │   ├── vendors/    # Store management, Categories, Menus/SKUs
-│       │   │   ├── orders/     # FSM state machine, checkout, validation
-│       │   │   ├── dispatch/   # Redis Geo broadcast & manual override
-│       │   │   ├── tracking/   # Socket.IO gateway & live coordinates
-│       │   │   ├── billing/    # Commission ledger & batch settlement export
-│       │   │   └── notifications/ # Push notification (FCM) & SMS
-│       │   ├── app.module.ts
-│       │   └── main.ts
-│       └── package.json
-│
-├── deploy/                     # Docker Compose, Nginx ingress conf, SQL scripts
-│   ├── docker-compose.yml      # Local development multi-container stack
-│   ├── docker-compose.prod.yml # Production Cloud VPS stack (SSL & certbot)
-│   ├── nginx.local.conf        # Edge ingress proxy configuration
-│   └── init-postgis.sql        # PostGIS extension initialization
-│
-└── README.md
+│   └── backend_api/            # NestJS Backend API (Port 4000)
+│       └── src/modules/        # auth, users, vendors, orders, dispatch, tracking, billing
+├── deploy/                     # Docker Compose, Nginx ingress config, PostGIS SQL scripts
+└── context_docs/               # Authoritative BRDs, TIDs, ADRs, and WBS documentation
 ```
 
 ---
 
 ## 4. Security & Role-Based Access Control (RBAC)
 
-The backend enforces stateless JWT authentication with refresh token rotation and hierarchical Role Guards:
-
-```
-                  ┌──────────────────────┐
-                  │    JWT Auth Guard    │
-                  └──────────┬───────────┘
-                             │
-            ┌────────────────┴────────────────┐
-            ▼                                 ▼
-┌───────────────────────┐         ┌───────────────────────┐
-│  SUPER_ADMIN Guard    │         │  VENDOR_ADMIN Guard   │
-├───────────────────────┤         ├───────────────────────┤
-│ Full read/write access│         │ Scoped to single      │
-│ across all entities   │         │ `vendor_id` via JWT   │
-└───────────────────────┘         └───────────────────────┘
-            │                                 │
-            ▼                                 ▼
-┌───────────────────────┐         ┌───────────────────────┐
-│     RIDER Guard       │         │    CUSTOMER Guard     │
-├───────────────────────┤         ├───────────────────────┤
-│ Scoped to trips and   │         │ Scoped to own orders, │
-│ active assignments    │         │ carts, and addresses  │
-└───────────────────────┘         └───────────────────────┘
-```
-
-- **Vendor Scope Isolation**: NestJS interceptors automatically inject `WHERE vendor_id = req.user.vendorId` into all database queries executed by vendor users, preventing cross-tenant data leaks.
-- **Super Admin Bypass**: Requests with role `SUPER_ADMIN` bypass vendor scope isolation, allowing central editing of any store's catalog or settings.
-- **Rate Limiting**: Nginx and NestJS Throttler guard all public endpoints (especially Phone OTP requests: max 3 requests per 5 minutes per IP/phone).
+- **Authentication Protocol**: Stateless JWT with short-lived access tokens (15m–24h) and secure refresh tokens (30d).
+- **Role Hierarchy**:
+  - `SUPER_ADMIN`: Unrestricted global read/write authority across all tenants and entities.
+  - `VENDOR_ADMIN`: Scoped to merchant outlets. Injected multi-tenant constraint: `WHERE vendor_id = req.user.vendorId` (or brand-wide for `ALL_OUTLETS_MASTER`).
+  - `RIDER`: Scoped to assigned deliveries and active trip operations.
+  - `CUSTOMER`: Scoped to user's own orders, carts, and saved addresses.
+- **Rate Limiting**: NestJS Throttler guards public endpoints (Phone OTP: max 3 requests / 15 min per IP/phone).
+- **Payment Verification Gate**: Webhook ingress strictly verified via cryptographic HMAC signatures (`x-webhook-signature`).

@@ -1,195 +1,158 @@
-# DeliveryOS — Master Product Overview & Feature Guide
-### The Complete Plain-English Guide for Business Owners, Clients & Non-Technical Partners
+# 00 — Master Product Overview & Capability Catalog
+
+High-density product specification detailing core business capabilities, stakeholder applications, operational workflows, and commercial mechanics across the DeliveryOS platform.
 
 ---
 
-## 1. What is DeliveryOS?
+## 1. Platform Topology & Applications
 
-**DeliveryOS** is an all-in-one on-demand multi-vendor delivery platform. It connects local businesses—such as restaurants, cafes, grocery shops, and pharmacies—with nearby customers through a dedicated delivery fleet.
+DeliveryOS connects merchants, customers, and delivery couriers through 4 unified applications backed by a centralized real-time API:
 
-The platform provides everything needed to launch and scale a delivery business:
-1. 📱 **Customer Mobile App** (iPhone & Android)
-2. 🛵 **Delivery Rider Mobile App** (iPhone & Android)
-3. 🏪 **Store & Kitchen Web Portal** (Tablet, Laptop & Mobile friendly)
-4. 👑 **Super Admin Master Console** (Complete business governance)
-
----
-
-## 2. Platform Highlights & Key Business Advantages
-
-- 🛡️ **Zero Food Waste Order Flow**: A delivery rider is secured **before** the kitchen starts cooking. The restaurant never wastes food on an unassigned order.
-- 🎯 **Smart Geofenced Address Guard**: Customers can freely adjust their delivery address on the map, but the system intelligently prevents selecting any address outside the chosen outlet's delivery coverage radius.
-- 🏢 **2-Level Vendor Hierarchy**: Support both single-branch shop managers (*Particular Outlet Permission*) and multi-branch chain owners (*Master Vendor Permission for All Outlets*).
-- 🏷️ **Promotions & Coupon Engine**: Engage customers with dynamic home-screen promotional banners and flexible discount coupons (percentage or flat discounts).
-- 💵 **Flexible Delivery Fee**: Toggle between a simple **Fixed Flat Delivery Fee** (e.g. 50 ৳ or 12 ﷼) or a distance-based fee with one click in your admin panel.
-- 👑 **100% Master Control**: As the platform owner, you have full authority to create, edit, price-override, or disable any store's menu items centrally.
-- 🔄 **Smart Re-Order**: Customers can repeat past orders in one tap. The system automatically verifies that the store is open and items are in stock before checkout.
-- 📞 **Instant Phone Connection**: Customers, riders, and stores can call each other directly with one tap using their phone's native dialer—avoiding text chat confusion.
-- 🛒 **Multi-Vertical Flexibility**: Sell restaurant meals (with cheese/sauce add-ons), groceries by weight (kg/grams), or pharmacy items in the same platform.
-- 🌍 **Dual-Region Ready**: Built-in support for **Saudi Arabia** (SAR currency, Arabic Right-to-Left layout, +966 phone numbers) and **South Asia** (BDT currency, Bengali/English, +880 phone numbers).
+1. **Customer Mobile Application** (Flutter iOS & Android):
+   - Discovery, cart customization, geofenced checkout, live order tracking, phone dialer handoff, and smart re-order.
+2. **Rider Mobile Application** (Flutter iOS & Android):
+   - Shift duty switch, broadcast alert claiming, 3-step fulfillment workflow, native GPS navigation handoff, and Cash-on-Delivery (COD) reconciliation.
+3. **Store & Kitchen Web Portal** (React 18 SPA — `/vendor`):
+   - 3-lane Kitchen Display System (KDS), in-memory synthesized Web Audio chime, item/variant stock toggles, operating hours, and sales ledger.
+4. **Super Admin Master Console** (React 18 SPA — `/admin`):
+   - Global platform governance, live courier fleet radar, manual dispatch override, master catalog authority, promo banner/coupon engine, and RFC 4180 CSV settlements.
 
 ---
 
-## 3. The 4 Platform Stakeholders & Applications
+## 2. Core Business Invariants & Capabilities
 
-DeliveryOS is designed to deliver a smooth, balanced experience across all four essential stakeholders:
+### 2.1 Food Waste Prevention Flow (`RIDER_FIRST`)
+- **Rule**: Couriers are matched and assigned **before** kitchen preparation begins.
+- **Trigger**: Customer checkout completes (and online payment verifies, if applicable).
+- **Execution**: System broadcasts order to available riders within 3–5 km. Once a courier claims the order, the store KDS sounds the arrival chime for kitchen acceptance.
+- **Benefit**: Eliminates food waste and financial loss caused by unassigned cooked meals.
+
+### 2.2 Geofenced Address Guard
+- **Rule**: Customers cannot place orders to delivery coordinates located outside an outlet's configured delivery radius.
+- **Validation**: PostGIS spatial boundary evaluation:
+  ```sql
+  ST_DWithin(customer_address.coordinates, vendor.coordinates, vendor.delivery_radius_km * 1000) = TRUE
+  ```
+- **Edge Case**: If the delivery pin is shifted outside the delivery zone during cart review, checkout is blocked with an explicit out-of-boundary alert.
+
+### 2.3 Single-Vendor Cart Boundary
+- **Rule**: Cart contents must originate from exactly one vendor outlet.
+- **Conflict Handling**: Adding an item from a different store prompts a confirmation dialog to clear the existing cart before adding the new item.
+
+### 2.4 Multi-Vertical Catalog Flexibility
+- **Restaurants & Cafes**: Dish items with single-choice variants (e.g., sizes) and multiple optional add-ons/toppings.
+- **Groceries & Super Shops**: Packaged products and bulk produce sold by weight unit (`kg`, `500g`, `grams`, `piece`).
+- **Pharmacies & Essentials**: Standard unit OTC healthcare items.
+
+### 2.5 Dual-Tier Vendor Hierarchy
+- **Particular Outlet Permission**: Scoped strictly to a single physical outlet ID for branch managers (isolated KDS, local stock toggles, store-specific sales).
+- **All Outlets Master Permission**: Scoped to brand owner accounts across all chain locations (branch switching, consolidated brand reports, brand-wide menu management).
+
+### 2.6 Configurable Delivery Economics
+- **Fixed Flat Fee**: Constant fee per delivery (default pilot: 50.00 BDT / 12.00 SAR).
+- **Distance-Tiered Fee**: Base fee up to base distance + incremental rate per additional kilometer:
+  $$\text{Fee} = \text{base\_fee} + \max(0, \text{distance\_km} - \text{base\_km}) \times \text{per\_km\_rate}$$
+
+### 2.7 Native Device Handoffs
+- **Voice Communication**: Direct OS phone dialer (`tel:`) shortcuts connecting customers, merchants, and riders without intermediary telephony costs.
+- **Turn-by-Turn Navigation**: Direct handoff to native Google Maps (`google.navigation:`) or Apple Maps (`maps.apple.com`).
+
+### 2.8 Dual-Region Localization
+- **Bangladesh (`BD`)**: BDT (`৳`), English / Bengali, `+880` phone prefix.
+- **Saudi Arabia (`KSA`)**: SAR (`﷼`), Arabic RTL / English, `+966` phone prefix.
+
+---
+
+## 3. Stakeholder Feature Breakdown
+
+### 3.1 Customer Experience
+- **Authentication**: Phone OTP verification with guest browsing enabled until checkout.
+- **Discovery**: Real-time nearby merchant feed filtered by geofence, vertical tags, and active operational status (`OPEN`, `CLOSED`, `BUSY`).
+- **Instant Search**: Search results allow direct `ADD +` into cart with item customizer modal.
+- **Discounts**: Dynamic promo banners and coupon engine (percentage or flat discount with minimum spend limits).
+- **Payment Choice**: Cash on Delivery (COD) or Online Payment Gateway (bKash, Moyasar, Stripe).
+- **Failure Fallback**: Instant "Switch to Cash (COD)" option if an online payment attempt fails or remains unverified.
+- **Live Tracking**: Visual 6-stage order stepper and live courier motorcycle icon on interactive map.
+- **Smart Re-Order**: 1-tap re-order from history with automated verification of current store hours, item availability, and updated prices.
+
+### 3.2 Rider Fleet Operations
+- **Onboarding**: Minimal profile entry with administrative verification gate (`is_approved = true`).
+- **Duty State**: Online/offline shift toggle with **In-Flight Duty Lock** (couriers cannot go offline while carrying active orders).
+- **Broadcast Modal**: 45-second animated countdown with haptic vibration, system alert chime, store name, distance, delivery area, and payout.
+- **Sequential Fulfillment**:
+  - *Step 1*: Claim broadcast and travel to store (`POST /orders/:id/pickup`).
+  - *Step 2*: Navigate to customer doorstep coordinates.
+  - *Step 3*: Verify physical delivery and check mandatory COD cash collection box (`POST /orders/:id/deliver`).
+- **Doorstep SOP**: 5-minute digital countdown timer and two-call protocol for unresponsive customers before returning parcel to Dispatch HQ.
+- **Wallet & Cash Limit**: Daily earnings ledger with real-time tracking of collected COD cash against configured safety limit (`max_cash_limit`).
+
+### 3.3 Vendor Store Operations
+- **KDS Board**: 3-lane kanban board (`New Orders` ➔ `In Preparation` ➔ `Ready for Pickup`).
+- **Audio Chime**: In-memory Web Audio oscillator alert (D5 587 Hz + A5 880 Hz) repeating every 3 seconds until all incoming orders are acknowledged.
+- **Preparation Controls**: 1-tap accept with default prep time (e.g., 20m) or custom selector pills (`15m`, `25m`, `35m`, `45m`).
+- **Rejection Modal**: Mandatory rejection reason code (`OUT_OF_STOCK`, `KITCHEN_OVERLOAD`, `STORE_CLOSING_SOON`, `OTHER`).
+- **Stockout Management**: Instant 1-click stock switches for items and variants, retaining sold-out items on merchant view for easy reactivation.
+- **Emergency Controls**: Header-level "Rush Hour Pause" button blocking customer checkout during kitchen surges.
+
+### 3.4 Super Admin Governance
+- **Fleet Radar**: Interactive Leaflet OSM map tracking active riders and unassigned orders with color-coded operational states.
+- **Dispatch Override**: Force-assign any unassigned order to an online courier; force-cancel orders with mandatory 5-character audit reason.
+- **Applicant Queue**: Approve, reject, or adjust cash safety limits for registered couriers.
+- **Master Catalog Authority**: Centrally modify, re-price, or toggle items across all merchant menus.
+- **Promotions Management**: Schedule homepage banners and create discount coupons with usage quotas.
+- **Financial Settlement**: RFC 4180 CSV export for vendor net payables and courier earnings; trigger batch settlement cycles.
+
+---
+
+## 4. End-to-End Operational Lifecycle (`RIDER_FIRST`)
 
 ```
-                  ┌─────────────────────────────────────────┐
-                  │      👑 Super Admin Master Console      │
-                  │  (Banners, Coupons, Fleet, Catalog, Ops)│
-                  └───────┬─────────────────────────┬───────┘
-                          │                         │
-            ┌─────────────┴───────────┐ ┌───────────┴─────────────┐
-            │ 🏪 Store Kitchen Portal │ │ 🛵 Delivery Rider App   │
-            │ (Audio Alerts, 2-Tier   │ │ (Duty Switch, Broadcast,│
-            │  Permissions, Prep Time)│ │  Turn-by-Turn, Handover)│
-            └─────────────┬───────────┘ └───────────┬─────────────┘
-                          │                         │
-                          └───────────┬─────────────┘
-                                      │
-                        ┌─────────────▼─────────────┐
-                        │   📱 Customer Mobile App  │
-                        │ (Map Pick, Banners, Guard,│
-                        │  Coupons, Tracking, Re-Do)│
-                        └───────────────────────────┘
-```
-
----
-
-### 3.1 📱 Customer Mobile App (iOS & Android)
-
-Designed for fast browsing, effortless ordering, and live visibility:
-
-| Feature Area | What It Does for the Customer |
-| :--- | :--- |
-| **Smooth Authentication** | Fast login with mobile number via SMS OTP, plus guest browsing so customers can explore stores before signing up. |
-| **Hassle-Free Map Location** | Drop a pin on an interactive map to automatically filter and display only the outlets actively serving that exact location. |
-| **Promotional Offer Banners** | Eye-catching top carousel on the home screen highlighting deals, seasonal campaigns, or featured outlets. |
-| **Vendor & Item Discovery** | Browse by store or use the instant search bar to find specific dishes, groceries, or stores by name. |
-| **Categorized Outlet Menus** | View outlet menus neatly arranged into sticky categories (e.g. Burgers, Drinks, Desserts, Fresh Produce). |
-| **Item Customization** | Pick a single variant (e.g. Regular, Large, 1 kg) and add optional toppings or extras (e.g. extra cheese, sauce). |
-| **Item Count & Cart Review** | Adjust item quantities (+/-), review order subtotal, and maintain single-store cart simplicity. |
-| **Smart Address Coverage Guard** | Add or edit delivery address directly in the cart, but the system **intelligently blocks any address outside the store's delivery coverage radius**, preventing failed deliveries. |
-| **Delivery & Payment Choice** | Choose between **Home Delivery** or **Takeaway (Self-Pickup)**, and pay via **Cash on Delivery (COD)** or **Online Payment**. |
-| **Coupon Code Discount** | Enter a promo coupon code at checkout to receive an instant flat or percentage discount on eligible orders. |
-| **Live Map Order Tracking** | Watch the order progress through every step with live rider movement tracked on an interactive map. |
-| **1-Tap Direct Call** | Prominent one-tap buttons connect directly to the rider or store via phone dialer for quick voice updates. |
-| **Smart 1-Tap Re-Order** | Repeat any past order from history; the app automatically checks item availability and store hours before checkout. |
-
----
-
-### 3.2 🛵 Delivery Rider Mobile App (iOS & Android)
-
-Designed to be simple, sunlight-readable, and usable with gloves on:
-
-| Feature Area | What It Does for the Rider |
-| :--- | :--- |
-| **Admin-Approved Registration** | Register with phone number, name, and vehicle type; account activates immediately once Super Admin approves. |
-| **Secure Login** | Quick login using approved credentials to access assigned trips and daily earnings. |
-| **Work Mode Toggle** | Prominent duty switch to go **Online** (ready to receive trip requests) or **Offline** (taking a break). |
-| **Detailed Order Broadcasts** | Loud incoming chime with a clear order preview: pickup outlet, customer delivery area, distance, and rider payout. |
-| **Instant Order Acceptance** | Single tap to claim the trip and secure the delivery assignment. |
-| **Turn-by-Turn Voice Navigation**| One tap launches device-native Google Maps or Apple Maps for voice-guided navigation to store and customer. |
-| **Step-by-Step Fulfillment** | Three simple milestones: **Pick Up Food** at counter ➔ **Navigate to Customer** ➔ **Mark Delivered**. |
-| **Doorstep Cash Collection** | For COD orders, collect cash at the door and verify collection with a simple checkbox. |
-| **Direct Customer Dial** | One-tap phone button to contact the customer directly upon arriving at the building gate. |
-| **Daily Earnings & Cash Limit** | Real-time wallet tracking total deliveries, earnings, and cash collected with an automatic safety limit. |
-
----
-
-### 3.3 🏪 Store & Kitchen Web Portal (Dedicated React App — Port 3001)
-
-Runs as an independent React application (`apps/vendor_portal`) with a warm Amber & Flame Orange culinary theme optimized for kitchen tablets, cashier PCs, and counter displays:
-
-| Feature Area | What It Does for Store Owners & Kitchen Staff |
-| :--- | :--- |
-| **Flexible Onboarding** | Apply online via a registration form, OR have the platform Super Admin create and configure the account directly. |
-| **Admin Approval Workflow** | All self-registered vendor applications are reviewed and approved by the Super Admin before going live. |
-| **2-Level Permission Hierarchy** | **1. Particular Outlet Permission**: Branch manager access to run a single physical location.<br/>**2. All Outlets Permission (Master Vendor)**: Multi-outlet chain owner access to oversee all brand branches. |
-| **Menu & Catalog Customizer** | Create and edit categories, items, variants (sizes, weights), and toppings/add-on groups with photos and prices. |
-| **Instant Stock Toggle** | 2-tap switch to mark any item or variant **In Stock** or **Out of Stock** immediately. |
-| **Continuous Audio Chime** | Plays a persistent ringing chime when a new order arrives until kitchen staff acknowledges it. |
-| **Full Order Details & Rider Badge**| Clear display of items, toppings, customer notes, and badge confirming the assigned delivery rider. |
-| **Flexible Prep Time Selection** | Accept with a custom prep timer (`15m`, `25m`, `40m`) OR tap one-click accept with the store's **Default Prep Time**. |
-| **Food Ready Notification** | Tap **"Ready for Pickup"** once packaged, alerting the waiting rider to collect the order at the counter. |
-| **Rider Handover Confirmation** | Mark order handed over to the rider as they depart the store. |
-| **Operating Hours & Rush Pause** | Configure weekly opening/closing times; tap **"Pause Orders"** during unexpected kitchen rushes. |
-| **Financial Ledger & Reports** | Transparent view of daily sales, platform commissions deducted, and net payout balances. |
-
----
-
-### 3.4 👑 Super Admin Master Console (Dedicated React App — Port 3000)
-
-The central command headquarters running as an independent React application (`apps/admin_portal`) with an authoritative Enterprise Indigo & Slate theme:
-
-| Feature Area | What It Does for the Platform Owner |
-| :--- | :--- |
-| **Complete Business Governance** | 100% centralized authority to oversee and control all stores, riders, customers, and transactions. |
-| **Promotional Banner Management** | Create, schedule, and reorder home-screen banners linking to specific outlets, categories, or campaigns. |
-| **Coupon Code Management** | Create promo codes with percentage or flat discounts, minimum spend limits, expiry dates, and usage caps. |
-| **Rider Fleet Administration** | Review and approve rider registrations, monitor active online fleet on a live radar map, and enforce cash limits. |
-| **Restaurant & Outlet Management** | Approve vendor applications, create new stores directly, and assign Particular Outlet or Master Vendor permissions. |
-| **Master Catalog Authority** | Centrally create global categories, edit any store's menu, apply price overrides, or disable items across the platform. |
-| **Live Order Monitor & Dispatch Override**| Real-time dashboard of all active orders with one-click ability to manually reassign orders to any online rider. |
-| **Delivery Fee Control** | Toggle between **Fixed Flat Delivery Fee** (e.g. 50 BDT / 12 SAR) and dynamic road-distance pricing. |
-| **Automated Financial Settlements** | Generate weekly payout statements for stores and riders ready for bank transfers (CSV/Excel export). |
-| **Multi-Region & Localization** | Instant toggle between Saudi Arabia (SAR, Arabic RTL, +966) and South Asia (BDT, Bengali, +880). |
-
----
-
-## 4. How the "Zero Food Waste" Order Workflow Works
-
-```
-1. CUSTOMER PLACES ORDER
-   ├── App verifies outlet is open and selected items are in stock.
-   └── Smart Address Guard ensures delivery pin is strictly within outlet coverage.
-
-2. SYSTEM SECURES A RIDER FIRST
-   ├── Broadcasts trip alert to available online riders within 3–5 km.
-   └── Rider accepts trip ──► Delivery is now GUARANTEED.
-
-3. KITCHEN CHIME RINGS AT THE STORE
-   ├── Store manager hears continuous audio alert showing order items and assigned rider.
-   └── Store manager approves order using custom prep time OR default prep time.
-
-4. RIDER TRAVELS TO STORE WHILE FOOD IS COOKING
-   └── Kitchen prepares food; food finishes cooking right as the rider arrives.
-
-5. FOOD READY & HANDOVER
-   ├── Store taps "Ready for Pickup" when packaged.
-   └── Rider arrives at counter, collects parcel, and confirms pickup.
-
-6. RIDER DELIVERS TO CUSTOMER
-   ├── Rider navigates to customer doorstep using native turn-by-turn navigation.
-   └── If Cash on Delivery, rider collects payment, checks "Cash Collected", and completes trip.
+[1. Customer Checkout] ──► Validates open status, items in stock & geofenced address.
+          │
+          ▼
+[2. Proximity Dispatch] ──► Redis GEORADIUS finds online couriers within 3–5 km.
+          │
+          ▼
+[3. Atomic Mutex Claim] ──► First courier claims order via Redis SET NX EX lock.
+          │
+          ▼
+[4. KDS Arrival Alert]  ──► Kitchen chime sounds; merchant accepts with prep duration.
+          │
+          ▼
+[5. Counter Handover]   ──► Kitchen prepares order; marks READY_FOR_PICKUP; rider picks up.
+          │
+          ▼
+[6. Doorstep Handover]  ──► Rider navigates to customer, collects COD (if cash), marks DELIVERED.
+          │
+          ▼
+[7. Ledger Accounting]  ──► Deterministic double-entry commission & rider earnings ledger updated.
 ```
 
 ---
 
-## 5. How Money & Accounting Flows
+## 5. Commercial Accounting Breakdown
 
-Dispute-free financial balance managed automatically:
+Dispute-free settlement arithmetic executed per completed order:
 
-```
-Customer Pays Total:          550.00 BDT
-  • Food Subtotal:            500.00 BDT
-  • Delivery Fee:              50.00 BDT
-  • Coupon Discount:         -  0.00 BDT (Applied if coupon is valid)
-─────────────────────────────────────────────
-Platform Deductions:
-  • Vendor Commission (15%): - 75.00 BDT
-─────────────────────────────────────────────
-Net Vendor Payout:            425.00 BDT (Transferred weekly via Bank)
-Rider Trip Earnings:           40.00 BDT (Credited to rider wallet)
-Platform Net Profit:           85.00 BDT (75 commission + 10 delivery fee margin)
-```
+$$\begin{aligned}
+\text{Gross Subtotal} &= \sum (\text{item\_price} \times \text{qty}) + \text{add-ons} \\
+\text{Net Subtotal} &= \text{Gross Subtotal} - \text{Coupon Discount} \\
+\text{Total Customer Paid} &= \text{Net Subtotal} + \text{Delivery Fee} + \text{Tax} \\
+\text{Platform Commission} &= \text{Net Subtotal} \times \left(\frac{\text{commission\_rate}}{100}\right) \\
+\text{Net Vendor Payable} &= \text{Net Subtotal} - \text{Platform Commission} \\
+\text{Platform Net Margin} &= \text{Platform Commission} + (\text{Delivery Fee} - \text{Rider Earnings})
+\end{aligned}$$
 
 ---
 
-## 6. Recommended 1-Month Pilot Plan (10 Partner Stores)
+## 6. Pilot Execution Parameters (10 Vendors)
 
-- **Target Area**: A single 3 to 5 km radius neighborhood with high density.
-- **Partner Mix**: 7 popular food restaurants + 3 neighbourhood grocery/super shops.
-- **Rider Team**: 5 to 8 active riders for prompt, reliable 30-minute delivery.
-- **Goal**: Perfect operations, zero food waste, and complete merchant satisfaction before onboarding the next 50+ stores.
+- **Pilot Radius**: Concentrated 3–5 km dense delivery zone.
+- **Merchant Mix**: 7 restaurants/cafes + 3 grocery/super shops.
+- **Courier Fleet**: 5–8 pre-approved active riders.
+- **Pricing Mode**: `FIXED_FLAT` (50.00 BDT / 12.00 SAR).
+- **Core SLA Targets**:
+  - End-to-end delivery cycle: $< 35$ minutes.
+  - Merchant acceptance response: $< 2$ minutes.
+  - Courier broadcast claim: $< 90$ seconds.
+  - Successful fulfillment rate: $> 95\%$.

@@ -1,14 +1,14 @@
 # 04 — Real-Time WebSockets & Event Protocol
 
-This document defines the real-time bidirectional communication layer for **DeliveryOS** powered by **Socket.IO 4.x** and the **Redis Pub/Sub Adapter** for horizontal clustering.
+Real-time bidirectional event architecture, Socket.IO 4.x room structures, event schemas, payload DTOs, and reconnection invariants for DeliveryOS.
 
 ---
 
-## 1. WebSocket Gateway Architecture
+## 1. WebSocket Gateway Topology & Handshake
 
 ```mermaid
 graph TD
-    subgraph Clients["Clients Tier"]
+    subgraph Clients["Connected Clients Tier"]
         CA["Customer App (Flutter)"]
         RA["Rider App (Flutter)"]
         VK["Vendor KDS (React SPA)"]
@@ -21,42 +21,41 @@ graph TD
     end
 
     subgraph RedisBus["Redis In-Memory Bus"]
-        REDIS[("Redis 7 Pub/Sub & GEO Keys")]
+        REDIS[("Redis 7.2 Pub/Sub & GEO Keys")]
     end
 
-    CA -->|Connect & Join order_1042| GW
+    CA -->|Connect & Join order_UUID| GW
     RA -->|Connect & Stream Telemetry| GW
-    VK -->|Connect & Join vendor_101 / brand_201| GW
-    AD -->|Connect & Join admin_hq / admin_fleet| GW
+    VK -->|Connect & Join vendor_UUID| GW
+    AD -->|Connect & Join admin_hq| GW
 
     GW --> AUTH
     GW <--> REDIS
 ```
 
 - **Connection URL**: `wss://api.domain.com/events` (locally `ws://localhost:8080/events`)
-- **Authentication**: JWT token passed during initial handshake:
-```javascript
-const socket = io("https://api.domain.com/events", {
-  auth: {
-    token: "eyJhbGciOi..."
-  },
-  transports: ["websocket"]
-});
-```
+- **Transport**: `["websocket"]` (polling disabled in production for low latency)
+- **Handshake Authentication**:
+  ```javascript
+  const socket = io("https://api.domain.com/events", {
+    auth: { token: "Bearer <jwt_token>" },
+    transports: ["websocket"]
+  });
+  ```
 
 ---
 
-## 2. Room Architecture & Subscription Model
+## 2. Room Architecture & Subscription Matrix
 
-Upon successful handshake, the gateway assigns sockets to targeted rooms based on stakeholder identity:
+Upon authenticated handshake, sockets are auto-assigned to primary rooms based on user role and may join dynamic temporary rooms:
 
-| Stakeholder | Auto-Joined Rooms | Dynamic Rooms | Description & Purpose |
+| Stakeholder Role | Auto-Joined Rooms | Dynamic Scoped Rooms | Purpose & Event Influx |
 | :--- | :--- | :--- | :--- |
-| **Customer** | `user_{userId}` | `order_{orderId}` | Receives real-time state changes, courier coordinates, and cancellation alerts. |
-| **Vendor Staff** | `vendor_{vendorId}` | N/A | Receives incoming kitchen orders (`order:new`), cancellations, and status changes. |
-| **Brand Owner** | `brand_{brandId}` | `vendor_{vendorId}` | Multi-outlet brand stream receiving consolidated updates across all brand branches. |
-| **Rider Fleet** | `rider_{riderId}`, `riders_pool` | `order_{orderId}` | Receives broadcast alerts (`dispatch:broadcast`), cancellation notices, and chat. |
-| **Super Admin** | `admin_hq`, `admin_fleet` | N/A | Global control tower: live courier GPS radar, unassigned orders, and escalation alerts. |
+| **Customer** | `user_{userId}` | `order_{orderId}` | Order state updates, moving courier coordinates, cancellation alerts. |
+| **Vendor Staff** | `vendor_{vendorId}` | N/A | Incoming orders (`order:new`), cancellations, status changes. |
+| **Brand Owner** | `brand_{brandId}` | `vendor_{vendorId}` | Consolidated stream of orders across all merchant brand branches. |
+| **Rider Fleet** | `rider_{riderId}`, `riders_pool` | `order_{orderId}` | Radius broadcast alerts (`dispatch:broadcast`), cancellation notices. |
+| **Super Admin** | `admin_hq`, `admin_fleet` | N/A | Global radar updates, unassigned escalations, and audit events. |
 
 ---
 
@@ -65,153 +64,155 @@ Upon successful handshake, the gateway assigns sockets to targeted rooms based o
 ### 3.1 Client-to-Server Dynamic Actions
 
 #### `join:order` / `leave:order`
-- **Sender**: Customer Mobile App, Rider Mobile App
-- **Payload**: `{ "orderId": "order-uuid" }`
-- **Action**: Dynamically joins or leaves `order_${orderId}` room during active screen view.
+- **Direction**: Client ➔ Server
+- **Senders**: Customer App, Rider App
+- **Payload**: `{ "orderId": "uuid" }`
+- **Action**: Binds or unbinds socket to `order_{orderId}` room during active screen lifecycle.
 
 #### `rider:location:update`
-- **Sender**: Rider Mobile App
+- **Direction**: Client ➔ Server
+- **Sender**: Rider App (background telemetry)
 - **Payload**:
-```json
-{
-  "latitude": 23.780887,
-  "longitude": 90.419065,
-  "bearing": 182.5,
-  "speed": 24.0,
-  "activeOrderId": "order-uuid" // null if courier is idle
-}
-```
-- **Action**: Updates Redis Geo index (`riders:locations`), relays to `admin_fleet` room, and streams to `order_${orderId}` if actively delivering.
+  ```json
+  {
+    "latitude": 23.780887,
+    "longitude": 90.419065,
+    "bearing": 182.5,
+    "speed": 24.0,
+    "activeOrderId": "uuid" // null if courier is idle
+  }
+  ```
+- **Action**: Executes Redis `GEOADD riders:locations`, broadcasts to `admin_fleet`, and relays to `order_{activeOrderId}`.
 
 ---
 
-### 3.2 Vendor & Kitchen Events
+### 3.2 Vendor & Kitchen Display Events
 
-#### `order:new` (Server ➔ Vendor KDS & Admin)
-- **Rooms**: `vendor_{vendorId}`, `brand_{brandId}`, `admin_hq`
-- **Action**: Triggers persistent Web Audio API oscillator chime loop on KDS ([ADR-007](context_docs/architecture-decision-records/ADR-007-web-audio-api-synthesized-kds-chime.md)).
+#### `order:new`
+- **Direction**: Server ➔ Vendor KDS & Admin Console
+- **Target Rooms**: `vendor_{vendorId}`, `brand_{brandId}`, `admin_hq`
+- **Action**: Triggers persistent Web Audio API bell chime on KDS ([ADR-007](context_docs/architecture-decision-records/ADR-007-web-audio-api-synthesized-kds-chime.md)).
 - **Payload**:
-```json
-{
-  "orderId": "c1f7a4e2-...",
-  "orderNumber": "ORD-20261001-1042",
-  "itemCount": 2,
-  "totalAmount": 550.0,
-  "paymentMethod": "CASH_ON_DELIVERY",
-  "customerNotes": "Extra napkins please",
-  "items": [
-    {
-      "name": "Spicy Beef Burger",
-      "quantity": 1,
-      "variant": "Large",
-      "addons": ["Extra Cheese"]
-    }
-  ],
-  "placedAt": "2026-10-01T12:05:00.000Z"
-}
-```
+  ```json
+  {
+    "orderId": "uuid",
+    "orderNumber": "ORD-20261001-0042",
+    "itemCount": 2,
+    "totalAmount": 550.0,
+    "paymentMethod": "CASH_ON_DELIVERY",
+    "customerNotes": "Extra spicy please",
+    "items": [{ "name": "Burger", "quantity": 1, "variant": "Large", "addons": ["Cheese"] }],
+    "riderAssigned": true,
+    "placedAt": "2026-10-01T12:05:00.000Z"
+  }
+  ```
 
 ---
 
 ### 3.3 Rider Dispatch & Telemetry Events
 
-#### `dispatch:broadcast` (Server ➔ Nearby Couriers)
-- **Target**: Couriers in `riders_pool` within merchant delivery radius.
+#### `dispatch:broadcast`
+- **Direction**: Server ➔ Nearby Couriers
+- **Target Room**: Couriers in `riders_pool` within merchant delivery radius.
+- **Action**: Displays modal with 45s countdown and haptic vibration alert.
 - **Payload**:
-```json
-{
-  "orderId": "c1f7a4e2-...",
-  "orderNumber": "ORD-20261001-1042",
-  "vendorName": "Burger Spot - Banani",
-  "vendorAddress": "Road 11, Banani, Dhaka",
-  "distanceToVendorKm": 0.8,
-  "deliveryArea": "Gulshan 2, Dhaka",
-  "riderEarnings": 45.0,
-  "timeoutSeconds": 45
-}
-```
+  ```json
+  {
+    "orderId": "uuid",
+    "orderNumber": "ORD-20261001-0042",
+    "vendorName": "Pizza Point",
+    "vendorAddress": "Road 11, Banani, Dhaka",
+    "distanceToVendorKm": 1.2,
+    "deliveryArea": "Gulshan 2",
+    "riderEarnings": 40.0,
+    "timeoutSeconds": 45
+  }
+  ```
 
-#### `dispatch:escalated` (Server ➔ Admin Console)
-- **Room**: `admin_hq`
-- **Description**: Emitted when an order remains unclaimed across dispatch tiers:
-  - **Tier 1 (45s)**: Search radius expands from 3 km to 6 km.
-  - **Tier 2 (90s)**: Search radius expands to 10 km and triggers an urgent priority alert on the Super Admin Live Radar.
+#### `dispatch:escalated`
+- **Direction**: Server ➔ Super Admin Console
+- **Target Room**: `admin_hq`
+- **Trigger**: Order unassigned across escalation tiers:
+  - *Tier 1 (45s)*: Radius expands to 6 km.
+  - *Tier 2 (90s)*: Radius expands to 10 km and emits `dispatch:escalated`.
 - **Payload**:
-```json
-{
-  "orderId": "c1f7a4e2-...",
-  "orderNumber": "ORD-20261001-1042",
-  "tier": 2,
-  "unassignedSeconds": 95,
-  "timestamp": "2026-10-01T12:06:35.000Z"
-}
-```
+  ```json
+  {
+    "orderId": "uuid",
+    "orderNumber": "ORD-20261001-0042",
+    "tier": 2,
+    "unassignedSeconds": 92,
+    "timestamp": "2026-10-01T12:06:32.000Z"
+  }
+  ```
 
 ---
 
 ### 3.4 Order Progression & Exception Events
 
-#### `order:status:changed` (Server ➔ Customer, Vendor, Admin)
-- **Rooms**: `order_{orderId}`, `vendor_{vendorId}`, `brand_{brandId}`, `admin_hq`
+#### `order:status:changed`
+- **Direction**: Server ➔ All Stakeholders
+- **Target Rooms**: `order_{orderId}`, `vendor_{vendorId}`, `brand_{brandId}`, `admin_hq`
 - **Payload**:
-```json
-{
-  "orderId": "c1f7a4e2-...",
-  "orderNumber": "ORD-20261001-1042",
-  "previousStatus": "PLACED",
-  "newStatus": "PREPARING",
-  "prepTimeMinutes": 20,
-  "timestamp": "2026-10-01T12:07:00.000Z"
-}
-```
+  ```json
+  {
+    "orderId": "uuid",
+    "orderNumber": "ORD-20261001-0042",
+    "previousStatus": "PLACED",
+    "newStatus": "PREPARING",
+    "prepTimeMinutes": 20,
+    "timestamp": "2026-10-01T12:07:00.000Z"
+  }
+  ```
 
-#### `order:cancelled` (Server ➔ Customer, Vendor, Rider, Admin)
-- **Rooms**: `order_{orderId}`, `vendor_{vendorId}`, `rider_{riderId}`, `admin_hq`
-- **Description**: Broadcast when an order is cancelled by customer, vendor, or administrator.
-- **Action**: KDS removes order from board, rider app displays full-screen cancellation banner with reason, Redis mutex locks are released.
+#### `order:cancelled`
+- **Direction**: Server ➔ All Stakeholders
+- **Target Rooms**: `order_{orderId}`, `vendor_{vendorId}`, `rider_{riderId}`, `admin_hq`
+- **Action**: KDS removes order; rider app surfaces cancellation banner and releases courier; Redis mutex released.
 - **Payload**:
-```json
-{
-  "orderId": "c1f7a4e2-...",
-  "orderNumber": "ORD-20261001-1042",
-  "cancelledBy": "CUSTOMER",
-  "reason": "Customer cancelled before cooking started",
-  "refundInitiated": false,
-  "timestamp": "2026-10-01T12:08:00.000Z"
-}
-```
+  ```json
+  {
+    "orderId": "uuid",
+    "orderNumber": "ORD-20261001-0042",
+    "cancelledBy": "CUSTOMER" | "VENDOR_ADMIN" | "SUPER_ADMIN",
+    "reason": "Cancelled before cooking started",
+    "refundInitiated": false,
+    "timestamp": "2026-10-01T12:08:00.000Z"
+  }
+  ```
 
-#### `order:payment:verified` (Server ➔ Customer, Vendor)
-- **Rooms**: `order_{orderId}`, `vendor_{vendorId}`, `admin_hq`
-- **Description**: Emitted when online payment gateway webhook succeeds. Unlocks the kitchen preparation queue.
+#### `order:payment:verified`
+- **Direction**: Server ➔ Customer, Vendor, Admin
+- **Target Rooms**: `order_{orderId}`, `vendor_{vendorId}`, `admin_hq`
+- **Action**: Emitted upon gateway webhook confirmation, unlocking order for dispatch/kitchen.
 - **Payload**:
-```json
-{
-  "orderId": "c1f7a4e2-...",
-  "paymentStatus": "PAID",
-  "transactionId": "TXN-982141",
-  "timestamp": "2026-10-01T12:05:30.000Z"
-}
-```
+  ```json
+  {
+    "orderId": "uuid",
+    "paymentStatus": "PAID",
+    "transactionId": "TXN-982141",
+    "timestamp": "2026-10-01T12:05:30.000Z"
+  }
+  ```
 
-#### `order:delivery_failed` (Server ➔ Admin HQ & Store)
-- **Rooms**: `admin_hq`, `vendor_{vendorId}`
-- **Description**: Emitted when a courier executes the 5-minute unresponsive customer SOP (`POST /orders/:id/issue`).
+#### `order:delivery_failed`
+- **Direction**: Server ➔ Admin HQ & Vendor
+- **Target Rooms**: `admin_hq`, `vendor_{vendorId}`
 - **Payload**:
-```json
-{
-  "orderId": "c1f7a4e2-...",
-  "orderNumber": "ORD-20261001-1042",
-  "riderId": "rider-uuid",
-  "reason": "Customer unreachable at doorstep after 5 min wait",
-  "timestamp": "2026-10-01T12:35:00.000Z"
-}
-```
+  ```json
+  {
+    "orderId": "uuid",
+    "orderNumber": "ORD-20261001-0042",
+    "riderId": "uuid",
+    "reason": "Customer unreachable at doorstep after 5 min wait",
+    "timestamp": "2026-10-01T12:35:00.000Z"
+  }
+  ```
 
 ---
 
 ## 4. Reconnection & Resilience Standards
 
-1. **Heartbeat Protocol**: Pings every 25 seconds (`pingTimeout: 20000`, `pingInterval: 25000`).
-2. **HTTP State Reconciliation**: Upon network reconnection, web portals and mobile apps execute a background HTTP refetch (`GET /vendor/orders/live`, `GET /orders/:id`) before processing buffered socket events ([ADR-006](context_docs/architecture-decision-records/ADR-006-dual-store-frontend-paradigm-and-websocket-invalidation.md)).
-3. **Audio Alarm Guaranteed Silence**: The Web Audio API alarm loop runs strictly until all orders with `status === 'PLACED' || status === 'RIDER_ASSIGNED'` have transitioned to `PREPARING` or `CANCELLED`.
+1. **Heartbeat Protocol**: Gateway sends ping every 25 seconds (`pingInterval: 25000`, `pingTimeout: 20000`).
+2. **HTTP State Reconciliation Invariant**: On network reconnect, apps and portals execute background HTTP refetch (`GET /vendor/orders/live`, `GET /orders/:id`) before processing buffered socket messages ([ADR-006](context_docs/architecture-decision-records/ADR-006-dual-store-frontend-paradigm-and-websocket-invalidation.md)).
+3. **Audio Silence Invariant**: Web Audio chime loop terminates strictly when zero unaccepted orders remain in KDS Lane 1.

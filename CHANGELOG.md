@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.4] - 2026-09-26
+
+### Added
+- **Spec-Driven Development Workflow (`context_docs/SPEC_DRIVEN_WORKFLOW.md`)**:
+  - Defined authoritative 3-phase engineering lifecycle: Phase 1 (Plan & Grounding), Phase 2 (Implementation), Phase 3 (Verification & Living Document Sync).
+  - Authored concrete, repeatable checklists for: (A) Adding new features/sub-features, (B) Fixing existing features/bugs, and (C) Code refactoring.
+  - Linked active plan review (`/grill-me`), zero-assumption clarification, and strict DoD quality gates.
+- **Granular Master System Feature Catalog (`FEATURES.md`)**:
+  - Expanded line-by-line capability index covering all 5 sub-projects (Customer App, Rider App, Vendor Portal, Admin Portal, Backend Core/Database).
+  - Cataloged recent capabilities: Design System token architecture, layout hardening, reusable UI primitives, order cancellation & refund rollback engine, COD cash deposit verification, and net COD offset settlements.
+  - Added automated test suite catalog and complete traceability matrix mapping features to code, context docs, and ADRs.
+- **Master Quick Reference & AI Context Router Overhaul (`context_docs/QUICK_REFERENCE.md`)**:
+  - Integrated 3-phase workflow entry point and task routing matrix for zero token waste.
+- **Comprehensive Platform Documentation & Local Setup Overhaul (`README.md`)**:
+  - Re-architected root documentation with 5-minute local environment setup (Docker Compose, PostGIS, Redis, migrations, seed script, portal and mobile run commands).
+  - Integrated Spec-Driven Workflow architecture, Core Operational Invariants Matrix, and documentation index.
+- **Agent Governance Protocol Update (`AGENTS.md`)**:
+  - Synchronized AI agent rules with Spec-Driven Workflow, QUICK_REFERENCE.md routing, and Design System Invariant.
+- **Documentation Streamlining & Token Optimization (BRD & TID Suites)**:
+  - Audited all 8 Business Requirements Documents (`BRD-00` to `BRD-07`) and 8 Technical Implementation Documents (`TID-01` to `TID-07`).
+  - Stripped duplicate/verbose narrative and converted features into dense, high-signal, list-based specifications with inputs, outputs, rules, and edge cases.
+  - Fixed duplicate GiST index statements in `TID-02` and synchronized Nginx upstreams with ADR-005 in `TID-07`.
+
+---
+
 ## [1.4.3] - 2026-09-26
 
 ### Added

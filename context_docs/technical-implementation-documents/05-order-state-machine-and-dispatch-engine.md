@@ -1,41 +1,39 @@
 # 05 — Order State Machine & Dispatch Engine
 
-This document specifies the internal mechanics of the **Order Finite State Machine (FSM)** and the **Real-Time Proximity Broadcast Dispatch Engine**.
+Internal mechanics of the **Order Finite State Machine (FSM)**, Redis geospatial proximity search, distributed mutex locks, dispatch escalation, and double-entry accounting.
 
 ---
 
-## 1. Formal Order State Machine (FSM)
+## 1. Formal Order Finite State Machine (FSM)
 
-The system supports two sequence modes governed by `order_flow_config.mode` ([ADR-002](context_docs/architecture-decision-records/ADR-002-dynamic-dual-order-flow-fsm.md)):
-- **`RIDER_FIRST` (Zero Food Waste Mode)**: `PLACED` ➔ `RIDER_ASSIGNED` ➔ `PREPARING` ➔ `READY_FOR_PICKUP` ➔ `DISPATCHED` ➔ `DELIVERED`.
-- **`VENDOR_FIRST` (Traditional Retail Mode)**: `PLACED` ➔ `PREPARING` ➔ `READY_FOR_PICKUP` ➔ `DISPATCHED` ➔ `DELIVERED`.
+The system supports two sequence flows governed by `system_settings.order_flow_mode` ([ADR-002](context_docs/architecture-decision-records/ADR-002-dynamic-dual-order-flow-fsm.md)):
+- **`RIDER_FIRST` (Zero Food Waste Mode — Default)**:
+  `PLACED` ➔ `RIDER_ASSIGNED` ➔ `PREPARING` ➔ `READY_FOR_PICKUP` ➔ `DISPATCHED` ➔ `DELIVERED`.
+- **`VENDOR_FIRST` (Traditional Retail Mode)**:
+  `PLACED` ➔ `PREPARING` ➔ `READY_FOR_PICKUP` ➔ `DISPATCHED` ➔ `DELIVERED`.
 
-> [!NOTE]
-> **Direct Preparation Transition Invariant**:
-> When a merchant accepts an incoming order, the order transitions directly to **`PREPARING`** with `accepted_at = NOW()` and `prep_time_minutes` populated. The intermediate legacy status `ACCEPTED` is deprecated in runtime execution.
-
-> [!IMPORTANT]
-> **Payment-Gated Dispatch Invariant (ADR-011)**:
-> When `paymentMethod === ONLINE_GATEWAY`, an order in `PLACED` state with `paymentStatus === PENDING` will **NOT** broadcast to the courier pool or sound the kitchen alarm. Dispatch broadcast is held until cryptographic webhook verification confirms `paymentStatus === PAID` via `OrderFlowService.handleOrderPaid(orderId)`. Orders unpaid after 15 minutes are automatically transitioned to `CANCELLED`.
+### Critical Invariants:
+- **Direct Preparation Transition Invariant**: When a vendor accepts an order, the runtime engine transitions the order directly to **`PREPARING`** with `accepted_at = NOW()` and `prep_time_minutes` populated. The legacy status `ACCEPTED` is deprecated in runtime execution.
+- **Payment-Gated Invariant (ADR-011)**: When `paymentMethod === ONLINE_GATEWAY`, an order in `PLACED` with `paymentStatus === PENDING` will **NOT** broadcast to couriers or alert the store. Broadcast is held until cryptographic webhook verification confirms `paymentStatus === PAID`. Unpaid orders are cancelled after 15 minutes.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PLACED: Customer Checkout (Store verified open & within radius)
+    [*] --> PLACED: Checkout Submitted & Payment Verified
     
-    state "Config: RIDER_FIRST (Default)" as RiderFirstFlow {
+    state "Sequence: RIDER_FIRST (Default)" as RiderFirstFlow {
         PLACED --> RIDER_ASSIGNED: Courier claims 45s broadcast (Mutex locked)
-        RIDER_ASSIGNED --> PREPARING: Kitchen accepts order (Sets prep time & accepted_at)
+        RIDER_ASSIGNED --> PREPARING: Kitchen accepts order (Sets prep time)
     }
     
-    state "Config: VENDOR_FIRST" as VendorFirstFlow {
-        PLACED --> PREPARING: Kitchen accepts order (Sets prep time & accepted_at)
+    state "Sequence: VENDOR_FIRST" as VendorFirstFlow {
+        PLACED --> PREPARING: Kitchen accepts order (Sets prep time)
     }
 
     PLACED --> CANCELLED: Customer cancels or Store rejects
     RIDER_ASSIGNED --> CANCELLED: Customer cancels before cooking
     PREPARING --> READY_FOR_PICKUP: Items packed & labeled at counter
-    READY_FOR_PICKUP --> DISPATCHED: Courier confirms pickup at counter
-    DISPATCHED --> DELIVERED: Courier confirms handover & cash collected
+    READY_FOR_PICKUP --> DISPATCHED: Courier confirms physical pickup
+    DISPATCHED --> DELIVERED: Courier confirms handover & COD verified
     
     DELIVERED --> [*]
     CANCELLED --> [*]
@@ -43,46 +41,39 @@ stateDiagram-v2
 
 ### Transition Validation Matrix:
 
-| From State | Allowed Target State | Triggered By | Side Effects & Actions |
+| From State | Allowed Target | Permitted Roles | Invariants & Side Effects |
 | :--- | :--- | :--- | :--- |
-| `PLACED` | `RIDER_ASSIGNED` | Assigned Rider | *In RIDER_FIRST mode*: Rider claims order; triggers vendor kitchen alarm to review & accept. |
-| `PLACED` | `PREPARING` | Vendor Store Manager | *In VENDOR_FIRST mode*: Vendor sets prep time; sets `accepted_at` and starts preparation. |
-| `PLACED` | `CANCELLED` | Customer, Vendor, Admin | Cancels order before rider claim or kitchen prep. Releases payment hold or triggers refund. |
-| `RIDER_ASSIGNED` | `PREPARING` | Vendor Store Manager | Vendor reviews items, chooses prep timer, and accepts. Kitchen starts cooking. |
-| `RIDER_ASSIGNED` | `CANCELLED` | Customer, Admin | Customer cancellation prior to kitchen prep. Releases courier lock. |
-| `PREPARING` | `READY_FOR_PICKUP`| Vendor Store Manager | Items packed at counter. If `VENDOR_FIRST`, triggers courier broadcast now. |
-| `READY_FOR_PICKUP` | `DISPATCHED` | Assigned Rider | Rider collects parcel at store counter. Confirms physical handoff. |
-| `DISPATCHED` | `DELIVERED` | Assigned Rider | Confirms doorstep delivery, validates COD cash checkbox, updates ledgers. |
-| *Any Pre-Dispatched* | `CANCELLED` | Super Admin | Emergency operational cancellation with min-5-character audit reason. |
+| `PLACED` | `RIDER_ASSIGNED` | `RIDER`, `SUPER_ADMIN` | In `RIDER_FIRST`: Courier claims order; triggers kitchen chime with guaranteed rider badge. |
+| `PLACED` | `PREPARING` | `VENDOR_ADMIN`, `SUPER_ADMIN` | In `VENDOR_FIRST`: Vendor sets prep timer, sets `accepted_at = NOW()`, begins cooking. |
+| `PLACED` | `CANCELLED` | `CUSTOMER`, `VENDOR_ADMIN`, `SUPER_ADMIN` | Pre-preparation cancellation. Releases payment holds or triggers refund. |
+| `RIDER_ASSIGNED` | `PREPARING` | `VENDOR_ADMIN`, `SUPER_ADMIN` | Vendor reviews items, chooses prep duration, and taps Accept. |
+| `RIDER_ASSIGNED` | `CANCELLED` | `CUSTOMER`, `SUPER_ADMIN` | Customer cancellation prior to kitchen prep. Releases courier lock. |
+| `PREPARING` | `READY_FOR_PICKUP` | `VENDOR_ADMIN`, `SUPER_ADMIN` | Items packed at counter. In `VENDOR_FIRST`, triggers courier broadcast now. |
+| `READY_FOR_PICKUP` | `DISPATCHED` | `RIDER`, `SUPER_ADMIN` | Courier confirms physical pickup at counter. Activates live GPS streaming. |
+| `DISPATCHED` | `DELIVERED` | `RIDER`, `SUPER_ADMIN` | Confirms doorstep handover, validates COD cash checkbox, updates ledgers. |
+| *Any Pre-Dispatched* | `CANCELLED` | `SUPER_ADMIN` | Administrative override cancellation with mandatory min-5-char audit reason. |
 
 ---
 
-## 2. Redis Geospatial Indexing & Courier Coordinates
+## 2. Redis Geospatial Indexing & Telemetry
 
-Rider coordinates are stored in Redis using high-speed spatial keys rather than writing to PostgreSQL on every GPS tick ([ADR-003](context_docs/architecture-decision-records/ADR-003-postgis-spatial-engine-and-redis-geohash.md)):
+Rider locations are maintained in Redis spatial sets to prevent high-frequency write pressure on PostgreSQL ([ADR-003](context_docs/architecture-decision-records/ADR-003-postgis-spatial-engine-and-redis-geohash.md)):
 
 - **Redis Key**: `riders:locations`
 - **Location Update Command**:
-```typescript
-// NestJS Redis Service:
-await redis.geoadd(
-  'riders:locations',
-  longitude,
-  latitude,
-  riderId
-);
-```
+  ```typescript
+  await redis.geoadd('riders:locations', longitude, latitude, riderId);
+  ```
 
 ---
 
 ## 3. Proximity Radius Broadcast Algorithm
 
-The dispatch engine initiates search based on `order_flow_config.mode`:
-- **If `RIDER_FIRST`**: Triggered immediately at checkout (after verifying store status and payment confirmation).
-- **If `VENDOR_FIRST`**: Triggered after store staff marks order `READY_FOR_PICKUP`.
+The dispatch engine executes proximity searches according to `order_flow_mode`:
+- **`RIDER_FIRST`**: Triggered immediately at checkout (post payment verification).
+- **`VENDOR_FIRST`**: Triggered after store staff marks order `READY_FOR_PICKUP`.
 
 ```typescript
-// 1. Locate online, available riders within radius (e.g. 3–5 km of the store)
 async function findNearbyRiders(vendorLat: number, vendorLng: number, radiusKm: number = 4) {
   const nearbyRiderIds = await redis.geosearch(
     'riders:locations',
@@ -96,8 +87,7 @@ async function findNearbyRiders(vendorLat: number, vendorLng: number, radiusKm: 
     'ASC'
   );
 
-  // Filter out riders who are currently busy on an active trip
-  const availableRiders = [];
+  const availableRiders: { riderId: string; distanceKm: number }[] = [];
   for (const [riderId, distance] of nearbyRiderIds) {
     const isBusy = await redis.exists(`rider:active_order:${riderId}`);
     if (!isBusy) {
@@ -111,9 +101,9 @@ async function findNearbyRiders(vendorLat: number, vendorLng: number, radiusKm: 
 
 ---
 
-## 4. Concurrency Protection & Distributed Lock (Atomic Claim)
+## 4. Concurrency Protection & Atomic Mutex Lock
 
-To prevent multiple riders claiming the same order simultaneously, the backend utilizes an atomic **Redis Distributed Mutex** ([ADR-004](context_docs/architecture-decision-records/ADR-004-atomic-dispatch-claim-mutex.md)):
+To prevent duplicate order claims, the backend executes an atomic **Redis Distributed Mutex** ([ADR-004](context_docs/architecture-decision-records/ADR-004-atomic-dispatch-claim-mutex.md)):
 
 ```typescript
 async function claimOrder(orderId: string, riderId: string, isRiderFirst: boolean): Promise<boolean> {
@@ -141,10 +131,10 @@ async function claimOrder(orderId: string, riderId: string, isRiderFirst: boolea
         }
       });
 
-      // Mark rider busy in Redis
+      // Mark courier busy in Redis
       await redis.set(`rider:active_order:${riderId}`, orderId);
 
-      // If RIDER_FIRST: Trigger vendor kitchen chime now that rider is secured!
+      // If RIDER_FIRST: Trigger vendor kitchen chime now that courier is secured
       if (isRiderFirst) {
         socketGateway.server.to(`vendor_${order.vendorId}`).emit('order:new', {
           orderId: order.id,
@@ -167,23 +157,22 @@ async function claimOrder(orderId: string, riderId: string, isRiderFirst: boolea
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│  T = 0s: Broadcast to riders within 3 km radius        │
-│  - FCM Push + [dispatch:broadcast] to riders_pool      │
+│  Tier 0 (T = 0s): Broadcast within 3 km radius         │
+│  - FCM Push + Socket [dispatch:broadcast] to riders    │
 └───────────────────────────┬────────────────────────────┘
-                            │ (If unassigned after > 45s)
+                            │ (Unassigned after > 45s)
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │  Tier 1 (T > 45s): Expand broadcast radius to 6 km     │
-│  - Idempotent Redis key: dispatch:escalated:{id}:tier1 │
-│  - Re-broadcasts via FCM + WebSockets to wider pool    │
+│  - Redis idempotency key: dispatch:escalated:{id}:tier1│
+│  - Re-broadcasts to expanded courier radius            │
 └───────────────────────────┬────────────────────────────┘
-                            │ (If unassigned after > 90s)
+                            │ (Unassigned after > 90s)
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │  Tier 2 (T > 90s): Expand to 10 km & Super Admin Radar │
-│  - Idempotent Redis key: dispatch:escalated:{id}:tier2 │
 │  - Emits [dispatch:escalated] to admin_hq socket room  │
-│  - Dispatcher clicks "Manual Assign" ──► Selects Rider │
+│  - Dispatcher executes manual override assignment      │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -191,14 +180,14 @@ async function claimOrder(orderId: string, riderId: string, isRiderFirst: boolea
 
 ## 6. Financial Ledger Settlement & COD Offset Engine
 
-Every completed delivery triggers deterministic double-entry accounting entries ([ADR-009](context_docs/architecture-decision-records/ADR-009-deterministic-financial-accounting-ledger.md)):
+Double-entry ledger records executed atomically upon order completion (`DELIVERED`) ([ADR-009](context_docs/architecture-decision-records/ADR-009-deterministic-financial-accounting-ledger.md)):
 
 1. **Vendor Commission Entry (`CommissionLedger`)**:
    - `gross_amount`: Food subtotal minus coupon discounts.
-   - `commission_deducted`: `Math.round(gross_amount * commissionRate * 100) / 100`.
-   - `net_vendor_payable`: `gross_amount - commission_deducted`.
+   - `commission_amount`: `Math.round(gross_amount * (commissionRate / 100) * 100) / 100`.
+   - `net_vendor_payable`: `gross_amount - commission_amount`.
 2. **Rider Trip Entry (`RiderTripLedger`)**:
-   - `delivery_earnings`: Distance or flat remuneration credited to courier wallet.
+   - `delivery_earnings`: Configured trip remuneration credited to courier wallet.
    - `cod_collected`: Physical cash collected from customer added to courier's `cashInHand`.
 3. **Cash-on-Delivery Offset**:
-   - When a courier deposits cash at the central hub (`POST /riders/deposit-cash`), verified deposits decrement `cashInHand` and clear the safety limit.
+   - Hub cash deposits (`POST /riders/deposit-cash`) verified by admin decrement `cashInHand` and restore dispatch eligibility.

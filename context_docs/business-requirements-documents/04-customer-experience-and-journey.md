@@ -1,6 +1,6 @@
 # 04 — Customer Mobile App Journey Specification
 
-This document defines the functional screen flow, UI states, and interactions for the **Customer Mobile App** (Flutter 3.19+, Riverpod 3.3.2).
+Functional specifications, screen states, user inputs, business guards, outputs, and edge cases for the **Customer Mobile App** (Flutter 3.19+, Riverpod 3.3.2).
 
 ---
 
@@ -15,64 +15,87 @@ This document defines the functional screen flow, UI states, and interactions fo
 
 ---
 
-## 2. Screen Specifications
+## 2. Granular Screen Specifications
 
-### Screen 1: Splash & Smooth Authentication
-- **Language Picker**: Quick switch between `English`, `العربية` (RTL layout mirroring), or `বাংলা`.
-- **Guest Browsing**: Customers explore merchants and menus freely. Authentication is requested only upon checkout or saving an address.
-- **Phone OTP Verification**: Enter phone number (`+880` / `+966`) ➔ receive 6-digit SMS OTP ➔ automatic token verification and session persistence.
+### Screen 1: Splash & Authentication
+- **Components**: Locale selector (`en`, `ar` RTL, `bn`), phone input field, OTP verification view.
+- **Inputs**: Phone number with country prefix (`+880` / `+966`), 6-digit SMS OTP.
+- **Business Rules**:
+  - **Guest Browsing Invariant**: Customers may browse outlets, search dishes, and assemble a cart without logging in. Authentication is enforced only when tapping Checkout or saving an address.
+  - Rate limiting: Max 3 OTP requests per 15 minutes per phone number.
+- **Outputs**: Verified session token (JWT) stored in secure local storage; user profile hydrated.
+- **Edge Cases**: Invalid OTP surfaces inline validation error; countdown timer controls OTP resend.
 
-### Screen 2: Location Picker & Saved Address Book CRUD
-- **Interactive Map Pinning**: Draggable pin picker on Google Maps with automatic reverse geocoding.
-- **Address Book Management Screen (`AddressBookScreen`)**:
-  - Full CRUD capabilities: create, update, delete, and set default delivery address (`/addresses`).
-  - Form inputs: Label chips (`Home`, `Work`, `Other`), Street Address, Building/Floor/Apartment, and Custom Delivery Notes (gate code, landmark).
-  - Geofence coordinate extraction directly from map marker or device GPS.
+### Screen 2: Location Picker & Address Book CRUD (`AddressBookScreen`)
+- **Components**: Draggable map pin picker on Google Maps, address search bar, address management list (`/addresses`).
+- **Inputs**: Map coordinates, street address, building/floor/flat, address label (`Home`, `Work`, `Other`), delivery instructions (gate code, landmark).
+- **Business Rules**:
+  - Coordinates extracted directly from map marker or GPS geolocation (`lat`, `lng`).
+  - Active location filters all outlet feeds to those serving within their delivery radius.
+- **Outputs**: Persistent address record; active customer coordinate state updated in Riverpod `LocationNotifier`.
+- **Edge Cases**: Geocoding failure falls back to manual street address entry.
 
-### Screen 3: Home Feed, Categorized Discovery & Instant Search
-- **Top Promotional Banner Carousel**: Dynamic banners highlighting active platform campaigns with deep links to merchants or promo codes.
-- **Vertical Category Selector**: Filter pills (`All`, `FOOD`, `GROCERY`, `PHARMACY`) dynamically filtering nearby stores.
-- **Available Outlets Feed**: Live cards showing store logo, vertical, distance, ETA, delivery fee, and live operational status badges (`OPEN`, `CLOSED`, `BUSY`).
-- **Smart Search with Direct Add-to-Cart (`SearchScreen`)**:
-  - Debounced search querying merchant names and product titles simultaneously (`GET /vendors/search?q=...`).
-  - **Direct `ADD +` Action**: Product cards in search results allow tapping `ADD +` to launch the `ItemCustomizerSheet` directly from search without opening the store page.
-  - **Single-Vendor Cart Conflict Resolution**: If an item from a different store is selected, displays confirmation dialog: *"Replace Cart Items? Your cart already contains items from [Store A]. Clear cart and add from [Store B]?"* with `"Clear & Add"` action.
-  - **Shortcut SnackBar**: Visual confirmation upon adding items featuring a `"VIEW CART"` action button for immediate checkout.
+### Screen 3: Home Feed, Categorized Discovery & Instant Search (`SearchScreen`)
+- **Components**: Promotional banner carousel, vertical category filter pills (`All`, `FOOD`, `GROCERY`, `PHARMACY`), outlet cards, search bar.
+- **Inputs**: Search query text `q`, vertical category selection.
+- **Business Rules**:
+  - Store card shows outlet name, vertical tag, ETA, delivery fee, distance (km), and operational badges (`OPEN`, `CLOSED`, `BUSY`).
+  - Search queries both outlet names and item titles simultaneously (`GET /vendors/search?q=...`).
+  - **Direct Add Action**: Item cards in search results feature an `ADD +` button launching the `ItemCustomizerSheet` directly without loading the store page.
+  - **Single-Vendor Cart Conflict**: Adding an item from Store B while Store A items exist in cart triggers a confirmation modal: *"Clear Cart & Add New?"*.
+- **Outputs**: Filtered merchant list; navigation to `OutletDetailScreen` or instant item addition.
+- **Edge Cases**: Zero search results shows empty state with suggestions to clear filters.
 
-### Screen 4: Outlet Details & Menu Navigation
-- **Collapsing Sticky Category Header**: Store banner collapses into a pinned category tab bar (`OutletDetailScreen`) allowing smooth jumping between dish sections.
-- **Menu Dish Cards**: High-resolution dish photos, prices, unit descriptors, and `ADD` button. Sold-out items display a grayed-out "Out of Stock" badge and disable customization.
+### Screen 4: Storefront & Menu Navigation (`OutletDetailScreen`)
+- **Components**: Outlet header banner, collapsing sticky category bar, dish listing cards.
+- **Inputs**: Category tab taps, item selection.
+- **Business Rules**:
+  - Sticky category bar pinned below app bar for rapid scrolling across dish categories.
+  - Out-of-stock items displayed with grayed-out "Sold Out" badge with disabled `ADD` button.
+- **Outputs**: Tapping an available item opens the `ItemCustomizerSheet`.
 
-### Screen 5: Item Customizer Modal (Bottom Sheet)
-- **Single-Choice Variants**: Mutually exclusive radio buttons (e.g. Size: *Small, Medium, Large* or Weight: *500g, 1kg*) with real-time price delta recalculation.
-- **Optional Toppings & Add-ons**: Checkbox groups with selection limits.
-- **Special Cooking Notes**: Textarea capturing custom preparation requests passed directly to kitchen staff.
+### Screen 5: Item Customizer Modal (`ItemCustomizerSheet`)
+- **Components**: Variant selection radio buttons, add-on checkboxes, special notes textarea, quantity stepper, dynamic subtotal button.
+- **Inputs**: Selected variant ID, selected add-on IDs, item quantity, special cooking instructions.
+- **Business Rules**:
+  - Single-choice variants (e.g. Regular, Large or 500g, 1kg) recalculate line total dynamically.
+  - Add-on groups enforce `min_selection` and `max_selection` bounds.
+- **Outputs**: Formatted cart item payload dispatched to Riverpod `CartNotifier`.
 
-### Screen 6: Cart Page & Operational Guards
-- **Store Status Protection Banners**:
-  - **Red Alert Banner**: Displayed if store is closed (`isVendorActive === false`), warning that the store is currently not taking orders.
-  - **Amber Alert Banner**: Displayed if merchant toggled Rush Hour Pause (`isVendorBusy === true`), informing the customer that orders are temporarily paused.
-  - **Checkout Button Guard**: Primary CTA button is disabled (`canCheckout === false`), dynamically displaying `"Store Currently Closed"` or `"Store Paused (Rush Hour)"`.
-- **Address Coverage Guard**: Validates customer coordinates against store radius (`ST_DWithin`). Blocks checkout with high-contrast warning if out of bounds.
-- **Promo Coupon Engine**: Input validating promo codes (`POST /coupons/validate`) with minimum order spend check and line item discount deduction.
-- **Payment Method Toggle**: Choose between **Cash on Delivery (COD)** and **Online Gateway** (bKash, Moyasar, Stripe).
+### Screen 6: Cart & Operational Guards (`CartScreen`)
+- **Components**: Line items list, store operational banners, delivery address picker, coupon code input, payment method toggle, checkout CTA button.
+- **Inputs**: Item quantity adjustments, applied coupon code, selected delivery address, payment method (`CASH_ON_DELIVERY` or `ONLINE_GATEWAY`).
+- **Business Rules & Guards**:
+  - **Closed Store Guard**: Red banner if `is_active = false`; primary button disabled (`"Store Currently Closed"`).
+  - **Rush Hour Pause Guard**: Amber banner if `is_busy = true`; primary button disabled (`"Store Paused (Rush Hour)"`).
+  - **Address Geofence Guard**: Backend verifies coordinates via PostGIS `ST_DWithin`. If outside delivery radius, checkout is blocked with high-contrast alert.
+  - **Coupon Engine**: Validates code with minimum spend check; deducts line item discount.
+- **Outputs**: Validated order placement request payload submitted to `POST /orders/checkout`.
 
 ### Screen 7: Order Placement & Payment Gateway
-- **Checkout Submission**: Submits payload to `POST /orders/checkout`.
-- **Payment Webview / Gateway**: Online payments launch gateway session. Unpaid orders remain in `PLACED` state until cryptographic webhook confirms `PAID` ([ADR-011](context_docs/architecture-decision-records/ADR-011-multi-gateway-online-payment-and-webhook-idempotency.md)).
+- **Components**: Checkout execution trigger, payment gateway webview session (bKash, Moyasar, Stripe).
+- **Inputs**: Gateway payment confirmation or COD selection.
+- **Business Rules**:
+  - For COD orders: Order is created immediately in `PLACED` status and enters dispatch pipeline.
+  - For Online Gateway orders: Order remains in `PLACED` with `payment_status = PENDING`. Broadcast is held until cryptographic webhook verification confirms `PAID` ([ADR-011](context_docs/architecture-decision-records/ADR-011-multi-gateway-online-payment-and-webhook-idempotency.md)).
+- **Outputs**: Order UUID and order number; navigation to `OrderTrackingScreen`.
 
-### Screen 8: Live Order Tracking, Failure Recovery & Hotline
-- **6-Stage Fulfillment Stepper**: Visual timeline: `Placed` ➔ `Assigned` ➔ `Preparing` ➔ `Ready` ➔ `Delivering` ➔ `Delivered`.
-- **Live Moving Map**: Store pin, customer drop-off pin, and animated courier motorcycle icon streamed via WebSockets.
-- **Switch-to-COD Failure Recovery Card**:
-  - Displays when an online payment gateway transaction is pending or failed.
-  - Features an amber recovery card with a one-tap `"Switch to Cash (COD)"` action calling `POST /orders/:id/switch-cod`, converting the order to cash and instantly releasing it to the kitchen and dispatch queue.
-- **24/7 Support Hotline Launcher**: AppBar action icon and Profile tile dialing customer support (`+8801700000000`) via native OS phone handoff (`phone_call_launcher.dart`).
-- **Direct Voice Call Shortcuts**: One-tap phone buttons to call the assigned courier or merchant directly.
-- **Self-Service Order Cancellation**: Allowed during `PLACED` and `RIDER_ASSIGNED` stages via `POST /orders/:id/cancel` with automatic ledger reversal.
+### Screen 8: Live Order Tracking & Failure Recovery (`OrderTrackingScreen`)
+- **Components**: 6-stage fulfillment stepper, interactive live map with courier motorcycle icon, direct call action buttons, 24/7 hotline launcher, Switch-to-COD failure card.
+- **Inputs**: Stepper refresh, direct phone call tap (`tel:`), Switch-to-COD tap.
+- **Business Rules**:
+  - Stepper stages: `Placed` ➔ `Assigned` ➔ `Preparing` ➔ `Ready` ➔ `Delivering` ➔ `Delivered`.
+  - Courier location streamed via WebSocket `rider:location:update` onto map marker.
+  - **Switch-to-COD Recovery Card**: Appears when online payment fails or remains pending. One-tap action (`POST /orders/:id/switch-cod`) converts order to cash and releases it to kitchen and dispatch queue.
+  - **Direct Dialer Shortcuts**: One-tap phone button opens device native dialer to call courier or merchant.
+  - **Customer Hotline**: Dialing shortcut to platform support (`+8801700000000`).
+  - **Self-Service Cancellation**: Allowed only in `PLACED` or `RIDER_ASSIGNED` states (`POST /orders/:id/cancel`).
+- **Outputs**: State updates reflected in UI; direct telephone handoff.
 
-### Screen 9: Smart Re-Order from Order History
-- History screen itemizing past completed receipts.
-- Tapping **"Re-order"** invokes backend validation (`POST /orders/validate-reorder`):
-  - Validates current store opening hours and rush pause status.
-  - Identifies out-of-stock items, displays an alert dialog itemizing omitted dishes, and repopulates the cart with remaining items at updated prices.
+### Screen 9: Smart Re-Order from Order History (`OrderHistoryScreen`)
+- **Components**: Past orders receipt feed, 1-tap "Re-Order" button.
+- **Inputs**: Order ID selection.
+- **Business Rules**:
+  - Backend validation pipeline checks: store open status, geofence radius, item in-stock status, and price changes.
+  - If items are out of stock, displays alert dialog itemizing omitted items and loads available items into cart at current prices.
+- **Outputs**: Cart populated with active items and navigation to `CartScreen`.

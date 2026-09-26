@@ -1,6 +1,6 @@
 # 07 — DevOps, Docker & Environment Setup
 
-This document provides the deployment configuration, **Docker Compose** environment, **Nginx** reverse proxy rules, and **Environment Variables specification** for running **DeliveryOS** in development, staging, and production.
+Deployment topology, Docker Compose services, Nginx subpath routing configuration, environment variables specification, and database initialization for DeliveryOS.
 
 ---
 
@@ -111,7 +111,7 @@ networks:
 
 ---
 
-## 2. Nginx Reverse Proxy Configuration
+## 2. Nginx Subpath Reverse Proxy Configuration (ADR-005)
 
 ```nginx
 # deploy/nginx.conf
@@ -121,23 +121,33 @@ http {
     upstream backend_api {
         server backend:4000;
     }
-    upstream frontend_portal {
-        server web_portal:80;
+    upstream admin_portal_svc {
+        server admin_portal:80;
+    }
+    upstream vendor_portal_svc {
+        server vendor_portal:80;
     }
 
     server {
         listen 80;
-        server_name api.deliveryos.local portal.deliveryos.local;
+        server_name api.deliveryos.local portal.deliveryos.local localhost;
 
-        # Static Web Portal
+        # Super Admin Web Portal (Root Path /)
         location / {
-            proxy_pass http://frontend_portal;
+            proxy_pass http://admin_portal_svc;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+
+        # Vendor KDS Web Portal (Subpath /vendor/)
+        location /vendor/ {
+            proxy_pass http://vendor_portal_svc;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
         }
 
         # Backend REST API
-        location /api/ {
+        location /api/v1/ {
             proxy_pass http://backend_api;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -162,15 +172,11 @@ http {
 ## 3. Environment Variables Specification (`.env.example`)
 
 ```bash
-# ==========================================
-# DeliveryOS Backend Configuration
-# ==========================================
+# Node & Application Runtime
 NODE_ENV=production
 PORT=4000
 
 # Database (PostgreSQL + PostGIS)
-DATABASE_URL="postgresql://postgres:secretpassword@postgres:5432/deliveryos?schema=public"
-
 DB_HOST="localhost"
 DB_PORT=5433
 DB_NAME="deliveryos"
@@ -202,7 +208,7 @@ BASE_DELIVERY_KM=2.0
 PER_KM_DELIVERY_RATE=10.0
 
 # Order Fulfillment Sequence Flow
-ORDER_FLOW_MODE="RIDER_FIRST" # "RIDER_FIRST" (Zero Food Waste) | "VENDOR_FIRST" (Traditional Retail)
+ORDER_FLOW_MODE="RIDER_FIRST" # "RIDER_FIRST" (Zero Food Waste) | "VENDOR_FIRST"
 RIDER_SEARCH_TIMEOUT_SECONDS=90
 
 # Google Maps API
@@ -213,7 +219,7 @@ FIREBASE_PROJECT_ID="deliveryos-prod"
 FIREBASE_CLIENT_EMAIL="firebase-adminsdk@deliveryos-prod.iam.gserviceaccount.com"
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqh..."
 
-# SMS Gateway (Twilio / Local Provider)
+# SMS Gateway (Twilio / Mock)
 SMS_PROVIDER="TWILIO" # "TWILIO" | "MOCK"
 TWILIO_ACCOUNT_SID="AC..."
 TWILIO_AUTH_TOKEN="..."
@@ -242,8 +248,8 @@ CREATE EXTENSION IF NOT EXISTS "postgis_topology";
 
 ## 5. Seed Data Strategy for 10 Pilot Vendors
 
-When initializing the database for the pilot, the seed script (`services/backend_api/prisma/seed.ts` or `src/database/seed.ts`) automatically populates:
+When initializing the database for the pilot, the seed script (`services/backend_api/prisma/seed.ts`) populates:
 1. **1 Super Admin Account** (`admin@deliveryos.local` / `+8801700000000`).
-2. **10 Pilot Vendors** (7 popular restaurants across Burgers, Pizza, Biryani, Coffee/Bakery + 3 Super Shops/Groceries) complete with geo-coordinates, operating hours, categories, dishes, and image placeholders.
-3. **5 Pre-Approved Pilot Riders** equipped with mock locations within the pilot radius.
-4. **Default Delivery Fee Configuration** set to `FIXED_FLAT` (50 BDT / 10 SAR).
+2. **10 Pilot Vendors** (7 restaurants/cafes, 3 super shops/groceries) complete with coordinates, operating hours, categories, dishes, variants, and add-ons.
+3. **5 Pre-Approved Pilot Riders** with mock GPS coordinates within the pilot radius.
+4. **Default System Settings** (`FIXED_FLAT` fee mode at 50 BDT / 12 SAR; `RIDER_FIRST` FSM mode).

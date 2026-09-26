@@ -585,6 +585,31 @@ graph TD
   - [x] Created `services/backend_api/scripts/test-track-1-integrity.ts` (`npm run track1:test`) covering all 5 security and business integrity checks (100% passed).
   - [x] Regression test suites passed 100%: `npm run auth:test`, `npm run settlement:test`, `npm run cancel:test`, `npm run payment:test`.
 
+---
+
+## 📌 Market Launch Readiness Track 2: Spec-Driven Workflow & Living Catalog Architecture (Completed)
+
+> Master reference: [`SPEC_DRIVEN_WORKFLOW.md`](./context_docs/SPEC_DRIVEN_WORKFLOW.md) and [`FEATURES.md`](./FEATURES.md)
+
+### Track 2 Milestones Summary
+- **Task 2.1: Spec-Driven 3-Phase Engineering Protocol**:
+  - [x] Authored `context_docs/SPEC_DRIVEN_WORKFLOW.md` detailing Phase 1 (Plan & Grounding), Phase 2 (Implementation), and Phase 3 (Verification & Living Document Sync).
+  - [x] Established repeatable checklists for adding new features, fixing existing features/bugs, and refactoring.
+  - [x] Defined active interview protocols, strict typing gates, design system compliance, and Git commit rules.
+- **Task 2.2: Master Quick Reference & AI Context Router**:
+  - [x] Updated `context_docs/QUICK_REFERENCE.md` with 3-phase workflow entry point.
+  - [x] Expanded granular task router across all 5 sub-projects enabling agents to load only 1–2 files.
+- **Task 2.3: Granular Master System Feature Catalog**:
+  - [x] Overhauled `FEATURES.md` with complete line-by-line capability index across all 5 sub-projects.
+  - [x] Cataloged design system tokens, layout resilience, reusable UI primitives, cancellation rollback engine, and net COD offset calculations.
+  - [x] Created comprehensive traceability matrix mapping features to source code, context docs, and ADRs.
+- **Task 2.4: Comprehensive README & 5-Minute Local Setup**:
+  - [x] Overhauled root `README.md` with platform mission, multi-vertical architecture, and monorepo structure.
+  - [x] Added 5-minute local environment setup guide for Docker Compose, PostGIS, Redis, Prisma migrations, seed data, web portals, and Flutter apps.
+  - [x] Documented Core Operational Invariants Matrix and complete documentation router.
+- **Task 2.5: AI Agent Operating Guidelines Synchronization**:
+  - [x] Updated `AGENTS.md` to link directly to `SPEC_DRIVEN_WORKFLOW.md` and enforce the design system invariant.
+
 
 
 
