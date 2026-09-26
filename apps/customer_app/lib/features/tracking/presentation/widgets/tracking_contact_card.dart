@@ -44,12 +44,16 @@ class TrackingContactCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                    Flexible(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                     if (titleTrailing != null) ...[
@@ -71,6 +75,7 @@ class TrackingContactCard extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 8),
           if (isPrimaryAction)
             ElevatedButton.icon(
               onPressed: onAction,

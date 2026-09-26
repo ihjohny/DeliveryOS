@@ -76,14 +76,18 @@ class OrderHistoryScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Order Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                order.orderNumber,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              Expanded(
+                child: Text(
+                  order.orderNumber,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                ),
               ),
+              const SizedBox(width: 8),
               _buildStatusBadge(order.status),
             ],
           ),
@@ -94,14 +98,17 @@ class OrderHistoryScreen extends ConsumerWidget {
           ),
           const Divider(height: 20, color: AppColors.border),
 
-          // Vendor & Items Breakdown
           Row(
             children: [
               const Icon(Icons.storefront_rounded, size: 16, color: AppColors.primary),
               const SizedBox(width: 6),
-              Text(
-                order.vendorName,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              Expanded(
+                child: Text(
+                  order.vendorName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
               ),
             ],
           ),
@@ -134,9 +141,11 @@ class OrderHistoryScreen extends ConsumerWidget {
 
           const Divider(height: 20, color: AppColors.border),
 
-          // Total & Actions
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,10 +157,11 @@ class OrderHistoryScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
                 children: [
-                  // Track Order Button if active
-                  if (order.isActive) ...[
+                  if (order.isActive)
                     ElevatedButton.icon(
                       onPressed: () {
                         Navigator.of(context).push(
@@ -173,10 +183,7 @@ class OrderHistoryScreen extends ConsumerWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                  ],
 
-                  // Smart Re-Order Button
                   OutlinedButton.icon(
                     onPressed: () async {
                       final result = await ref.read(orderHistoryProvider.notifier).validateAndReorder(order);
@@ -219,7 +226,6 @@ class OrderHistoryScreen extends ConsumerWidget {
                         return;
                       }
 
-                      // Fully in-stock -> Jump straight to cart review
                       Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const CartScreen()),
                       );
@@ -278,9 +284,14 @@ class OrderHistoryScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: fg),
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.15,
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: fg),
+        ),
       ),
     );
   }

@@ -65,6 +65,8 @@ class SearchItemCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   'from ${item.vendorName}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -87,14 +89,19 @@ class SearchItemCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      CurrencyFormatter.formatWithUnit(item.basePrice, item.unitType),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: item.isInStock ? AppColors.textPrimary : AppColors.textMuted,
+                    Expanded(
+                      child: Text(
+                        CurrencyFormatter.formatWithUnit(item.basePrice, item.unitType),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: item.isInStock ? AppColors.textPrimary : AppColors.textMuted,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: item.isInStock ? onAdd : null,
                       style: ElevatedButton.styleFrom(

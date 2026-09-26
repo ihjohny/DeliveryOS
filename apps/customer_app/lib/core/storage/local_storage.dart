@@ -18,7 +18,6 @@ class LocalStorage {
     return LocalStorage(prefs);
   }
 
-  // Tokens
   String? getAccessToken() => _prefs.getString(_keyToken);
   Future<bool> setAccessToken(String token) => _prefs.setString(_keyToken, token);
   Future<bool> removeAccessToken() => _prefs.remove(_keyToken);
@@ -26,15 +25,12 @@ class LocalStorage {
   String? getRefreshToken() => _prefs.getString(_keyRefreshToken);
   Future<bool> setRefreshToken(String token) => _prefs.setString(_keyRefreshToken, token);
 
-  // Language
   String getLanguage() => _prefs.getString(_keyLanguage) ?? 'en';
   Future<bool> setLanguage(String langCode) => _prefs.setString(_keyLanguage, langCode);
 
-  // Guest Mode
   bool isGuest() => _prefs.getBool(_keyIsGuest) ?? false;
   Future<bool> setGuest(bool isGuest) => _prefs.setBool(_keyIsGuest, isGuest);
 
-  // Cached User Profile
   Map<String, dynamic>? getUserProfile() {
     final str = _prefs.getString(_keyUser);
     if (str == null) return null;
@@ -48,7 +44,6 @@ class LocalStorage {
   Future<bool> setUserProfile(Map<String, dynamic> user) =>
       _prefs.setString(_keyUser, jsonEncode(user));
 
-  // Saved Delivery Location
   Map<String, dynamic>? getSavedLocation() {
     final str = _prefs.getString(_keySavedLocation);
     if (str == null) return null;
@@ -62,7 +57,6 @@ class LocalStorage {
   Future<bool> setSavedLocation(Map<String, dynamic> location) =>
       _prefs.setString(_keySavedLocation, jsonEncode(location));
 
-  // Clear Session
   Future<void> clearSession() async {
     await _prefs.remove(_keyToken);
     await _prefs.remove(_keyRefreshToken);

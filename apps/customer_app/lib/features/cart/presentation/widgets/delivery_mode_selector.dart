@@ -79,12 +79,16 @@ class DeliveryModeSelector extends StatelessWidget {
                   color: isSelected ? AppColors.primary : AppColors.textSecondary,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                Flexible(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -92,6 +96,8 @@ class DeliveryModeSelector extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,

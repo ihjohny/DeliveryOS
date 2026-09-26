@@ -78,7 +78,6 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
           ),
         ),
         const SizedBox(height: 8),
-        // Indicator Dots
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(banners.length, (index) {
@@ -119,7 +118,6 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Background Image with Fallback Pattern
               Image.network(
                 banner.imageUrl,
                 fit: BoxFit.cover,
@@ -133,8 +131,6 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
                   ),
                 ),
               ),
-
-              // Gradient Overlay for Readability
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -148,8 +144,6 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
                   ),
                 ),
               ),
-
-              // Banner Typography
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -158,6 +152,8 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
                   children: [
                     Text(
                       banner.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -169,6 +165,8 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
                       const SizedBox(height: 3),
                       Text(
                         banner.subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 12,

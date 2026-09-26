@@ -168,21 +168,18 @@ class _MapLocationPickerScreenState
       ),
       body: Column(
         children: [
-          // Map Visual Area with Center Pin Marker
           Expanded(
             flex: 5,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Real Google Map with Fallback
                 _buildMapCanvas(),
-
-                // Center Pin Marker with pulse indicator
                 IgnorePointer(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
+                        constraints: const BoxConstraints(maxWidth: 220),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
@@ -197,6 +194,8 @@ class _MapLocationPickerScreenState
                         ),
                         child: Text(
                           _currentAddress.split(',').first,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11,
@@ -222,8 +221,6 @@ class _MapLocationPickerScreenState
                     ],
                   ),
                 ),
-
-                // "Use Current Location" Floating Pill
                 Positioned(
                   bottom: 16,
                   right: 16,
@@ -248,7 +245,6 @@ class _MapLocationPickerScreenState
             ),
           ),
 
-          // Bottom Sheet / Configuration Form
           Container(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             decoration: const BoxDecoration(
@@ -264,166 +260,159 @@ class _MapLocationPickerScreenState
             ),
             child: SafeArea(
               top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Pilot Neighborhood Quick Selectors
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _neighborhoodPresets.map((preset) {
-                        final isSelected =
-                            (_currentAddress == preset['address']);
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: ChoiceChip(
-                            label: Text(preset['name'] as String),
-                            selected: isSelected,
-                            selectedColor:
-                                AppColors.primary.withValues(alpha: 0.15),
-                            labelStyle: TextStyle(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
-                              fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              fontSize: 12,
-                            ),
-                            backgroundColor: AppColors.background,
-                            side: BorderSide(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.border,
-                            ),
-                            onSelected: (_) => _onPresetSelected(preset),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Selected Address Details Card
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.place_rounded,
-                            color: AppColors.primary, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _currentAddress,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              locState.isLoading
-                                  ? l10n.translate('finding_nearby')
-                                  : '${locState.nearbyStoreCount} ${l10n.translate('stores_found')}',
-                              style: TextStyle(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _neighborhoodPresets.map((preset) {
+                          final isSelected =
+                              (_currentAddress == preset['address']);
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: ChoiceChip(
+                              label: Text(preset['name'] as String),
+                              selected: isSelected,
+                              selectedColor:
+                                  AppColors.primary.withValues(alpha: 0.15),
+                              labelStyle: TextStyle(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: locState.nearbyStoreCount > 0
-                                    ? AppColors.secondary
-                                    : AppColors.textMuted,
                               ),
+                              backgroundColor: AppColors.background,
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.border,
+                              ),
+                              onSelected: (_) => _onPresetSelected(preset),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Address Type Selector Chips (Home, Work, Other)
-                  Row(
-                    children: [
-                      _buildTypeChip(
-                        type: AddressType.home,
-                        label: l10n.translate('home'),
-                        icon: Icons.home_rounded,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildTypeChip(
-                        type: AddressType.work,
-                        label: l10n.translate('work'),
-                        icon: Icons.work_rounded,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildTypeChip(
-                        type: AddressType.other,
-                        label: l10n.translate('other'),
-                        icon: Icons.bookmark_rounded,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Flat / Floor / Delivery Instructions
-                  TextField(
-                    controller: _detailsController,
-                    decoration: InputDecoration(
-                      hintText: l10n.translate('address_details_hint'),
-                      hintStyle: const TextStyle(
-                          fontSize: 13, color: AppColors.textMuted),
-                      prefixIcon: const Icon(Icons.apartment_rounded,
-                          size: 18, color: AppColors.textSecondary),
-                      filled: true,
-                      fillColor: AppColors.background,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppColors.border),
+                          );
+                        }).toList(),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Confirm Location CTA
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _handleConfirm,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.place_rounded,
+                              color: AppColors.primary, size: 20),
                         ),
-                      ),
-                      child: Text(
-                        l10n.translate('confirm_location'),
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _currentAddress,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                locState.isLoading
+                                    ? l10n.translate('finding_nearby')
+                                    : '${locState.nearbyStoreCount} ${l10n.translate('stores_found')}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: locState.nearbyStoreCount > 0
+                                      ? AppColors.secondary
+                                      : AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _buildTypeChip(
+                          type: AddressType.home,
+                          label: l10n.translate('home'),
+                          icon: Icons.home_rounded,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildTypeChip(
+                          type: AddressType.work,
+                          label: l10n.translate('work'),
+                          icon: Icons.work_rounded,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildTypeChip(
+                          type: AddressType.other,
+                          label: l10n.translate('other'),
+                          icon: Icons.bookmark_rounded,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _detailsController,
+                      decoration: InputDecoration(
+                        hintText: l10n.translate('address_details_hint'),
+                        hintStyle: const TextStyle(
+                            fontSize: 13, color: AppColors.textMuted),
+                        prefixIcon: const Icon(Icons.apartment_rounded,
+                            size: 18, color: AppColors.textSecondary),
+                        filled: true,
+                        fillColor: AppColors.background,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppColors.border),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _handleConfirm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          l10n.translate('confirm_location'),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -542,12 +531,16 @@ class _MapLocationPickerScreenState
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
               ),
               const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],

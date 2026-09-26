@@ -83,15 +83,20 @@ class _RiderEarningsScreenState extends ConsumerState<RiderEarningsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    isToday ? 'TODAY\'S COMPLETED TRIPS' : 'THIS WEEK\'S COMPLETED TRIPS',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6,
-                      color: AppColors.textSecondary,
+                  Expanded(
+                    child: Text(
+                      isToday ? 'TODAY\'S COMPLETED TRIPS' : 'THIS WEEK\'S COMPLETED TRIPS',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     '${tripsToShow.length} Orders',
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),

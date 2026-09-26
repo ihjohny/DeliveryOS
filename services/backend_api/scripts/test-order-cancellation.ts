@@ -66,6 +66,20 @@ async function runCancellationTests() {
     }
     const product = vendor.products[0];
 
+    // Ensure vendor is open for test execution
+    const currentDay = new Date().getDay();
+    await prisma.vendorOperatingHour.upsert({
+      where: { vendorId_dayOfWeek: { vendorId: vendor.id, dayOfWeek: currentDay } },
+      update: { isClosed: false, openTime: '00:00:00', closeTime: '23:59:59' },
+      create: {
+        vendorId: vendor.id,
+        dayOfWeek: currentDay,
+        openTime: '00:00:00',
+        closeTime: '23:59:59',
+        isClosed: false,
+      },
+    });
+
     // Vendor Staff
     const vendorStaff = await prisma.vendorStaff.findFirst({
       where: { vendorId: vendor.id, isActive: true },

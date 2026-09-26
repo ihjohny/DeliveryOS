@@ -78,16 +78,23 @@ class PerformanceMetricsCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.payments_rounded, color: AppColors.warning, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'COD Cash in Hand',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-                        ),
-                      ],
+                    const Expanded(
+                      child: Row(
+                        children: [
+                          Icon(Icons.payments_rounded, color: AppColors.warning, size: 20),
+                          SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'COD Cash in Hand',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 6),
                     Text(
                       '${formatCurrency(dutyState.codCashInHand)} / ${formatCurrency(dutyState.cashSafetyLimit)}',
                       style: TextStyle(

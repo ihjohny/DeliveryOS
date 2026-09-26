@@ -51,161 +51,160 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
+        builder: (ctx, setSheetState) => Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+          ),
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
             left: 20,
             right: 20,
             top: 20,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    existingAddress != null ? 'Edit Address' : 'Add New Address',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Label Chips
-              const Text('Address Label', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-              const SizedBox(height: 8),
-              Row(
-                children: labelOptions.map((l) {
-                  final isSelected = selectedLabel == l;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(l),
-                      selected: isSelected,
-                      selectedColor: AppColors.primary.withValues(alpha: 0.15),
-                      labelStyle: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        existingAddress != null ? 'Edit Address' : 'Add New Address',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      onSelected: (_) {
-                        setSheetState(() => selectedLabel = l);
-                      },
                     ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 12),
-
-              // Address Line
-              const Text('Street Address & Area', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-              const SizedBox(height: 6),
-              TextField(
-                controller: addressLineController,
-                decoration: InputDecoration(
-                  hintText: 'e.g. House 42, Road 11, Banani, Dhaka',
-                  hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  filled: true,
-                  fillColor: AppColors.background,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-
-              // Building / Floor
-              const Text('Apartment / Building / Floor (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-              const SizedBox(height: 6),
-              TextField(
-                controller: buildingFloorController,
-                decoration: InputDecoration(
-                  hintText: 'e.g. Apt 4B, 4th Floor',
-                  hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  filled: true,
-                  fillColor: AppColors.background,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Delivery Note
-              const Text('Delivery Instructions (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-              const SizedBox(height: 6),
-              TextField(
-                controller: deliveryNoteController,
-                decoration: InputDecoration(
-                  hintText: 'e.g. Call when outside, leave with security...',
-                  hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  filled: true,
-                  fillColor: AppColors.background,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Default toggle
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Set as default delivery address', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                value: isDefault,
-                activeColor: AppColors.primary,
-                onChanged: (val) {
-                  setSheetState(() => isDefault = val ?? false);
-                },
-              ),
-              const SizedBox(height: 14),
-
-              // Save Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final line = addressLineController.text.trim();
-                    if (line.isEmpty) return;
-
-                    Navigator.pop(ctx);
-                    if (existingAddress != null) {
-                      await ref.read(addressProvider.notifier).updateAddress(
-                            addressId: existingAddress.id,
-                            label: selectedLabel,
-                            addressLine: line,
-                            buildingFloor: buildingFloorController.text.trim(),
-                            deliveryNote: deliveryNoteController.text.trim(),
-                            isDefault: isDefault,
-                          );
-                    } else {
-                      await ref.read(addressProvider.notifier).createAddress(
-                            label: selectedLabel,
-                            addressLine: line,
-                            buildingFloor: buildingFloorController.text.trim(),
-                            deliveryNote: deliveryNoteController.text.trim(),
-                            latitude: lat,
-                            longitude: lng,
-                            isDefault: isDefault,
-                          );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                const SizedBox(height: 12),
+                const Text('Address Label', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: labelOptions.map((l) {
+                      final isSelected = selectedLabel == l;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(l),
+                          selected: isSelected,
+                          selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                          labelStyle: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                          ),
+                          onSelected: (_) {
+                            setSheetState(() => selectedLabel = l);
+                          },
+                        ),
+                      );
+                    }).toList(),
                   ),
-                  child: Text(existingAddress != null ? 'Update Address' : 'Save Address', style: const TextStyle(fontWeight: FontWeight.w800)),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                const Text('Street Address & Area', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: addressLineController,
+                  decoration: InputDecoration(
+                    hintText: 'e.g. House 42, Road 11, Banani, Dhaka',
+                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text('Apartment / Building / Floor (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: buildingFloorController,
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Apt 4B, 4th Floor',
+                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text('Delivery Instructions (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: deliveryNoteController,
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Call when outside, leave with security...',
+                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Set as default delivery address', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  value: isDefault,
+                  activeColor: AppColors.primary,
+                  onChanged: (val) {
+                    setSheetState(() => isDefault = val ?? false);
+                  },
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final line = addressLineController.text.trim();
+                      if (line.isEmpty) return;
+
+                      Navigator.pop(ctx);
+                      if (existingAddress != null) {
+                        await ref.read(addressProvider.notifier).updateAddress(
+                              addressId: existingAddress.id,
+                              label: selectedLabel,
+                              addressLine: line,
+                              buildingFloor: buildingFloorController.text.trim(),
+                              deliveryNote: deliveryNoteController.text.trim(),
+                              isDefault: isDefault,
+                            );
+                      } else {
+                        await ref.read(addressProvider.notifier).createAddress(
+                              label: selectedLabel,
+                              addressLine: line,
+                              buildingFloor: buildingFloorController.text.trim(),
+                              deliveryNote: deliveryNoteController.text.trim(),
+                              latitude: lat,
+                              longitude: lng,
+                              isDefault: isDefault,
+                            );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(existingAddress != null ? 'Update Address' : 'Save Address', style: const TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -325,9 +324,13 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
                                   color: AppColors.primary,
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  address.label,
-                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.textPrimary),
+                                Flexible(
+                                  child: Text(
+                                    address.label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.textPrimary),
+                                  ),
                                 ),
                                 if (address.isDefault) ...[
                                   const SizedBox(width: 8),

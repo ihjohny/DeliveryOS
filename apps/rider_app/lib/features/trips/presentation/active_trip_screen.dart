@@ -89,6 +89,8 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
           children: [
             Text(
               'Trip ${trip.orderNumber}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
             ),
             Text(

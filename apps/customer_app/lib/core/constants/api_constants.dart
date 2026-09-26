@@ -22,13 +22,11 @@ class ApiConstants {
     return 'http://localhost:4000';
   }
 
-  // Auth Endpoints
   static const String sendOtp = '/auth/otp/send';
   static const String verifyOtp = '/auth/otp/verify';
   static const String refreshAuth = '/auth/refresh';
   static const String registerDeviceToken = '/auth/device-token';
 
-  // Vendor Discovery Endpoints
   static const String nearbyVendors = '/vendors/nearby';
   static const String vendorDetails = '/vendors';
   static const String searchVendors = '/vendors/search';
@@ -37,7 +35,6 @@ class ApiConstants {
   static const String validateCoupon = '/coupons/validate';
   static const String cartValidateCoverage = '/cart/validate-address-coverage';
 
-  // Order & Customer Endpoints
   static const String customerAddresses = '/customers/addresses';
   static const String customerProfile = '/customers/profile';
   static const String initiatePayment = '/payments/initiate';

@@ -52,8 +52,13 @@ class EarningsSummaryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildMiniMetric('Completed Trips', '$totalTrips Trips', Icons.check_circle_outline_rounded, AppColors.dutyOnline),
-              _buildMiniMetric('Avg per Trip', formatCurrency(avgPerTrip), Icons.insights_rounded, AppColors.primary),
+              Expanded(
+                child: _buildMiniMetric('Completed Trips', '$totalTrips Trips', Icons.check_circle_outline_rounded, AppColors.dutyOnline),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildMiniMetric('Avg per Trip', formatCurrency(avgPerTrip), Icons.insights_rounded, AppColors.primary),
+              ),
             ],
           ),
         ],
@@ -66,12 +71,24 @@ class EarningsSummaryCard extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: iconColor),
         const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              ),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
         ),
       ],
     );

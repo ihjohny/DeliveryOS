@@ -84,7 +84,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -121,6 +121,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 'Sent to ${widget.phoneNumber}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
                               ),
                             ],
@@ -130,7 +132,6 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // 6-digit Code Input
                     TextField(
                       controller: _otpController,
                       keyboardType: TextInputType.number,
@@ -156,7 +157,6 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Dev Auto-fill Pill
                     Center(
                       child: TextButton.icon(
                         onPressed: () => setState(() => _otpController.text = '123456'),
@@ -169,7 +169,6 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Submit Verification Button
                     SizedBox(
                       width: double.infinity,
                       height: 54,

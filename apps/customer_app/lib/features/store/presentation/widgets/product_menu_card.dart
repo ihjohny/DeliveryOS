@@ -80,14 +80,19 @@ class ProductMenuCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        CurrencyFormatter.format(product.basePrice),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: product.isInStock ? AppColors.primary : AppColors.textMuted,
+                      Expanded(
+                        child: Text(
+                          CurrencyFormatter.format(product.basePrice),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: product.isInStock ? AppColors.primary : AppColors.textMuted,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: product.isInStock ? onAdd : null,
                         style: ElevatedButton.styleFrom(

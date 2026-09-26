@@ -41,15 +41,21 @@ class GpsTelemetryCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'GPS LOCATION RADAR',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textSecondary),
+                    const Flexible(
+                      child: Text(
+                        'GPS LOCATION RADAR',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textSecondary),
+                      ),
                     ),
-                    if (dutyState.isOnline)
+                    if (dutyState.isOnline) ...[
+                      const SizedBox(width: 6),
                       const Text(
                         'Beaconing (5s)',
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.dutyOnline),
                       ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -57,6 +63,8 @@ class GpsTelemetryCard extends StatelessWidget {
                   dutyState.isOnline
                       ? '${dutyState.latitude.toStringAsFixed(4)}° N, ${dutyState.longitude.toStringAsFixed(4)}° E'
                       : 'Location streaming paused while offline',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                 ),
               ],

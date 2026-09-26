@@ -88,7 +88,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
 
-    // Popular Quick Suggestions
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -143,7 +142,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       children: [
-        // Outlets Section
         if (results.outlets.isNotEmpty) ...[
           Text(
             'Stores & Restaurants (${results.outlets.length})',
@@ -168,7 +166,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           const SizedBox(height: 16),
         ],
 
-        // Dishes & Items Section
         if (results.items.isNotEmpty) ...[
           Text(
             'Dishes & Groceries (${results.items.length})',

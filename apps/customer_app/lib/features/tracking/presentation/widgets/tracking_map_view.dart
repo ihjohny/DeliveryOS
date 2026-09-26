@@ -139,7 +139,6 @@ class _TrackingMapViewState extends State<TrackingMapView> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Production Real GoogleMap
         GoogleMap(
           initialCameraPosition: CameraPosition(
             target: initialCenter,
@@ -160,53 +159,59 @@ class _TrackingMapViewState extends State<TrackingMapView> {
           },
         ),
 
-        // Live Telemetry Overlay Badge
         Positioned(
           left: 16,
           top: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.95),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: widget.state.stage == OrderStage.dispatched
-                        ? const Color(0xFF10B981)
-                        : AppColors.primary,
-                    shape: BoxShape.circle,
+          right: 64,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  widget.state.stage == OrderStage.dispatched
-                      ? 'Live GPS • ${widget.state.estimatedMinutesRemaining} mins away'
-                      : widget.state.stage.title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: widget.state.stage == OrderStage.dispatched
+                          ? const Color(0xFF10B981)
+                          : AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      widget.state.stage == OrderStage.dispatched
+                          ? 'Live GPS • ${widget.state.estimatedMinutesRemaining} mins away'
+                          : widget.state.stage.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
 
-        // Recenter Camera Floating Action Button
         Positioned(
           right: 16,
           bottom: 16,

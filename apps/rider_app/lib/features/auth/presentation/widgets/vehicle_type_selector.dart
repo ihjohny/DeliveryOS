@@ -47,7 +47,7 @@ class VehicleTypeSelector extends StatelessWidget {
       child: GestureDetector(
         onTap: () => onVehicleSelected(type),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.1) : AppColors.background,
             borderRadius: BorderRadius.circular(12),
@@ -62,6 +62,8 @@ class VehicleTypeSelector extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,

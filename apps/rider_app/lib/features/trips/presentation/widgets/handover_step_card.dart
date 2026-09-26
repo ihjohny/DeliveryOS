@@ -40,16 +40,23 @@ class HandoverStepCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.payments_rounded, color: AppColors.warning, size: 26),
-                        SizedBox(width: 8),
-                        Text(
-                          'CASH ON DELIVERY',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.warning),
-                        ),
-                      ],
+                    const Expanded(
+                      child: Row(
+                        children: [
+                          Icon(Icons.payments_rounded, color: AppColors.warning, size: 26),
+                          SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'CASH ON DELIVERY',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.warning),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       formatCurrency(trip.totalAmount),
                       style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
@@ -148,9 +155,13 @@ class HandoverStepCard extends StatelessWidget {
                     children: [
                       Icon(Icons.task_alt_rounded, size: 22),
                       SizedBox(width: 8),
-                      Text(
-                        'COMPLETE DELIVERY',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                      Flexible(
+                        child: Text(
+                          'COMPLETE DELIVERY',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                        ),
                       ),
                     ],
                   ),
@@ -160,7 +171,11 @@ class HandoverStepCard extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onReportIssue,
           icon: const Icon(Icons.person_off_rounded, size: 18, color: AppColors.error),
-          label: const Text('Customer Unreachable / Payment Refused?'),
+          label: const Text(
+            'Customer Unreachable / Payment Refused?',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.error,
             side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),

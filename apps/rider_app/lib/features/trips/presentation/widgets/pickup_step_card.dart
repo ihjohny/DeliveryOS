@@ -66,7 +66,12 @@ class PickupStepCard extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () => openNativeTurnByTurnNavigation(trip.store.latitude, trip.store.longitude),
                       icon: const Icon(Icons.navigation_rounded, size: 18),
-                      label: const Text('Directions to Store', style: TextStyle(fontWeight: FontWeight.w800)),
+                      label: const Text(
+                        'Directions to Store',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -79,7 +84,12 @@ class PickupStepCard extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: () => makeDirectPhoneCall(trip.store.phone),
                     icon: const Icon(Icons.phone_rounded, size: 18),
-                    label: const Text('Call Store', style: TextStyle(fontWeight: FontWeight.w700)),
+                    label: const Text(
+                      'Call Store',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.textPrimary,
                       side: const BorderSide(color: AppColors.borderStrong),
@@ -167,9 +177,13 @@ class PickupStepCard extends StatelessWidget {
                     children: [
                       Icon(Icons.takeout_dining_rounded, size: 22),
                       SizedBox(width: 8),
-                      Text(
-                        'ORDER PICKED UP ➔ START DELIVERY',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 0.3),
+                      Flexible(
+                        child: Text(
+                          'ORDER PICKED UP ➔ START DELIVERY',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 0.3),
+                        ),
                       ),
                     ],
                   ),

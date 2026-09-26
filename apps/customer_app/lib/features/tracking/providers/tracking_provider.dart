@@ -35,10 +35,8 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
       totalAmount: 0.0,
     );
 
-    // 1. Join real-time WebSocket dynamic order room
     socket.joinOrder(orderId);
 
-    // 2. Listen to order:status:changed from backend
     void handleStatusChanged(dynamic payload) {
       if (payload is Map<String, dynamic>) {
         final data = payload['data'] is Map<String, dynamic>
@@ -72,7 +70,6 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
       }
     }
 
-    // 3. Listen to order:cancelled event
     void handleOrderCancelled(dynamic payload) {
       if (payload is Map<String, dynamic>) {
         final data = payload['data'] is Map<String, dynamic>
@@ -88,7 +85,6 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
       }
     }
 
-    // 4. Listen to order:rider:moved from backend telemetry stream
     void handleRiderMoved(dynamic payload) {
       if (payload is Map<String, dynamic>) {
         final data = payload['data'] is Map<String, dynamic>
@@ -128,7 +124,6 @@ class TrackingNotifier extends Notifier<OrderTrackingState> {
       _telemetryTimer?.cancel();
     });
 
-    // Initial background fetch to populate authoritative store and items
     Future.microtask(() => refreshDetails());
 
     return initialState;

@@ -184,7 +184,6 @@ class RiderProfileData {
     };
   }
 
-  // Mock / Dev Pilot Profile
   factory RiderProfileData.pilotApproved({
     String? phone,
     String? fullName,

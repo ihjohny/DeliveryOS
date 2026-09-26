@@ -64,13 +64,10 @@ class OrderTrackingScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Live Map with Store, Rider, and Delivery Pins
           Expanded(
             flex: 4,
             child: TrackingMapView(state: trackingState),
           ),
-
-          // Lower Panel with ETA, Stepper, and Direct Call Actions
           Expanded(
             flex: 5,
             child: Container(
@@ -82,7 +79,6 @@ class OrderTrackingScreen extends ConsumerWidget {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  // Online Payment Pending & Recovery (Switch to COD)
                   if (trackingState.paymentMethod == 'ONLINE_GATEWAY' &&
                       trackingState.paymentStatus != 'PAID' &&
                       !trackingState.isCancelled) ...[
@@ -111,11 +107,9 @@ class OrderTrackingScreen extends ConsumerWidget {
                     ),
                   ],
 
-                  // ETA Card
                   TrackingEtaBanner(state: trackingState),
                   const SizedBox(height: 12),
 
-                  // Refund Banner (if cancelled and refund processed/applicable)
                   if (trackingState.isCancelled &&
                       (trackingState.paymentStatus == 'REFUNDED' ||
                           trackingState.paymentMethod == 'ONLINE')) ...[
@@ -123,11 +117,9 @@ class OrderTrackingScreen extends ConsumerWidget {
                     const SizedBox(height: 12),
                   ],
 
-                  // 6-Stage Stepper
                   OrderStepperWidget(currentStage: trackingState.stage),
                   const SizedBox(height: 12),
 
-                  // Courier Card with Native Dialer Call Button
                   if (trackingState.rider != null && !trackingState.isCancelled) ...[
                     TrackingContactCard(
                       leading: CircleAvatar(
@@ -161,7 +153,6 @@ class OrderTrackingScreen extends ConsumerWidget {
                     const SizedBox(height: 10),
                   ],
 
-                  // Store Card with Native Dialer Call Button
                   TrackingContactCard(
                     leading: Container(
                       padding: const EdgeInsets.all(8),
@@ -186,7 +177,6 @@ class OrderTrackingScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // Customer Cancel CTA (allowed in PLACED and RIDER_ASSIGNED)
                   if (trackingState.canCancel) ...[
                     _buildCancelOrderButton(context, ref, trackingState),
                     const SizedBox(height: 16),

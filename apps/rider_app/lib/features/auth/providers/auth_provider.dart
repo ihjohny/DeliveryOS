@@ -153,7 +153,6 @@ class RiderAuthNotifier extends Notifier<RiderAuthState> {
         await storage.setAccessToken(accessToken);
         await storage.setRefreshToken(refreshToken);
 
-        // Fetch rider full profile
         return await fetchProfile();
       }
     } on DioException catch (dioErr) {
@@ -248,7 +247,6 @@ class RiderAuthNotifier extends Notifier<RiderAuthState> {
     state = state.copyWith(isLoading: true, clearError: true);
     await Future.delayed(const Duration(milliseconds: 600));
 
-    // Try server check
     final success = await fetchProfile();
     if (!success && state.isPendingApproval) {
       state = state.copyWith(

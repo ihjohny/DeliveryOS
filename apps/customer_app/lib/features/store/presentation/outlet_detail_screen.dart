@@ -172,26 +172,34 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(8),
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${cart.totalItemCount}',
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+                        ),
                       ),
-                      child: Text(
-                        '${cart.totalItemCount}',
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+                      const SizedBox(width: 10),
+                      const Flexible(
+                        child: Text(
+                          'View Cart',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'View Cart',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   CurrencyFormatter.format(cart.grossSubtotal),
                   style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
@@ -210,7 +218,6 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
 
     return CustomScrollView(
       slivers: [
-        // Sliver App Bar with Outlet Cover Photo
         SliverAppBar(
           expandedHeight: 180.0,
           pinned: true,
@@ -277,7 +284,6 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
           ),
         ),
 
-        // Outlet Meta Card
         SliverToBoxAdapter(
           child: Container(
             color: Colors.white,
@@ -320,18 +326,18 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
                   children: [
                     _buildMetaBadge(
                       icon: Icons.timer_outlined,
                       label: '${catalog.estimatedPrepTimeMinutes} min prep',
                     ),
-                    const SizedBox(width: 8),
                     _buildMetaBadge(
                       icon: Icons.radar_rounded,
                       label: '${catalog.deliveryRadiusKm.toStringAsFixed(0)} km radius',
                     ),
-                    const SizedBox(width: 8),
                     _buildMetaBadge(
                       icon: Icons.star_rounded,
                       label: '4.8 (240+)',
@@ -344,7 +350,6 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
           ),
         ),
 
-        // Sticky Horizontal Category Tabs
         if (categories.isNotEmpty)
           SliverPersistentHeader(
             pinned: true,
@@ -357,7 +362,6 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
             ),
           ),
 
-        // Category Products List
         if (activeCategory != null && activeCategory.products.isNotEmpty)
           SliverPadding(
             padding: const EdgeInsets.all(16),

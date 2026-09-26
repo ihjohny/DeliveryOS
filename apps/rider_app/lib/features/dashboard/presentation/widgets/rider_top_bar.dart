@@ -37,12 +37,16 @@ class RiderTopBar extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      profile?.fullName ?? 'Rider Partner',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
+                    Flexible(
+                      child: Text(
+                        profile?.fullName ?? 'Rider Partner',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -75,15 +79,25 @@ class RiderTopBar extends StatelessWidget {
                       color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      profile?.vehicleType.displayName ?? 'Motorcycle',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                    Flexible(
+                      child: Text(
+                        profile?.vehicleType.displayName ?? 'Motorcycle',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                      ),
                     ),
-                    const Text(' • ', style: TextStyle(color: AppColors.textMuted)),
-                    Text(
-                      profile?.phone ?? '',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                    ),
+                    if (profile?.phone != null && profile!.phone.isNotEmpty) ...[
+                      const Text(' • ', style: TextStyle(color: AppColors.textMuted)),
+                      Flexible(
+                        child: Text(
+                          profile!.phone,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],

@@ -320,7 +320,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // 1. Delivery Method Selector
           DeliveryModeSelector(
             selectedMethod: cartState.deliveryMethod,
             deliveryFee: cartState.deliveryFee,
@@ -330,7 +329,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           ),
           const SizedBox(height: 12),
 
-          // 2. Delivery Address Card & Geofence Banner
           if (cartState.deliveryMethod == DeliveryMethod.homeDelivery) ...[
             Container(
               padding: const EdgeInsets.all(12),
@@ -345,32 +343,39 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            addressState.selectedAddress != null
-                                ? (addressState.selectedAddress!.label.toLowerCase() == 'home'
-                                    ? Icons.home_rounded
-                                    : (addressState.selectedAddress!.label.toLowerCase() == 'work'
-                                        ? Icons.work_rounded
-                                        : Icons.location_on_rounded))
-                                : Icons.my_location_rounded,
-                            color: AppColors.primary,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            addressState.selectedAddress != null
-                                ? 'Deliver to: ${addressState.selectedAddress!.label}'
-                                : 'Deliver to Current Location',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              addressState.selectedAddress != null
+                                  ? (addressState.selectedAddress!.label.toLowerCase() == 'home'
+                                      ? Icons.home_rounded
+                                      : (addressState.selectedAddress!.label.toLowerCase() == 'work'
+                                          ? Icons.work_rounded
+                                          : Icons.location_on_rounded))
+                                  : Icons.my_location_rounded,
+                              color: AppColors.primary,
+                              size: 18,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                addressState.selectedAddress != null
+                                    ? 'Deliver to: ${addressState.selectedAddress!.label}'
+                                    : 'Deliver to Current Location',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       TextButton(
                         onPressed: () async {
                           final picked = await Navigator.of(context).push<CustomerAddressModel>(
@@ -426,7 +431,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             const SizedBox(height: 14),
           ],
 
-          // Store Closed / Busy Warning Banner
           if (!cartState.isVendorActive || cartState.isVendorBusy) ...[
             Container(
               margin: const EdgeInsets.only(bottom: 14),
@@ -463,7 +467,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             ),
           ],
 
-          // 3. Cart Items Section
           const Text(
             'Order Items',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
@@ -475,7 +478,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           }),
           const SizedBox(height: 16),
 
-          // 4. Coupon Code Input Section
           const Text(
             'Promotions & Vouchers',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
@@ -495,7 +497,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           ),
           const SizedBox(height: 16),
 
-          // 5. Cooking & Delivery Instructions
           const Text(
             'Cooking & Delivery Notes',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
@@ -521,7 +522,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           ),
           const SizedBox(height: 16),
 
-          // 6. Payment Method Choice
           const Text(
             'Payment Method',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
@@ -535,13 +535,11 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           ),
           const SizedBox(height: 16),
 
-          // 7. Order Summary Card
           _buildSummaryCard(cartState),
           const SizedBox(height: 24),
         ],
       ),
 
-      // Bottom Bar with "Place Order" CTA
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         decoration: const BoxDecoration(
@@ -570,16 +568,21 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          !cartState.isVendorActive
-                              ? 'Store Currently Closed'
-                              : cartState.isVendorBusy
-                                  ? 'Store Paused (Rush Hour)'
-                                  : (!cartState.isWithinCoverage && cartState.deliveryMethod == DeliveryMethod.homeDelivery)
-                                      ? 'Address Out of Coverage'
-                                      : 'Place Order (${cartState.totalItemCount} items)',
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                        Expanded(
+                          child: Text(
+                            !cartState.isVendorActive
+                                ? 'Store Currently Closed'
+                                : cartState.isVendorBusy
+                                    ? 'Store Paused (Rush Hour)'
+                                    : (!cartState.isWithinCoverage && cartState.deliveryMethod == DeliveryMethod.homeDelivery)
+                                        ? 'Address Out of Coverage'
+                                        : 'Place Order (${cartState.totalItemCount} items)',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           CurrencyFormatter.format(cartState.totalPayable),
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
@@ -643,7 +646,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             ),
           ),
 
-          // Stepper Controls
           Container(
             decoration: BoxDecoration(
               color: AppColors.background,
@@ -723,14 +725,19 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isBold ? 14 : 12,
-              fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
-              color: color ?? (isBold ? AppColors.textPrimary : AppColors.textSecondary),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: isBold ? 14 : 12,
+                fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
+                color: color ?? (isBold ? AppColors.textPrimary : AppColors.textSecondary),
+              ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             value,
             style: TextStyle(

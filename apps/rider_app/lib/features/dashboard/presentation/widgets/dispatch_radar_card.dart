@@ -56,6 +56,8 @@ class DispatchRadarCard extends StatelessWidget {
               icon: const Icon(Icons.bolt_rounded, size: 18, color: AppColors.dutyOnline),
               label: const Text(
                 'Simulate Order Broadcast (Pilot Demo)',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
               ),
               style: OutlinedButton.styleFrom(

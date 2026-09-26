@@ -47,49 +47,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // Top App Bar & Address Header
             SliverToBoxAdapter(
               child: Container(
                 color: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                 child: Column(
                   children: [
-                    // Row 1: Logo & Language / Cart / Auth Controls
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(8),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.delivery_dining_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.delivery_dining_rounded,
-                                color: Colors.white,
-                                size: 20,
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  l10n.translate('app_title'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.translate('app_title'),
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Language switcher dropdown / popup
                             PopupMenuButton<String>(
                               initialValue: currentLocale.languageCode,
                               icon: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: AppColors.background,
                                   borderRadius: BorderRadius.circular(16),
@@ -99,7 +103,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.language_rounded, size: 14, color: AppColors.textSecondary),
-                                    const SizedBox(width: 4),
+                                    const SizedBox(width: 3),
                                     Text(
                                       currentLocale.languageCode.toUpperCase(),
                                       style: const TextStyle(
@@ -120,15 +124,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 PopupMenuItem(value: 'bn', child: Text('বাংলা')),
                               ],
                             ),
-                            const SizedBox(width: 6),
-
-                            // Cart Icon Button with Badge
                             IconButton(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                               icon: Badge(
                                 isLabelVisible: cartState.items.isNotEmpty,
                                 label: Text('${cartState.totalItemCount}'),
                                 backgroundColor: AppColors.primary,
-                                child: const Icon(Icons.shopping_bag_outlined, size: 22, color: AppColors.textPrimary),
+                                child: const Icon(Icons.shopping_bag_outlined, size: 21, color: AppColors.textPrimary),
                               ),
                               tooltip: 'Cart',
                               onPressed: () {
@@ -137,11 +141,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 );
                               },
                             ),
-                            const SizedBox(width: 2),
-
-                            // My Orders / History
                             IconButton(
-                              icon: const Icon(Icons.receipt_long_outlined, size: 22, color: AppColors.textPrimary),
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                              icon: const Icon(Icons.receipt_long_outlined, size: 21, color: AppColors.textPrimary),
                               tooltip: 'My Orders',
                               onPressed: () {
                                 Navigator.of(context).push(
@@ -149,11 +153,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 );
                               },
                             ),
-                            const SizedBox(width: 2),
-
-                            // Profile
                             IconButton(
-                              icon: const Icon(Icons.person_outline_rounded, size: 22, color: AppColors.textPrimary),
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                              icon: const Icon(Icons.person_outline_rounded, size: 21, color: AppColors.textPrimary),
                               tooltip: 'My Profile',
                               onPressed: () {
                                 Navigator.of(context).push(
@@ -166,8 +170,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-
-                    // Row 2: Selected Address Bar
                     InkWell(
                       onTap: () {
                         Navigator.of(context).push(
@@ -259,7 +261,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // Guest Mode Banner (if guest)
             if (authState.isGuest)
               SliverToBoxAdapter(
                 child: Container(
@@ -305,7 +306,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
-            // Search Bar (Interactive Tap Trigger)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
@@ -349,7 +349,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // Promotional Banner Carousel
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(top: 6.0, bottom: 8.0),
@@ -374,7 +373,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // Stores Delivering Status Pill
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
@@ -402,7 +400,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // Category Horizontal List
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(top: 8.0, bottom: 12.0),
@@ -438,7 +435,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // Outlets Feed
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               sliver: SliverList(
@@ -502,26 +498,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                borderRadius: BorderRadius.circular(6),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '${cartState.totalItemCount}',
+                                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+                                ),
                               ),
-                              child: Text(
-                                '${cartState.totalItemCount}',
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'View Cart (${cartState.vendorName ?? "Outlet"})',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'View Cart (${cartState.vendorName ?? "Outlet"})',
-                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           CurrencyFormatter.format(cartState.totalPayable),
                           style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),

@@ -103,7 +103,6 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Sunlight-Readable Header Card
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -155,7 +154,6 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Mode Selector Tabs (Sign In vs Apply as Rider)
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -177,6 +175,8 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                             child: Text(
                               'Rider Login',
                               textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
@@ -198,6 +198,8 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                             child: Text(
                               'Apply / Register',
                               textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
@@ -212,7 +214,6 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Input Card
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -314,7 +315,6 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Submit Button (High-Contrast, Touch Target >= 54px)
                       SizedBox(
                         width: double.infinity,
                         height: 54,
@@ -335,9 +335,13 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                               : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text(
-                                      _isRegistering ? 'Submit Application' : 'Send Verification OTP',
-                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                                    Flexible(
+                                      child: Text(
+                                        _isRegistering ? 'Submit Application' : 'Send Verification OTP',
+                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     const Icon(Icons.arrow_forward_rounded, size: 20),
@@ -351,7 +355,6 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                 if (kDebugMode) ...[
                   const SizedBox(height: 20),
 
-                  // Pilot Demo Shortcut Pills (Dev Mode Only)
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(

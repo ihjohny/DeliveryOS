@@ -70,6 +70,8 @@ class TripTimelineHeader extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 12,
             fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,

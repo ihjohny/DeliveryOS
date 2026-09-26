@@ -38,6 +38,8 @@ class EarningsTimeframeSelector extends StatelessWidget {
                 child: Center(
                   child: Text(
                     'Today',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
@@ -63,6 +65,8 @@ class EarningsTimeframeSelector extends StatelessWidget {
                 child: Center(
                   child: Text(
                     'This Week',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,

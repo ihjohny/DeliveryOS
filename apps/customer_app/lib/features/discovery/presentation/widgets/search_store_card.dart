@@ -48,6 +48,8 @@ class SearchStoreCard extends StatelessWidget {
                 children: [
                   Text(
                     outlet.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -67,6 +69,7 @@ class SearchStoreCard extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(

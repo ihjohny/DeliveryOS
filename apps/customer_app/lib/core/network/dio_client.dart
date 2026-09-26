@@ -32,7 +32,6 @@ class DioClient {
             return handler.next(options);
           },
           onError: (DioException error, handler) {
-            // Unify API error handling
             return handler.next(error);
           },
         ),

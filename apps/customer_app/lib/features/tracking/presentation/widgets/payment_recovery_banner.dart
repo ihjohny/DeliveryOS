@@ -29,12 +29,16 @@ class PaymentRecoveryBanner extends StatelessWidget {
             children: [
               Icon(Icons.payment_rounded, color: Color(0xFFD97706), size: 22),
               SizedBox(width: 8),
-              Text(
-                'Online Payment Pending',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF92400E),
+              Expanded(
+                child: Text(
+                  'Online Payment Pending',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF92400E),
+                  ),
                 ),
               ),
             ],
@@ -45,26 +49,25 @@ class PaymentRecoveryBanner extends StatelessWidget {
             style: TextStyle(fontSize: 12, color: Color(0xFFB45309)),
           ),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: onSwitchToCOD,
-                  icon: const Icon(Icons.money_rounded, size: 16),
-                  label: const Text(
-                    'Switch to Cash (COD)',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD97706),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+              ElevatedButton.icon(
+                onPressed: onSwitchToCOD,
+                icon: const Icon(Icons.money_rounded, size: 16),
+                label: const Text(
+                  'Switch to Cash (COD)',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD97706),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
-              const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: onRefresh,
                 icon: const Icon(Icons.sync_rounded, size: 16),

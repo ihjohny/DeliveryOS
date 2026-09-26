@@ -101,106 +101,102 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
+    final viewInsets = MediaQuery.of(context).viewInsets;
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.88,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
-          // Drag Handle & Close Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2),
+    return Padding(
+      padding: EdgeInsets.only(bottom: viewInsets.bottom),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.88,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 22, color: AppColors.textSecondary),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-          ),
-
-          // Scrollable Content
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                // Product Title & Price
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            product.name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            CurrencyFormatter.formatWithUnit(product.basePrice, product.unitType),
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!product.isInStock)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.errorContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Sold Out',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-
-                if (product.description != null && product.description!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    product.description!,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                      height: 1.4,
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 22, color: AppColors.textSecondary),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product.name,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              CurrencyFormatter.formatWithUnit(product.basePrice, product.unitType),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (!product.isInStock)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.errorContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Sold Out',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.error,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (product.description != null && product.description!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      product.description!,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                  const Divider(height: 28, color: AppColors.border),
 
-                const Divider(height: 28, color: AppColors.border),
-
-                // Variant Single-Choice Radio Group
                 if (product.variants.isNotEmpty) ...[
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -286,7 +282,6 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                   const Divider(height: 24, color: AppColors.border),
                 ],
 
-                // Toppings & Add-on Checkbox Groups
                 if (product.addonGroups.isNotEmpty) ...[
                   ...product.addonGroups.map((group) {
                     return Column(
@@ -378,7 +373,6 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                   }),
                 ],
 
-                // Special Kitchen Instructions
                 const Text(
                   'Special Instructions for the Kitchen',
                   style: TextStyle(
@@ -411,7 +405,6 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
             ),
           ),
 
-          // Bottom Action Bar: Quantity & Real-Time Price CTA
           Container(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             decoration: const BoxDecoration(
@@ -422,7 +415,6 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
               top: false,
               child: Row(
                 children: [
-                  // Quantity Increment/Decrement
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.background,
@@ -432,6 +424,9 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                     child: Row(
                       children: [
                         IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                           icon: const Icon(Icons.remove_rounded, size: 18),
                           onPressed: (_quantity > 1 && _canAddToCart)
                               ? () => setState(() => _quantity--)
@@ -440,12 +435,15 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                         Text(
                           '$_quantity',
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w800,
                             color: AppColors.textPrimary,
                           ),
                         ),
                         IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                           icon: const Icon(Icons.add_rounded, size: 18),
                           onPressed: _canAddToCart
                               ? () => setState(() => _quantity++)
@@ -454,15 +452,15 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 10),
 
-                  // Add to Cart CTA with Dynamic Total Price
                   Expanded(
                     child: SizedBox(
                       height: 50,
                       child: ElevatedButton(
                         onPressed: _canAddToCart ? _handleAddToCart : null,
                         style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           backgroundColor: AppColors.primary,
                           disabledBackgroundColor: AppColors.textMuted.withValues(alpha: 0.3),
                           foregroundColor: Colors.white,
@@ -474,21 +472,27 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              _canAddToCart ? 'Add to Cart' : 'Currently Unavailable',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
+                            Flexible(
+                              child: Text(
+                                _canAddToCart ? 'Add to Cart' : 'Currently Unavailable',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                            if (_canAddToCart)
+                            if (_canAddToCart) ...[
+                              const SizedBox(width: 4),
                               Text(
                                 CurrencyFormatter.format(_totalPrice),
                                 style: const TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
+                            ],
                           ],
                         ),
                       ),
@@ -500,6 +504,7 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 }

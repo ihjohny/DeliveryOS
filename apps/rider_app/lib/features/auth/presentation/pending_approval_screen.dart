@@ -24,7 +24,6 @@ class PendingApprovalScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-              // Pending Status Card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -94,7 +93,6 @@ class PendingApprovalScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 20),
 
-                    // Rider Details Recap
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -114,7 +112,6 @@ class PendingApprovalScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 20),
 
-                    // Invariant Guard Notice
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -140,7 +137,6 @@ class PendingApprovalScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
 
-              // Check Status Button
               SizedBox(
                 height: 52,
                 child: ElevatedButton.icon(
@@ -163,7 +159,12 @@ class PendingApprovalScreen extends ConsumerWidget {
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                         )
                       : const Icon(Icons.refresh_rounded, size: 20),
-                  label: const Text('Check Approval Status', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                  label: const Text(
+                    'Check Approval Status',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -173,7 +174,6 @@ class PendingApprovalScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
 
-              // Dev Mode Instant Approval Button (Debug Only)
               if (kDebugMode) ...[
                 OutlinedButton.icon(
                   onPressed: () {
@@ -186,6 +186,8 @@ class PendingApprovalScreen extends ConsumerWidget {
                   icon: const Icon(Icons.bolt_rounded, size: 18, color: AppColors.dutyOnline),
                   label: const Text(
                     'Simulate Admin Approval (Dev Mode)',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -197,7 +199,6 @@ class PendingApprovalScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
               ],
 
-              // Logout Button
               TextButton.icon(
                 onPressed: () async {
                   await ref.read(riderAuthProvider.notifier).logout();
@@ -227,9 +228,15 @@ class PendingApprovalScreen extends ConsumerWidget {
           label,
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
         ),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          ),
         ),
       ],
     );

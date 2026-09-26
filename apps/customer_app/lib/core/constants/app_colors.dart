@@ -1,26 +1,22 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Brand Primary (Vibrant Delivery Orange)
   static const Color primary = Color(0xFFFF5200);
   static const Color primaryLight = Color(0xFFFF7A33);
   static const Color primaryDark = Color(0xFFCC4200);
   static const Color primaryContainer = Color(0xFFFFF0E6);
   static const Color secondary = Color(0xFF10B981);
 
-  // Neutral & Slate Tones
   static const Color background = Color(0xFFF8FAFC);
   static const Color surface = Colors.white;
   static const Color darkBackground = Color(0xFF0F172A);
   static const Color darkSurface = Color(0xFF1E293B);
 
-  // Text Colors
   static const Color textPrimary = Color(0xFF0F172A);
   static const Color textSecondary = Color(0xFF64748B);
   static const Color textMuted = Color(0xFF94A3B8);
   static const Color textWhite = Colors.white;
 
-  // Semantic Feedback Colors
   static const Color success = Color(0xFF10B981);
   static const Color successContainer = Color(0xFFECFDF5);
   static const Color warning = Color(0xFFF59E0B);
@@ -30,7 +26,6 @@ class AppColors {
   static const Color info = Color(0xFF0EA5E9);
   static const Color infoContainer = Color(0xFFF0F9FF);
 
-  // Borders & Dividers
   static const Color border = Color(0xFFE2E8F0);
   static const Color borderDark = Color(0xFF334155);
 }

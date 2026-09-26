@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.1] - 2026-09-26
+
+### Fixed
+- **Customer Mobile App Layout & Responsiveness**:
+  - Constrained `OrderStepperWidget` stages and clamped label text scaling to prevent horizontal blowout on 320px screens.
+  - Converted `OrderHistoryScreen` and `PaymentRecoveryBanner` action rows to flexible `Wrap` layout to eliminate RenderFlex overflows under dynamic font scaling (1.5x).
+  - Enforced text truncation and ellipsis on outlet cards, search results, and store detail metadata.
+  - Hardened pin code input, phone input, and bottom sheets against keyboard-induced viewport clipping.
+- **Rider Fleet Mobile App Layout & Responsiveness**:
+  - Wrapped duty switch card, top bar metrics, active trip banner, and GPS telemetry card in flexible containers with ellipsis to prevent 320px–360px screen overflows.
+  - Constrained COD cash-in-hand metrics in `CodCashLimitCard` and `EarningsSummaryCard`, eliminating a 47px overflow.
+  - Wrapped 45-second dispatch broadcast modal, 3-step fulfillment action cards, and doorstep SOP sheets in `SingleChildScrollView` to prevent vertical clipping on compact devices.
+- **Backend Test Script Resilience**:
+  - Added operating hours upsert in `test-order-cancellation.ts` to ensure test vendor is open regardless of server execution time and timezone.
+
+### Changed
+- Standardized code-level comments across all Customer and Rider mobile app components per AGENT_RULES.md § 3.6, stripping trivial boilerplate while preserving core state machine and safety invariants.
+
+---
+
 ## [1.4.0] - 2026-09-25
 
 ### Added

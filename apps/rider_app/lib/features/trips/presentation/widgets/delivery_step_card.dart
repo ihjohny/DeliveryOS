@@ -66,7 +66,12 @@ class DeliveryStepCard extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () => openNativeTurnByTurnNavigation(trip.customer.latitude, trip.customer.longitude),
                       icon: const Icon(Icons.navigation_rounded, size: 18),
-                      label: const Text('Directions to Customer', style: TextStyle(fontWeight: FontWeight.w800)),
+                      label: const Text(
+                        'Directions to Customer',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -79,7 +84,12 @@ class DeliveryStepCard extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: () => makeDirectPhoneCall(trip.customer.phone),
                     icon: const Icon(Icons.phone_rounded, size: 18),
-                    label: const Text('Call Customer', style: TextStyle(fontWeight: FontWeight.w700)),
+                    label: const Text(
+                      'Call Customer',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.textPrimary,
                       side: const BorderSide(color: AppColors.borderStrong),
@@ -131,9 +141,13 @@ class DeliveryStepCard extends StatelessWidget {
               children: [
                 Icon(Icons.door_front_door_rounded, size: 22),
                 SizedBox(width: 8),
-                Text(
-                  'ARRIVED AT DOORSTEP ➔ HANDOVER',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 0.3),
+                Flexible(
+                  child: Text(
+                    'ARRIVED AT DOORSTEP ➔ HANDOVER',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 0.3),
+                  ),
                 ),
               ],
             ),
@@ -143,7 +157,11 @@ class DeliveryStepCard extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onReportUnreachable,
           icon: const Icon(Icons.person_off_rounded, size: 18, color: AppColors.error),
-          label: const Text('Customer Unreachable at Doorstep?'),
+          label: const Text(
+            'Customer Unreachable at Doorstep?',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.error,
             side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
