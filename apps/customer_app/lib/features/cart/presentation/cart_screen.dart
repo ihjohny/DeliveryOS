@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../addresses/domain/address_model.dart';
@@ -37,29 +37,28 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   Future<void> _handlePlaceOrder() async {
     final auth = ref.read(authProvider);
 
-    // If guest, prompt to login before submitting order
     if (auth.isGuest) {
       final shouldLogin = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Login Required to Order', style: TextStyle(fontWeight: FontWeight.w800)),
-          content: const Text(
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+          title: Text('Login Required to Order', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800)),
+          content: Text(
             'Please login with your phone number so we can track and deliver your order.',
-            style: TextStyle(fontSize: 14),
+            style: AppTypography.bodyMedium,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(ctx).pop(true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
               ),
-              child: const Text('Login Now'),
+              child: Text('Login Now', style: AppTypography.labelLarge.copyWith(color: AppColors.white)),
             ),
           ],
         ),
@@ -73,7 +72,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       return;
     }
 
-    // Home Delivery requires saved address
     String? deliveryAddressId;
     final cart = ref.read(cartProvider);
     if (cart.deliveryMethod == DeliveryMethod.homeDelivery) {
@@ -117,7 +115,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
           title: Row(
             children: [
               Icon(
@@ -125,10 +123,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 color: isOnline ? AppColors.primary : AppColors.secondary,
                 size: 28,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 isOnline ? 'Online Payment Session' : 'Order Confirmed!',
-                style: const TextStyle(fontWeight: FontWeight.w900),
+                style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w900),
               ),
             ],
           ),
@@ -138,7 +136,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             children: [
               Text(
                 'Order $orderNumber has been placed successfully!',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 10),
               if (isOnline) ...[
@@ -146,7 +144,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppRadius.borderSm,
                     border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                   ),
                   child: Column(
@@ -155,28 +153,28 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Gateway:', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                          Text(paymentSession?['gateway']?.toString() ?? 'SANDBOX', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                          Text('Gateway:', style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary)),
+                          Text(paymentSession?['gateway']?.toString() ?? 'SANDBOX', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Txn ID:', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                          Text(paymentSession?['transactionId']?.toString() ?? 'PENDING', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, fontFamily: 'monospace')),
+                          Text('Txn ID:', style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary)),
+                          Text(paymentSession?['transactionId']?.toString() ?? 'PENDING', style: AppTypography.labelSmall.copyWith(fontFamily: 'monospace')),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Amount:', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          Text('Amount:', style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary)),
                           Text(
                             paymentSession?['amount'] != null
                                 ? CurrencyFormatter.format(num.tryParse(paymentSession!['amount'].toString()) ?? 0)
                                 : '',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.primary),
+                            style: AppTypography.titleSmall.copyWith(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.primary),
                           ),
                         ],
                       ),
@@ -184,14 +182,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  '⚡ Business Rule: Courier & Kitchen dispatch will activate immediately upon online payment verification webhook confirmation.',
-                  style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontStyle: FontStyle.italic),
+                Text(
+                  '⚡ Dispatch will activate immediately upon online payment verification confirmation.',
+                  style: AppTypography.caption.copyWith(fontStyle: FontStyle.italic),
                 ),
               ] else ...[
-                const Text(
+                Text(
                   'We have dispatched the order to the kitchen and courier fleet.',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: AppTypography.bodySmall,
                 ),
               ],
             ],
@@ -200,9 +198,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                Navigator.of(context).pop(); // Back to discovery home
+                Navigator.of(context).pop();
               },
-              child: const Text('Return to Home', style: TextStyle(color: AppColors.textSecondary)),
+              child: Text('Return to Home', style: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary)),
             ),
             ElevatedButton.icon(
               onPressed: () {
@@ -218,11 +216,11 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                foregroundColor: AppColors.white,
+                shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
               ),
               icon: const Icon(Icons.navigation_rounded, size: 16),
-              label: Text(isOnline ? 'Go to Tracking' : 'Track Order', style: const TextStyle(fontWeight: FontWeight.w700)),
+              label: Text(isOnline ? 'Go to Tracking' : 'Track Order', style: AppTypography.labelLarge.copyWith(color: AppColors.white)),
             ),
           ],
         ),
@@ -247,11 +245,11 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.white,
           elevation: 0.5,
-          title: const Text(
+          title: Text(
             'My Cart',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800),
           ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
@@ -271,7 +269,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         elevation: 0.5,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
@@ -280,14 +278,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'My Cart',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800),
             ),
             if (cartState.vendorName != null)
               Text(
                 cartState.vendorName!,
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
               ),
           ],
         ),
@@ -299,16 +297,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('Clear Cart?'),
-                  content: const Text('Are you sure you want to remove all items from your cart?'),
+                  title: Text('Clear Cart?', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800)),
+                  content: Text('Are you sure you want to remove all items from your cart?', style: AppTypography.bodyMedium),
                   actions: [
-                    TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+                    TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text('Cancel', style: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary))),
                     TextButton(
                       onPressed: () {
                         ref.read(cartProvider.notifier).clearCart();
                         Navigator.of(ctx).pop();
                       },
-                      child: const Text('Clear', style: TextStyle(color: AppColors.error)),
+                      child: Text('Clear', style: AppTypography.labelLarge.copyWith(color: AppColors.error)),
                     ),
                   ],
                 ),
@@ -318,7 +316,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.edgeInsetsLg,
         children: [
           DeliveryModeSelector(
             selectedMethod: cartState.deliveryMethod,
@@ -327,14 +325,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               ref.read(cartProvider.notifier).setDeliveryMethod(method);
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
           if (cartState.deliveryMethod == DeliveryMethod.homeDelivery) ...[
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: AppSpacing.edgeInsetsMd,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.white,
+                borderRadius: AppRadius.borderMd,
                 border: Border.all(color: AppColors.border),
               ),
               child: Column(
@@ -357,7 +355,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                               color: AppColors.primary,
                               size: 18,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             Flexible(
                               child: Text(
                                 addressState.selectedAddress != null
@@ -365,17 +363,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                     : 'Deliver to Current Location',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: AppTypography.titleSmall.copyWith(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       TextButton(
                         onPressed: () async {
                           final picked = await Navigator.of(context).push<CustomerAddressModel>(
@@ -392,14 +389,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                           }
                         },
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
+                        child: Text(
                           'Change',
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: AppTypography.labelMedium.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary,
                           ),
@@ -410,7 +406,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   const SizedBox(height: 6),
                   Text(
                     addressState.selectedAddress?.addressLine ?? userLocation.addressLine,
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: AppTypography.bodySmall,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -436,17 +432,17 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               margin: const EdgeInsets.only(bottom: 14),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: !cartState.isVendorActive ? const Color(0xFFFEF2F2) : const Color(0xFFFFFBEB),
-                borderRadius: BorderRadius.circular(12),
+                color: !cartState.isVendorActive ? AppColors.errorContainer : AppColors.warningContainer,
+                borderRadius: AppRadius.borderMd,
                 border: Border.all(
-                  color: !cartState.isVendorActive ? const Color(0xFFFCA5A5) : const Color(0xFFFDE68A),
+                  color: !cartState.isVendorActive ? AppColors.errorBorderLight : AppColors.warningBorder,
                 ),
               ),
               child: Row(
                 children: [
                   Icon(
                     !cartState.isVendorActive ? Icons.store_mall_directory_outlined : Icons.timer_outlined,
-                    color: !cartState.isVendorActive ? const Color(0xFFDC2626) : const Color(0xFFD97706),
+                    color: !cartState.isVendorActive ? AppColors.errorDark : AppColors.warningDark,
                     size: 22,
                   ),
                   const SizedBox(width: 10),
@@ -455,10 +451,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       !cartState.isVendorActive
                           ? '${cartState.vendorName ?? "Store"} is currently closed and not accepting orders.'
                           : '${cartState.vendorName ?? "Store"} has temporarily paused orders due to rush hour.',
-                      style: TextStyle(
+                      style: AppTypography.titleSmall.copyWith(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: !cartState.isVendorActive ? const Color(0xFF991B1B) : const Color(0xFF92400E),
+                        color: !cartState.isVendorActive ? AppColors.errorText : AppColors.warningText,
                       ),
                     ),
                   ),
@@ -467,22 +463,22 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             ),
           ],
 
-          const Text(
+          Text(
             'Order Items',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           ...List.generate(cartState.items.length, (index) {
             final item = cartState.items[index];
             return _buildCartItemCard(item, index);
           }),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
-          const Text(
+          Text(
             'Promotions & Vouchers',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           CouponInputSection(
             appliedCoupon: cartState.couponCode,
             couponDiscount: cartState.couponDiscount,
@@ -495,55 +491,55 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               ref.read(cartProvider.notifier).removeCoupon();
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
-          const Text(
+          Text(
             'Cooking & Delivery Notes',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: _notesController,
             decoration: InputDecoration(
               hintText: 'e.g. Ring doorbell, leave at door, extra napkins...',
-              hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+              hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
               filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border),
+              fillColor: AppColors.white,
+              border: const OutlineInputBorder(
+                borderRadius: AppRadius.borderSm,
+                borderSide: BorderSide(color: AppColors.border),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border),
+              enabledBorder: const OutlineInputBorder(
+                borderRadius: AppRadius.borderSm,
+                borderSide: BorderSide(color: AppColors.border),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
-          const Text(
+          Text(
             'Payment Method',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           PaymentMethodSelector(
             selectedMethod: cartState.paymentMethod,
             onMethodChanged: (method) {
               ref.read(cartProvider.notifier).setPaymentMethod(method);
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           _buildSummaryCard(cartState),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
         ],
       ),
 
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.white,
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
         child: SafeArea(
@@ -555,15 +551,15 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.35),
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
               ),
               child: _isSubmitting
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                      child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.white),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -579,13 +575,20 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                         : 'Place Order (${cartState.totalItemCount} items)',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                            style: AppTypography.titleSmall.copyWith(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.white,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           CurrencyFormatter.format(cartState.totalPayable),
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                          style: AppTypography.titleMedium.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -599,10 +602,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   Widget _buildCartItemCard(CartItem item, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      padding: AppSpacing.edgeInsetsMd,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.white,
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -614,33 +617,36 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               children: [
                 Text(
                   item.product.name,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  style: AppTypography.titleSmall,
                 ),
                 if (item.selectedVariant != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     'Portion: ${item.selectedVariant!.name}',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
+                    style: AppTypography.labelSmall.copyWith(color: AppColors.primary),
                   ),
                 ],
                 if (item.selectedAddons.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     'Extras: ${item.selectedAddons.map((a) => a.name).join(", ")}',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    style: AppTypography.labelSmall.copyWith(
+                      fontWeight: FontWeight.normal,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
                 if (item.specialInstructions != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     'Note: "${item.specialInstructions}"',
-                    style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppColors.textMuted),
+                    style: AppTypography.caption.copyWith(fontSize: 11, fontStyle: FontStyle.italic),
                   ),
                 ],
                 const SizedBox(height: 6),
                 Text(
                   CurrencyFormatter.format(item.totalPrice),
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                  style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w800),
                 ),
               ],
             ),
@@ -649,7 +655,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           Container(
             decoration: BoxDecoration(
               color: AppColors.background,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.borderSm,
               border: Border.all(color: AppColors.border),
             ),
             child: Row(
@@ -664,7 +670,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 ),
                 Text(
                   '${item.quantity}',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                  style: AppTypography.labelMedium.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_rounded, size: 16),
@@ -685,16 +694,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.white,
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Bill Summary',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 10),
           _buildSummaryRow('Item Subtotal', CurrencyFormatter.format(cart.grossSubtotal)),
@@ -730,17 +739,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: isBold ? 14 : 12,
+              style: (isBold ? AppTypography.titleSmall : AppTypography.bodySmall).copyWith(
                 fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
                 color: color ?? (isBold ? AppColors.textPrimary : AppColors.textSecondary),
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             value,
-            style: TextStyle(
+            style: (isBold ? AppTypography.titleSmall : AppTypography.labelSmall).copyWith(
               fontSize: isBold ? 15 : 12,
               fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
               color: color ?? AppColors.textPrimary,

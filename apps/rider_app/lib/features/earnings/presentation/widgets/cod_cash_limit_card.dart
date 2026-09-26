@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../dashboard/domain/duty_models.dart';
 
@@ -48,32 +48,32 @@ class CodCashLimitCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(Icons.payments_rounded, color: AppColors.warning, size: 20),
-                    SizedBox(width: 8),
+                    SizedBox(width: AppSpacing.sm),
                     Flexible(
                       child: Text(
                         'COD Cash in Hand',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                        style: AppTypography.bodyBold,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
                   color: isLimitReached
                       ? AppColors.errorBackground
                       : (isNearLimit ? AppColors.warningBackground : AppColors.dutyOnlineBackground),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppRadius.roundedSm,
                 ),
                 child: Text(
                   isLimitReached
                       ? 'LOCKED • COD BLOCKED'
                       : (isNearLimit ? 'CAUTION ($usagePercent%)' : 'SAFE ($usagePercent%)'),
-                  style: TextStyle(
+                  style: AppTypography.badgeText.copyWith(
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                     color: progressColor,
@@ -83,7 +83,7 @@ class CodCashLimitCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -91,21 +91,20 @@ class CodCashLimitCard extends StatelessWidget {
             children: [
               Text(
                 formatCurrency(dutyState.codCashInHand),
-                style: TextStyle(
+                style: AppTypography.statNumber.copyWith(
                   fontSize: 28,
-                  fontWeight: FontWeight.w900,
                   color: isLimitReached ? AppColors.error : AppColors.textPrimary,
                 ),
               ),
               Text(
                 'Limit: ${formatCurrency(dutyState.cashSafetyLimit)}',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                style: AppTypography.caption.copyWith(fontSize: 13, fontWeight: FontWeight.w700),
               ),
             ],
           ),
           const SizedBox(height: 10),
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.roundedSm,
             child: LinearProgressIndicator(
               value: dutyState.cashLimitUsageRatio,
               minHeight: 10,
@@ -113,21 +112,21 @@ class CodCashLimitCard extends StatelessWidget {
               valueColor: AlwaysStoppedAnimation<Color>(progressColor),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             isLimitReached
                 ? '⚠️ Cash safety limit reached! You are blocked from accepting new COD orders until cash is submitted at the central office.'
                 : (isNearLimit
                     ? '⚠️ Nearing limit: ${formatCurrency(dutyState.remainingCashLimit)} remaining before COD orders are paused.'
                     : 'Safe limit remaining: ${formatCurrency(dutyState.remainingCashLimit)} before safety threshold.'),
-            style: TextStyle(
+            style: AppTypography.caption.copyWith(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: isLimitReached ? AppColors.error : (isNearLimit ? AppColors.warning : AppColors.textSecondary),
               height: 1.3,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           ElevatedButton.icon(
             onPressed: dutyState.codCashInHand <= 0 || dutyState.isDepositingCash
                 ? null
@@ -136,21 +135,25 @@ class CodCashLimitCard extends StatelessWidget {
                 ? const SizedBox(
                     height: 16,
                     width: 16,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2),
                   )
                 : const Icon(Icons.account_balance_rounded, size: 18),
             label: Text(
               dutyState.isDepositingCash ? 'PROCESSING DEPOSIT...' : 'DEPOSIT CASH AT HUB',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
+              style: AppTypography.buttonText.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+                letterSpacing: 0.5,
+              ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: isLimitReached ? AppColors.primary : AppColors.card,
-              foregroundColor: isLimitReached ? Colors.white : AppColors.primary,
+              foregroundColor: isLimitReached ? AppColors.white : AppColors.primary,
               side: isLimitReached ? null : const BorderSide(color: AppColors.primary, width: 1.5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: const RoundedRectangleBorder(borderRadius: AppRadius.roundedMd),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
               elevation: 0,
             ),
           ),

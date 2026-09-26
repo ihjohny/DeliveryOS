@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import '../constants/constants.dart';
 
-/// Reusable store operational status pill badge across DeliveryOS.
-/// Displays OPEN, BUSY, or CLOSED with consistent brand theme tokens.
 class StoreStatusBadge extends StatelessWidget {
   final bool isOpen;
   final bool isBusy;
@@ -22,34 +21,32 @@ class StoreStatusBadge extends StatelessWidget {
 
     if (!isOpen) {
       label = compact ? 'CLOSED' : 'CLOSED';
-      bgColor = const Color(0xFFFEE2E2);
-      textColor = const Color(0xFFDC2626);
+      bgColor = AppColors.errorLight;
+      textColor = AppColors.errorDark;
     } else if (isBusy) {
       label = 'BUSY';
-      bgColor = const Color(0xFFFEF3C7);
-      textColor = const Color(0xFFD97706);
+      bgColor = AppColors.warningLight;
+      textColor = AppColors.warningDark;
     } else {
       label = compact ? 'OPEN' : 'OPEN NOW';
-      bgColor = const Color(0xFFDCFCE7);
-      textColor = const Color(0xFF16A34A);
+      bgColor = AppColors.successLight;
+      textColor = AppColors.successGreen;
     }
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 6.0 : 8.0,
-        vertical: compact ? 2.0 : 4.0,
+        horizontal: compact ? 6.0 : AppSpacing.sm,
+        vertical: compact ? AppSpacing.xxs : AppSpacing.xs,
       ),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(compact ? 4 : 6),
+        borderRadius: compact ? AppRadius.borderXs : AppRadius.borderSm,
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: compact ? 10 : 11,
+        style: (compact ? AppTypography.caption : AppTypography.labelSmall).copyWith(
           fontWeight: FontWeight.w800,
           color: textColor,
-          letterSpacing: 0.2,
         ),
       ),
     );

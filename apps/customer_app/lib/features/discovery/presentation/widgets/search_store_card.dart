@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 import '../../domain/search_result_model.dart';
 
-/// Modular store result card rendered in universal search results.
 class SearchStoreCard extends StatelessWidget {
   final SearchOutlet outlet;
   final VoidCallback onTap;
@@ -17,13 +16,13 @@ class SearchStoreCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.borderMd,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: AppSpacing.edgeInsetsMd,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.white,
+          borderRadius: AppRadius.borderMd,
           border: Border.all(color: AppColors.border),
         ),
         child: Row(
@@ -31,9 +30,9 @@ class SearchStoreCard extends StatelessWidget {
             Container(
               width: 44,
               height: 44,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppRadius.borderSm,
               ),
               child: const Icon(
                 Icons.storefront_rounded,
@@ -41,7 +40,7 @@ class SearchStoreCard extends StatelessWidget {
                 size: 22,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,37 +49,32 @@ class SearchStoreCard extends StatelessWidget {
                     outlet.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: AppTypography.titleSmall,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     outlet.addressText,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: AppTypography.labelSmall.copyWith(
+                      fontWeight: FontWeight.normal,
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
               decoration: BoxDecoration(
                 color: AppColors.background,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: AppRadius.borderSm,
                 border: Border.all(color: AppColors.border),
               ),
               child: Text(
                 '${outlet.distanceKm.toStringAsFixed(1)} km',
-                style: const TextStyle(
-                  fontSize: 11,
+                style: AppTypography.labelSmall.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.textSecondary,
                 ),

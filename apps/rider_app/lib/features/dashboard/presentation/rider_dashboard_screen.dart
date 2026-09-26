@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/design_tokens.dart';
 import '../../auth/domain/auth_models.dart';
 import '../../auth/presentation/pending_approval_screen.dart';
 import '../../auth/presentation/phone_login_screen.dart';
@@ -57,27 +57,27 @@ class RiderDashboardScreen extends ConsumerWidget {
             await ref.read(riderAuthProvider.notifier).fetchProfile();
           },
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
             children: [
               RiderTopBar(
                 profile: profile,
                 onOpenEarnings: () => _navigateToEarnings(context),
                 onLogout: () => _handleLogout(context, ref),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               if (dutyState.isCashLimitReached) ...[
                 CashLimitAlertBanner(
                   dutyState: dutyState,
                   onDeposit: () => _navigateToEarnings(context),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
               ],
               DutySwitchCard(
                 dutyState: dutyState,
                 isOnline: isOnline,
                 onToggleDuty: () => _handleToggleDuty(context, ref, isOnline),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               if (tripState.hasActiveTrip) ...[
                 ActiveTripBanner(
                   trip: tripState.activeTrip!,
@@ -85,15 +85,15 @@ class RiderDashboardScreen extends ConsumerWidget {
                     MaterialPageRoute(builder: (_) => const ActiveTripScreen()),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
               ],
               GpsTelemetryCard(dutyState: dutyState),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               PerformanceMetricsCard(
                 dutyState: dutyState,
                 onOpenEarnings: () => _navigateToEarnings(context),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               DispatchRadarCard(
                 isOnline: isOnline,
                 hasActiveTrip: tripState.hasActiveTrip,

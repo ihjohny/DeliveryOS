@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -21,7 +21,10 @@ class SplashScreen extends ConsumerWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xxl,
+                vertical: AppSpacing.xl,
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight - 40.0),
                 child: IntrinsicHeight(
@@ -31,10 +34,10 @@ class SplashScreen extends ConsumerWidget {
                       Align(
                         alignment: Alignment.topRight,
                         child: Container(
-                          padding: const EdgeInsets.all(4),
+                          padding: AppSpacing.edgeInsetsXs,
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
+                            color: AppColors.white,
+                            borderRadius: AppRadius.borderFull,
                             border: Border.all(color: AppColors.border),
                           ),
                           child: Row(
@@ -63,7 +66,7 @@ class SplashScreen extends ConsumerWidget {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24.0),
+                        padding: AppSpacing.edgeInsetsVerticalXxl,
                         child: Column(
                           children: [
                             Container(
@@ -71,7 +74,7 @@ class SplashScreen extends ConsumerWidget {
                               height: 90,
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(24),
+                                borderRadius: AppRadius.borderXxl,
                                 boxShadow: [
                                   BoxShadow(
                                     color: AppColors.primary.withValues(alpha: 0.35),
@@ -83,25 +86,22 @@ class SplashScreen extends ConsumerWidget {
                               child: const Icon(
                                 Icons.delivery_dining_rounded,
                                 size: 54,
-                                color: Colors.white,
+                                color: AppColors.white,
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: AppSpacing.xxl),
                             Text(
                               l10n.translate('app_title'),
-                              style: const TextStyle(
+                              style: AppTypography.headlineLarge.copyWith(
                                 fontSize: 32,
                                 fontWeight: FontWeight.w900,
-                                letterSpacing: -0.5,
-                                color: AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
                               l10n.translate('tagline'),
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 14,
+                              style: AppTypography.bodyMedium.copyWith(
                                 fontWeight: FontWeight.w500,
                                 color: AppColors.textSecondary,
                               ),
@@ -122,22 +122,22 @@ class SplashScreen extends ConsumerWidget {
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
+                                foregroundColor: AppColors.white,
                                 elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: AppRadius.borderLg,
                                 ),
                               ),
                               child: Text(
                                 l10n.translate('continue_btn'),
-                                style: const TextStyle(
+                                style: AppTypography.labelLarge.copyWith(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.white,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.md),
                           SizedBox(
                             width: double.infinity,
                             height: 48,
@@ -152,10 +152,9 @@ class SplashScreen extends ConsumerWidget {
                               },
                               child: Text(
                                 l10n.translate('skip_guest'),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
+                                style: AppTypography.labelLarge.copyWith(
                                   color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -192,17 +191,16 @@ class _LanguageChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? AppColors.primary : AppColors.transparent,
+          borderRadius: AppRadius.borderFull,
         ),
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
+          style: AppTypography.labelMedium.copyWith(
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? Colors.white : AppColors.textSecondary,
+            color: isSelected ? AppColors.white : AppColors.textSecondary,
           ),
         ),
       ),

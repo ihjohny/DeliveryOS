@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../domain/user_location.dart';
 import '../providers/location_provider.dart';
@@ -108,7 +108,7 @@ class _MapLocationPickerScreenState
       final err = ref.read(locationProvider).error ??
           'Could not determine current location';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err), backgroundColor: Colors.red),
+        SnackBar(content: Text(err), backgroundColor: AppColors.error),
       );
     }
   }
@@ -147,7 +147,7 @@ class _MapLocationPickerScreenState
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         elevation: 0.5,
         leading: widget.isInitialOnboarding
             ? null
@@ -158,8 +158,7 @@ class _MapLocationPickerScreenState
               ),
         title: Text(
           l10n.translate('location_title'),
-          style: const TextStyle(
-            fontSize: 18,
+          style: AppTypography.titleLarge.copyWith(
             fontWeight: FontWeight.w800,
             color: AppColors.textPrimary,
           ),
@@ -184,10 +183,10 @@ class _MapLocationPickerScreenState
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: AppColors.textPrimary,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: AppRadius.borderXl,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
+                              color: AppColors.black.withValues(alpha: 0.2),
                               blurRadius: 8,
                             ),
                           ],
@@ -196,14 +195,13 @@ class _MapLocationPickerScreenState
                           _currentAddress.split(',').first,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.white,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       const Icon(
                         Icons.location_on_rounded,
                         size: 44,
@@ -213,7 +211,7 @@ class _MapLocationPickerScreenState
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.3),
+                          color: AppColors.black.withValues(alpha: 0.3),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -222,19 +220,18 @@ class _MapLocationPickerScreenState
                   ),
                 ),
                 Positioned(
-                  bottom: 16,
-                  right: 16,
+                  bottom: AppSpacing.lg,
+                  right: AppSpacing.lg,
                   child: FloatingActionButton.extended(
                     heroTag: 'fab_current_loc',
                     onPressed: _handleUseCurrentLocation,
-                    backgroundColor: Colors.white,
+                    backgroundColor: AppColors.white,
                     foregroundColor: AppColors.primary,
                     elevation: 3,
                     icon: const Icon(Icons.my_location_rounded, size: 18),
                     label: Text(
                       l10n.translate('current_location'),
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: AppTypography.labelMedium.copyWith(
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
@@ -246,13 +243,13 @@ class _MapLocationPickerScreenState
           ),
 
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.xxl),
             decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              color: AppColors.white,
+              borderRadius: BorderRadius.vertical(top: AppRadius.radiusXxl),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black12,
+                  color: AppColors.black12,
                   blurRadius: 16,
                   offset: Offset(0, -4),
                 ),
@@ -272,20 +269,19 @@ class _MapLocationPickerScreenState
                           final isSelected =
                               (_currentAddress == preset['address']);
                           return Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
+                            padding: const EdgeInsets.only(right: AppSpacing.sm),
                             child: ChoiceChip(
                               label: Text(preset['name'] as String),
                               selected: isSelected,
                               selectedColor:
                                   AppColors.primary.withValues(alpha: 0.15),
-                              labelStyle: TextStyle(
+                              labelStyle: AppTypography.caption.copyWith(
                                 color: isSelected
                                     ? AppColors.primary
                                     : AppColors.textSecondary,
                                 fontWeight: isSelected
                                     ? FontWeight.w700
                                     : FontWeight.w500,
-                                fontSize: 12,
                               ),
                               backgroundColor: AppColors.background,
                               side: BorderSide(
@@ -299,12 +295,12 @@ class _MapLocationPickerScreenState
                         }).toList(),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(AppSpacing.sm),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
@@ -312,15 +308,14 @@ class _MapLocationPickerScreenState
                           child: const Icon(Icons.place_rounded,
                               color: AppColors.primary, size: 20),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 _currentAddress,
-                                style: const TextStyle(
-                                  fontSize: 15,
+                                style: AppTypography.titleSmall.copyWith(
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimary,
                                 ),
@@ -330,8 +325,7 @@ class _MapLocationPickerScreenState
                                 locState.isLoading
                                     ? l10n.translate('finding_nearby')
                                     : '${locState.nearbyStoreCount} ${l10n.translate('stores_found')}',
-                                style: TextStyle(
-                                  fontSize: 12,
+                                style: AppTypography.caption.copyWith(
                                   fontWeight: FontWeight.w500,
                                   color: locState.nearbyStoreCount > 0
                                       ? AppColors.secondary
@@ -351,13 +345,13 @@ class _MapLocationPickerScreenState
                           label: l10n.translate('home'),
                           icon: Icons.home_rounded,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         _buildTypeChip(
                           type: AddressType.work,
                           label: l10n.translate('work'),
                           icon: Icons.work_rounded,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         _buildTypeChip(
                           type: AddressType.other,
                           label: l10n.translate('other'),
@@ -365,30 +359,29 @@ class _MapLocationPickerScreenState
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     TextField(
                       controller: _detailsController,
                       decoration: InputDecoration(
                         hintText: l10n.translate('address_details_hint'),
-                        hintStyle: const TextStyle(
-                            fontSize: 13, color: AppColors.textMuted),
+                        hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
                         prefixIcon: const Icon(Icons.apartment_rounded,
                             size: 18, color: AppColors.textSecondary),
                         filled: true,
                         fillColor: AppColors.background,
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
+                            horizontal: AppSpacing.md, vertical: 10),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppRadius.borderSm,
                           borderSide: const BorderSide(color: AppColors.border),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppRadius.borderSm,
                           borderSide: const BorderSide(color: AppColors.border),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -396,16 +389,15 @@ class _MapLocationPickerScreenState
                         onPressed: _handleConfirm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.borderMd,
                           ),
                         ),
                         child: Text(
                           l10n.translate('confirm_location'),
-                          style: const TextStyle(
-                            fontSize: 15,
+                          style: AppTypography.labelLarge.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -461,7 +453,7 @@ class _MapLocationPickerScreenState
 
   Widget _buildStyledMapPlaceholder() {
     return Container(
-      color: const Color(0xFFE5E3DF),
+      color: AppColors.mapBackground,
       child: Stack(
         children: [
           CustomPaint(
@@ -469,14 +461,14 @@ class _MapLocationPickerScreenState
             painter: _MapGridPainter(),
           ),
           Positioned(
-            top: 20,
-            left: 20,
+            top: AppSpacing.xl,
+            left: AppSpacing.xl,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                color: AppColors.white.withValues(alpha: 0.9),
+                borderRadius: AppRadius.borderSm,
+                boxShadow: const [BoxShadow(color: AppColors.black12, blurRadius: 4)],
               ),
               child: Row(
                 children: [
@@ -485,8 +477,7 @@ class _MapLocationPickerScreenState
                   const SizedBox(width: 6),
                   Text(
                     'Coordinates: (${_currentLat.toStringAsFixed(4)}, ${_currentLng.toStringAsFixed(4)})',
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: AppTypography.caption.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
@@ -509,14 +500,14 @@ class _MapLocationPickerScreenState
     return Expanded(
       child: InkWell(
         onTap: () => setState(() => _selectedType = type),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppRadius.borderSm,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           decoration: BoxDecoration(
             color: isSelected
                 ? AppColors.primary.withValues(alpha: 0.1)
                 : AppColors.background,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppRadius.borderSm,
             border: Border.all(
               color: isSelected ? AppColors.primary : AppColors.border,
               width: isSelected ? 1.5 : 1,
@@ -530,14 +521,13 @@ class _MapLocationPickerScreenState
                 size: 16,
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.xs),
               Flexible(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: AppTypography.caption.copyWith(
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected ? AppColors.primary : AppColors.textPrimary,
                   ),
@@ -555,11 +545,11 @@ class _MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final roadPaint = Paint()
-      ..color = Colors.white
+      ..color = AppColors.white
       ..strokeWidth = 5;
 
     final waterPaint = Paint()
-      ..color = const Color(0xFFAAD3DF)
+      ..color = AppColors.mapWater
       ..style = PaintingStyle.fill;
 
     final path = Path()

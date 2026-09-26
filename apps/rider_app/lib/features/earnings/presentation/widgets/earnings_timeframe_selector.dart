@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 
 enum EarningsTimeframe { today, week }
 
@@ -20,7 +20,7 @@ class EarningsTimeframeSelector extends StatelessWidget {
         color: AppColors.border.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(14),
       ),
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(AppSpacing.xs),
       child: Row(
         children: [
           Expanded(
@@ -29,10 +29,10 @@ class EarningsTimeframeSelector extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: selectedTimeframe == EarningsTimeframe.today ? AppColors.card : Colors.transparent,
+                  color: selectedTimeframe == EarningsTimeframe.today ? AppColors.card : AppColors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: selectedTimeframe == EarningsTimeframe.today
-                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                      ? [BoxShadow(color: AppColors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
                       : null,
                 ),
                 child: Center(
@@ -40,9 +40,7 @@ class EarningsTimeframeSelector extends StatelessWidget {
                     'Today',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                    style: AppTypography.bodyBold.copyWith(
                       color: selectedTimeframe == EarningsTimeframe.today ? AppColors.primary : AppColors.textSecondary,
                     ),
                   ),
@@ -56,10 +54,10 @@ class EarningsTimeframeSelector extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: selectedTimeframe == EarningsTimeframe.week ? AppColors.card : Colors.transparent,
+                  color: selectedTimeframe == EarningsTimeframe.week ? AppColors.card : AppColors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: selectedTimeframe == EarningsTimeframe.week
-                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                      ? [BoxShadow(color: AppColors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
                       : null,
                 ),
                 child: Center(
@@ -67,9 +65,7 @@ class EarningsTimeframeSelector extends StatelessWidget {
                     'This Week',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                    style: AppTypography.bodyBold.copyWith(
                       color: selectedTimeframe == EarningsTimeframe.week ? AppColors.primary : AppColors.textSecondary,
                     ),
                   ),

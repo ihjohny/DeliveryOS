@@ -69,32 +69,28 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
       const isTrip = rider.status === 'ON_TRIP';
       const isOnline = rider.status === 'ONLINE';
 
-      const colorBg = isWarning
-        ? '#ea580c'
+      const statusBgClass = isWarning
+        ? 'bg-brand-orange'
         : isTrip
-          ? '#0284c7'
+          ? 'bg-sky-600'
           : isOnline
-            ? '#10b981'
-            : '#64748b';
+            ? 'bg-status-success'
+            : 'bg-surface-500';
+
+      const statusTextClass = isWarning
+        ? 'text-brand-orange'
+        : isTrip
+          ? 'text-sky-600'
+          : isOnline
+            ? 'text-status-success'
+            : 'text-surface-500';
 
       const customIcon = L.divIcon({
         className: 'custom-courier-pin',
         html: `
-          <div style="
-            position: relative;
-            width: 32px;
-            height: 32px;
-            background-color: ${colorBg};
-            border: 2px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-            cursor: pointer;
-          ">
-            <span style="font-size: 14px;">🛵</span>
-            ${isTrip ? `<span style="position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background-color: #38bdf8; border: 2px solid white; border-radius: 50%;"></span>` : ''}
+          <div class="relative w-8 h-8 ${statusBgClass} border-2 border-white rounded-full flex items-center justify-center shadow-md cursor-pointer select-none">
+            <span class="text-sm">🛵</span>
+            ${isTrip ? '<span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-sky-400 border-2 border-white rounded-full"></span>' : ''}
           </div>
         `,
         iconSize: [32, 32],
@@ -104,16 +100,16 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
       const marker = L.marker([lat, lng], { icon: customIcon });
 
       const popupContent = `
-        <div style="font-family: sans-serif; font-size: 12px; padding: 4px; min-width: 160px;">
-          <div style="font-weight: bold; font-size: 13px; margin-bottom: 2px; color: #0f172a;">${rider.riderName}</div>
-          <div style="color: #64748b; margin-bottom: 6px;">${rider.phone} • ${rider.vehicleType}</div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>Status:</span>
-            <strong style="color: ${colorBg};">${rider.status.replace('_', ' ')}</strong>
+        <div class="font-sans text-xs p-1 min-w-[160px]">
+          <div class="font-bold text-sm mb-0.5 text-slate-900">${rider.riderName}</div>
+          <div class="text-slate-500 mb-1.5">${rider.phone} • ${rider.vehicleType}</div>
+          <div class="flex justify-between mb-1">
+            <span class="text-slate-500">Status:</span>
+            <strong class="${statusTextClass}">${rider.status.replace('_', ' ')}</strong>
           </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span>Cash in Hand:</span>
-            <strong>৳${(rider.cashInHand || 0).toFixed(0)}</strong>
+          <div class="flex justify-between">
+            <span class="text-slate-500">Cash in Hand:</span>
+            <strong class="text-slate-900">৳${(rider.cashInHand || 0).toFixed(0)}</strong>
           </div>
         </div>
       `;
@@ -138,19 +134,8 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
       const orderIcon = L.divIcon({
         className: 'custom-order-pin',
         html: `
-          <div style="
-            position: relative;
-            width: 28px;
-            height: 28px;
-            background-color: #f59e0b;
-            border: 2px solid white;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-          ">
-            <span style="font-size: 13px;">📦</span>
+          <div class="relative w-7 h-7 bg-brand-amber border-2 border-white rounded-md flex items-center justify-center shadow-md select-none">
+            <span class="text-xs">📦</span>
           </div>
         `,
         iconSize: [28, 28],
@@ -159,25 +144,16 @@ export const LiveFleetMap: React.FC<LiveFleetMapProps> = ({
 
       const marker = L.marker([lat, lng], { icon: orderIcon });
       const popupDiv = document.createElement('div');
-      popupDiv.style.fontFamily = 'sans-serif';
-      popupDiv.style.fontSize = '12px';
-      popupDiv.style.padding = '4px';
-      popupDiv.style.minWidth = '170px';
+      popupDiv.className = 'font-sans text-xs p-1 min-w-[170px]';
       popupDiv.innerHTML = `
-        <div style="font-weight: bold; color: #b45309; margin-bottom: 2px;">Waiting for Courier</div>
-        <div style="font-weight: 600; font-size: 13px;">${order.orderNumber}</div>
-        <div style="color: #64748b; margin-bottom: 4px;">${order.vendorName}</div>
-        <div style="color: #0f172a; font-weight: bold; margin-bottom: 6px;">৳${order.totalAmount}</div>
+        <div class="font-bold text-amber-700 mb-0.5">Waiting for Courier</div>
+        <div class="font-semibold text-sm text-slate-900">${order.orderNumber}</div>
+        <div class="text-slate-500 mb-1">${order.vendorName}</div>
+        <div class="text-slate-900 font-bold mb-1.5">৳${order.totalAmount}</div>
       `;
       const openBtn = document.createElement('button');
       openBtn.textContent = 'Open Order →';
-      openBtn.style.color = '#4f46e5';
-      openBtn.style.textDecoration = 'underline';
-      openBtn.style.fontWeight = '600';
-      openBtn.style.background = 'none';
-      openBtn.style.border = 'none';
-      openBtn.style.padding = '0';
-      openBtn.style.cursor = 'pointer';
+      openBtn.className = 'text-primary-600 font-semibold underline text-xs p-0 bg-transparent border-none cursor-pointer hover:text-primary-700';
       openBtn.onclick = (e) => {
         e.preventDefault();
         navigate(`/orders?orderNumber=${encodeURIComponent(order.orderNumber)}`);

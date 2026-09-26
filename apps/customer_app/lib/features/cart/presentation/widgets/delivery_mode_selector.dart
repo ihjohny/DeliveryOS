@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../domain/cart_item_model.dart';
 
@@ -18,10 +18,10 @@ class DeliveryModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: AppSpacing.edgeInsetsXs,
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -34,7 +34,7 @@ class DeliveryModeSelector extends StatelessWidget {
               icon: Icons.delivery_dining_rounded,
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xs),
           Expanded(
             child: _buildModeTab(
               method: DeliveryMethod.takeaway,
@@ -57,15 +57,15 @@ class DeliveryModeSelector extends StatelessWidget {
     final isSelected = selectedMethod == method;
     return InkWell(
       onTap: () => onMethodChanged(method),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadius.borderSm,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          color: isSelected ? AppColors.white : AppColors.transparent,
+          borderRadius: AppRadius.borderSm,
           boxShadow: isSelected
-              ? const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))]
+              ? const [BoxShadow(color: AppColors.black12, blurRadius: 4, offset: Offset(0, 2))]
               : null,
         ),
         child: Column(
@@ -84,7 +84,7 @@ class DeliveryModeSelector extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTypography.labelMedium.copyWith(
                       fontSize: 13,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                       color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
@@ -98,8 +98,7 @@ class DeliveryModeSelector extends StatelessWidget {
               subtitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10,
+              style: AppTypography.caption.copyWith(
                 fontWeight: FontWeight.w600,
                 color: isSelected ? AppColors.primary : AppColors.textMuted,
               ),

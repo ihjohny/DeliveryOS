@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../domain/user_model.dart';
@@ -67,7 +67,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 20),
@@ -78,7 +78,10 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xxl,
+                vertical: AppSpacing.md,
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight - 24.0),
                 child: IntrinsicHeight(
@@ -87,31 +90,24 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                     children: [
                       Text(
                         l10n.translate('login_title'),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.w800),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
                         l10n.translate('login_subtitle'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
+                        style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: AppSpacing.xxxl),
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
+                          color: AppColors.white,
+                          borderRadius: AppRadius.borderLg,
                           border: Border.all(color: AppColors.border),
                         ),
                         child: Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                               decoration: const BoxDecoration(
                                 border: Border(right: BorderSide(color: AppColors.border)),
                               ),
@@ -134,16 +130,16 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                                 keyboardType: TextInputType.phone,
                                 decoration: InputDecoration(
                                   hintText: l10n.translate('phone_hint'),
-                                  hintStyle: const TextStyle(color: AppColors.textMuted),
+                                  hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
                                   border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                                  contentPadding: AppSpacing.edgeInsetsHorizontalLg,
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       if (kDebugMode)
                         GestureDetector(
                           onTap: () {
@@ -153,23 +149,21 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                             });
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                            decoration: const BoxDecoration(
                               color: AppColors.primaryContainer,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: AppRadius.borderSm,
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.flash_on_rounded, size: 16, color: AppColors.primary),
-                                SizedBox(width: 6),
+                                const Icon(Icons.flash_on_rounded, size: 16, color: AppColors.primary),
+                                const SizedBox(width: 6),
                                 Flexible(
                                   child: Text(
                                     'Demo Customer: +8801700000005',
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                                    style: AppTypography.labelMedium.copyWith(
                                       color: AppColors.primaryDark,
                                     ),
                                   ),
@@ -179,7 +173,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                           ),
                         ),
                       const Spacer(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSpacing.xxl),
                       SizedBox(
                         width: double.infinity,
                         height: 52,
@@ -188,10 +182,10 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.white,
                             elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.borderLg,
                             ),
                           ),
                           child: isLoading
@@ -200,19 +194,19 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                                   width: 22,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2.5,
-                                    color: Colors.white,
+                                    color: AppColors.white,
                                   ),
                                 )
                               : Text(
                                   l10n.translate('send_otp'),
-                                  style: const TextStyle(
+                                  style: AppTypography.labelLarge.copyWith(
                                     fontSize: 16,
-                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.white,
                                   ),
                                 ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
                       Center(
                         child: TextButton(
                           onPressed: () async {
@@ -226,8 +220,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                           },
                           child: Text(
                             l10n.translate('skip_guest'),
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: AppTypography.labelLarge.copyWith(
                               fontWeight: FontWeight.w600,
                               color: AppColors.textSecondary,
                             ),

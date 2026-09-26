@@ -111,6 +111,13 @@ When generating code, you must strictly uphold these inviolable business rules:
 - **Complex Logic Only**: Code-level comments are permitted **only** when explaining non-obvious business invariants (e.g. FSM transition sequences, Redis claim mutex timeouts, double-entry financial balance guards), non-trivial math/algorithms, or tricky platform-specific workarounds.
 - **No Commented-Out Dead Code**: Never leave commented-out blocks of code in production files. Delete obsolete code cleanly.
 
+### 3.7 Design System Standards (Zero Arbitrary Inline Styles)
+- **Zero Raw Inline Colors**: Do NOT write arbitrary `Color(0x...)` or random un-themed Material colors (`Colors.amber[700]`, `Colors.grey[200]`, `Colors.white`) scattered inside UI widgets. All colors must be consumed from the centralized design tokens (`AppColors`).
+- **Zero Ad-Hoc Typography**: Do NOT write arbitrary `TextStyle(fontSize: ..., fontWeight: ...)` scattered across screens without semantic hierarchy. Use semantic typography tokens (`AppTypography`) or theme text styles (`Theme.of(context).textTheme`).
+- **Standardized Spacing & Radius**: Use centralized spacing and border radius tokens (`AppSpacing`, `AppRadius`) rather than arbitrary magic numbers.
+- **Web Portal Semantic Styling**: Web portals (`apps/admin_portal`, `apps/vendor_portal`) must use semantic Tailwind utility classes mapped to the project theme (`primary-*`, `brand-*`, standard sizing scale). Never use inline `style={{ ... }}` or arbitrary un-themed hex classes (`text-[#...]`).
+- **Mandatory Design System Adherence**: Every newly created or modified component across Flutter and React must strictly consume the design system tokens to prevent code duplication, visual drift, and fragmentation. Keep the design system clean, accessible, and not overengineered.
+
 ---
 
 ## 4. Step-by-Step Implementation Procedure for AI Agents

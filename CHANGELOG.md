@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.3] - 2026-09-26
+
+### Added
+- **Centralized Design System Governance**:
+  - Added Design System Standards (§ 3.7) to `context_docs/AGENT_RULES.md` and Design System Invariant (`ZERO INLINE STYLING`) to `AGENTS.md`.
+  - Established `AppTypography`, `AppSpacing`, and `AppRadius` in `apps/customer_app/lib/core/constants/`.
+  - Established high-contrast outdoor `AppTypography`, `AppSpacing`, and `AppRadius` in `apps/rider_app/lib/core/constants/`.
+  - Created automated test suites (`test/design_system_test.dart`) for both mobile applications.
+  - Added unified `surface` and `status` semantic palettes in `tailwind.config.js` across both web portals.
+
+### Fixed
+- **Mobile Presentation Layer Ad-hoc Styling**:
+  - Eliminated all raw `Color(0x...)` and `Colors.*` across 26 files in Customer App and 20 files in Rider App, migrating to `AppColors.*`.
+  - Replaced all scattered ad-hoc `TextStyle(...)` calls with semantic `AppTypography` hierarchy tokens.
+  - Replaced magic spacing and border radii numbers with `AppSpacing` and `AppRadius`.
+- **Web Portal Styling & Tokens**:
+  - Unified `Button`, `Badge`, `Modal`, `Table`, `StatCard`, `PageHeader`, and `EmptyState` primitives.
+  - Replaced inline style attributes and hardcoded hex values in `LiveFleetMap.tsx` with semantic Tailwind classes.
+
+---
+
 ## [1.4.2] - 2026-09-26
 
 ### Added

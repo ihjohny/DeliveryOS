@@ -1,10 +1,12 @@
 import React from 'react';
+import { LucideIcon } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 export interface PageHeaderProps {
   title: string;
+  subtitle?: React.ReactNode;
   description?: React.ReactNode;
-  icon?: React.ReactNode;
+  icon?: LucideIcon | React.ReactNode;
   badge?: React.ReactNode;
   actions?: React.ReactNode;
   children?: React.ReactNode;
@@ -13,6 +15,7 @@ export interface PageHeaderProps {
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
+  subtitle,
   description,
   icon,
   badge,
@@ -20,27 +23,32 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   children,
   className,
 }) => {
+  const subText = subtitle || description;
   const actionSlot = actions || children;
 
+  const renderIcon = () => {
+    if (!icon) return null;
+    if (React.isValidElement(icon)) {
+      return <div className="shrink-0">{icon}</div>;
+    }
+    const IconComp = icon as LucideIcon;
+    return <IconComp className="h-6 w-6 text-primary-600 dark:text-primary-400 shrink-0" />;
+  };
+
   return (
-    <div
-      className={cn(
-        'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-4 dark:border-slate-800',
-        className
-      )}
-    >
+    <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between', className)}>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2.5">
-          {icon && <div className="shrink-0">{icon}</div>}
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 truncate">
+          {renderIcon()}
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate">
             {title}
-          </h2>
+          </h1>
           {badge && <div className="shrink-0">{badge}</div>}
         </div>
-        {description && (
-          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            {description}
-          </div>
+        {subText && (
+          <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            {subText}
+          </p>
         )}
       </div>
 

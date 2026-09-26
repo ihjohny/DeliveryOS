@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import '../constants/constants.dart';
 
-/// Standardized empty state view across DeliveryOS.
-/// Displays an icon with soft circular backdrop, title, optional description message,
-/// and an optional call-to-action button.
 class EmptyStateView extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -26,13 +23,16 @@ class EmptyStateView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xxxl,
+          vertical: AppSpacing.xxl,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: AppSpacing.edgeInsetsXl,
               decoration: BoxDecoration(
                 color: AppColors.primaryContainer.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
@@ -43,47 +43,39 @@ class EmptyStateView extends StatelessWidget {
                 color: AppColors.primary,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
+              style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800),
             ),
             if (message != null && message!.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 message!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                  height: 1.4,
-                ),
+                style: AppTypography.bodySmall.copyWith(fontSize: 13, color: AppColors.textSecondary),
               ),
             ],
             if (actionButtonText != null && onActionPressed != null) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl),
               ElevatedButton(
                 onPressed: onActionPressed,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  foregroundColor: AppColors.white,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadius.borderMd,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl,
+                    vertical: AppSpacing.md,
+                  ),
                   elevation: 0,
                 ),
                 child: Text(
                   actionButtonText!,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AppTypography.labelLarge.copyWith(color: AppColors.white),
                 ),
               ),
             ],

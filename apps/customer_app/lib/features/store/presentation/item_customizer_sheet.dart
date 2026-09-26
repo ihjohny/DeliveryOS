@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../domain/store_catalog_model.dart';
 
@@ -35,7 +35,7 @@ class ItemCustomizerSheet extends StatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (_) => ItemCustomizerSheet(
         product: product,
         onAddToCart: onAddToCart,
@@ -56,7 +56,6 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
   @override
   void initState() {
     super.initState();
-    // Default to first in-stock variant if available
     if (widget.product.variants.isNotEmpty) {
       final available = widget.product.variants.where((v) => v.isInStock);
       if (available.isNotEmpty) {
@@ -110,8 +109,8 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
           maxHeight: MediaQuery.of(context).size.height * 0.88,
         ),
         decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          color: AppColors.white,
+          borderRadius: BorderRadius.vertical(top: AppRadius.radiusXxl),
         ),
         child: Column(
           children: [
@@ -123,9 +122,9 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                   Container(
                     width: 40,
                     height: 4,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: AppRadius.borderXxs,
                     ),
                   ),
                   IconButton(
@@ -137,7 +136,7 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                 children: [
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,18 +147,13 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                           children: [
                             Text(
                               product.name,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
-                              ),
+                              style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             Text(
                               CurrencyFormatter.formatWithUnit(product.basePrice, product.unitType),
-                              style: const TextStyle(
+                              style: AppTypography.titleSmall.copyWith(
                                 fontSize: 15,
-                                fontWeight: FontWeight.w700,
                                 color: AppColors.primary,
                               ),
                             ),
@@ -169,14 +163,13 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                       if (!product.isInStock)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.errorContainer,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppRadius.borderSm,
                           ),
-                          child: const Text(
+                          child: Text(
                             'Sold Out',
-                            style: TextStyle(
-                              fontSize: 12,
+                            style: AppTypography.labelMedium.copyWith(
                               fontWeight: FontWeight.w700,
                               color: AppColors.error,
                             ),
@@ -185,13 +178,12 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                     ],
                   ),
                   if (product.description != null && product.description!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       product.description!,
-                      style: const TextStyle(
+                      style: AppTypography.bodySmall.copyWith(
                         fontSize: 13,
                         color: AppColors.textSecondary,
-                        height: 1.4,
                       ),
                     ),
                   ],
@@ -201,24 +193,19 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Choose Portion / Variant',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: AppTypography.titleSmall,
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.primaryContainer,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: AppRadius.borderXs,
                         ),
-                        child: const Text(
+                        child: Text(
                           'REQUIRED',
-                          style: TextStyle(
-                            fontSize: 10,
+                          style: AppTypography.caption.copyWith(
                             fontWeight: FontWeight.w800,
                             color: AppColors.primaryDark,
                           ),
@@ -226,20 +213,20 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   ...product.variants.map((variant) {
                     final isSelected = _selectedVariant?.id == variant.id;
                     return InkWell(
                       onTap: variant.isInStock
                           ? () => setState(() => _selectedVariant = variant)
                           : null,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: AppRadius.borderSm,
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
                         decoration: BoxDecoration(
                           color: isSelected ? AppColors.primaryContainer.withValues(alpha: 0.3) : AppColors.background,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppRadius.borderSm,
                           border: Border.all(
                             color: isSelected ? AppColors.primary : AppColors.border,
                           ),
@@ -254,13 +241,12 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                                   ? (val) => setState(() => _selectedVariant = val)
                                   : null,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: AppSpacing.xs),
                             Expanded(
                               child: Text(
                                 variant.name,
-                                style: TextStyle(
+                                style: AppTypography.labelMedium.copyWith(
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w600,
                                   color: variant.isInStock ? AppColors.textPrimary : AppColors.textMuted,
                                   decoration: variant.isInStock ? null : TextDecoration.lineThrough,
                                 ),
@@ -268,7 +254,7 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                             ),
                             Text(
                               variant.isInStock ? CurrencyFormatter.format(variant.price) : 'Unavailable',
-                              style: TextStyle(
+                              style: AppTypography.labelMedium.copyWith(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: variant.isInStock ? AppColors.textPrimary : AppColors.textMuted,
@@ -289,13 +275,9 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                       children: [
                         Text(
                           group.name,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
+                          style: AppTypography.titleSmall,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         ...group.addons.map((addon) {
                           final isChecked = _selectedAddons.any((a) => a.id == addon.id);
                           return InkWell(
@@ -312,13 +294,13 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                                     });
                                   }
                                 : null,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: AppRadius.borderSm,
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 6),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                               decoration: BoxDecoration(
                                 color: isChecked ? AppColors.primaryContainer.withValues(alpha: 0.3) : AppColors.background,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: AppRadius.borderSm,
                                 border: Border.all(
                                   color: isChecked ? AppColors.primary : AppColors.border,
                                 ),
@@ -342,13 +324,12 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                                           }
                                         : null,
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: AppSpacing.xs),
                                   Expanded(
                                     child: Text(
                                       addon.name,
-                                      style: TextStyle(
+                                      style: AppTypography.labelMedium.copyWith(
                                         fontSize: 13,
-                                        fontWeight: FontWeight.w600,
                                         color: addon.isInStock ? AppColors.textPrimary : AppColors.textMuted,
                                         decoration: addon.isInStock ? null : TextDecoration.lineThrough,
                                       ),
@@ -356,7 +337,7 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                                   ),
                                   Text(
                                     addon.isInStock ? '+${CurrencyFormatter.format(addon.price)}' : 'Unavailable',
-                                    style: TextStyle(
+                                    style: AppTypography.labelMedium.copyWith(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
                                       color: addon.isInStock ? AppColors.primary : AppColors.textMuted,
@@ -373,34 +354,30 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                   }),
                 ],
 
-                const Text(
+                Text(
                   'Special Instructions for the Kitchen',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AppTypography.titleSmall,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 TextField(
                   controller: _notesController,
                   maxLines: 2,
                   decoration: InputDecoration(
                     hintText: 'e.g. Less spicy, extra sauce, separate packaging...',
-                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
                     filled: true,
                     fillColor: AppColors.background,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppColors.border),
+                    border: const OutlineInputBorder(
+                      borderRadius: AppRadius.borderSm,
+                      borderSide: BorderSide(color: AppColors.border),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppColors.border),
+                    enabledBorder: const OutlineInputBorder(
+                      borderRadius: AppRadius.borderSm,
+                      borderSide: BorderSide(color: AppColors.border),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xl),
               ],
             ),
           ),
@@ -408,7 +385,7 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
           Container(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             decoration: const BoxDecoration(
-              color: Colors.white,
+              color: AppColors.white,
               border: Border(top: BorderSide(color: AppColors.border)),
             ),
             child: SafeArea(
@@ -418,14 +395,14 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.background,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.borderMd,
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Row(
                       children: [
                         IconButton(
                           visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.all(4),
+                          padding: AppSpacing.edgeInsetsXs,
                           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                           icon: const Icon(Icons.remove_rounded, size: 18),
                           onPressed: (_quantity > 1 && _canAddToCart)
@@ -434,15 +411,14 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                         ),
                         Text(
                           '$_quantity',
-                          style: const TextStyle(
+                          style: AppTypography.titleSmall.copyWith(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
                           ),
                         ),
                         IconButton(
                           visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.all(4),
+                          padding: AppSpacing.edgeInsetsXs,
                           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                           icon: const Icon(Icons.add_rounded, size: 18),
                           onPressed: _canAddToCart
@@ -460,13 +436,13 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                       child: ElevatedButton(
                         onPressed: _canAddToCart ? _handleAddToCart : null,
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: AppSpacing.edgeInsetsHorizontalMd,
                           backgroundColor: AppColors.primary,
                           disabledBackgroundColor: AppColors.textMuted.withValues(alpha: 0.3),
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.white,
                           elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: AppRadius.borderMd,
                           ),
                         ),
                         child: Row(
@@ -477,19 +453,16 @@ class _ItemCustomizerSheetState extends State<ItemCustomizerSheet> {
                                 _canAddToCart ? 'Add to Cart' : 'Currently Unavailable',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: AppTypography.labelLarge.copyWith(color: AppColors.white),
                               ),
                             ),
                             if (_canAddToCart) ...[
-                              const SizedBox(width: 4),
+                              const SizedBox(width: AppSpacing.xs),
                               Text(
                                 CurrencyFormatter.format(_totalPrice),
-                                style: const TextStyle(
-                                  fontSize: 14,
+                                style: AppTypography.labelLarge.copyWith(
                                   fontWeight: FontWeight.w900,
+                                  color: AppColors.white,
                                 ),
                               ),
                             ],

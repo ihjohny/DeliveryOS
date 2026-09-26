@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../location/presentation/map_location_picker_screen.dart';
 
 class AddressGeofenceBanner extends StatelessWidget {
@@ -20,12 +20,12 @@ class AddressGeofenceBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!isWithinCoverage) {
       return Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.all(14),
+        margin: AppSpacing.edgeInsetsVerticalSm,
+        padding: AppSpacing.edgeInsetsMd,
         decoration: BoxDecoration(
-          color: const Color(0xFFFEF2F2),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFFCA5A5)),
+          color: AppColors.errorContainer,
+          borderRadius: AppRadius.borderMd,
+          border: Border.all(color: AppColors.errorBorderLight),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,12 +33,11 @@ class AddressGeofenceBanner extends StatelessWidget {
             Row(
               children: [
                 const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
-                const SizedBox(width: 8),
-                const Expanded(
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
                   child: Text(
                     'Out of Delivery Coverage',
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: AppTypography.titleSmall.copyWith(
                       fontWeight: FontWeight.w800,
                       color: AppColors.error,
                     ),
@@ -50,7 +49,7 @@ class AddressGeofenceBanner extends StatelessWidget {
             Text(
               coverageError ??
                   'Selected address is outside this outlet\'s delivery coverage radius. Please choose an address within coverage.',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF991B1B), height: 1.3),
+              style: AppTypography.bodySmall.copyWith(color: AppColors.errorText),
             ),
             const SizedBox(height: 10),
             SizedBox(
@@ -65,16 +64,19 @@ class AddressGeofenceBanner extends StatelessWidget {
                   onAddressChanged();
                 },
                 icon: const Icon(Icons.edit_location_alt_rounded, size: 16),
-                label: const Text(
+                label: Text(
                   'Change Address',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  style: AppTypography.labelMedium.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.white,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
+                  padding: AppSpacing.edgeInsetsHorizontalMd,
                 ),
               ),
             ),
@@ -84,25 +86,21 @@ class AddressGeofenceBanner extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: AppSpacing.edgeInsetsVerticalSm,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFECFDF5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFA7F3D0)),
+        color: AppColors.successContainer,
+        borderRadius: AppRadius.borderMd,
+        border: Border.all(color: AppColors.successBorder),
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 18),
-          const SizedBox(width: 8),
+          const Icon(Icons.check_circle_rounded, color: AppColors.successDark, size: 18),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               'Delivering to: $currentAddress',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF065F46),
-              ),
+              style: AppTypography.labelMedium.copyWith(color: AppColors.successText),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -116,12 +114,11 @@ class AddressGeofenceBanner extends StatelessWidget {
               );
               onAddressChanged();
             },
-            child: const Text(
+            child: Text(
               'Edit',
-              style: TextStyle(
-                fontSize: 12,
+              style: AppTypography.labelMedium.copyWith(
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF059669),
+                color: AppColors.successDark,
               ),
             ),
           ),

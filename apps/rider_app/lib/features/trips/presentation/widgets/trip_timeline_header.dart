@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../domain/trip_models.dart';
 
 class TripTimelineHeader extends StatelessWidget {
@@ -13,8 +13,8 @@ class TripTimelineHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: AppColors.white,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       child: Row(
         children: [
           _buildStepPill(
@@ -53,7 +53,7 @@ class TripTimelineHeader extends StatelessWidget {
         : isActive
             ? AppColors.primary
             : AppColors.background;
-    final textColor = (isActive || isCompleted) ? Colors.white : AppColors.textSecondary;
+    final textColor = (isActive || isCompleted) ? AppColors.white : AppColors.textSecondary;
 
     return Row(
       children: [
@@ -61,10 +61,10 @@ class TripTimelineHeader extends StatelessWidget {
           radius: 12,
           backgroundColor: bgColor,
           child: isCompleted
-              ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+              ? const Icon(Icons.check_rounded, size: 14, color: AppColors.white)
               : Text(
                   '$stepNumber',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textColor),
+                  style: AppTypography.badgeText.copyWith(color: textColor),
                 ),
         ),
         const SizedBox(width: 6),
@@ -72,8 +72,7 @@ class TripTimelineHeader extends StatelessWidget {
           title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 12,
+          style: AppTypography.caption.copyWith(
             fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
             color: isActive ? AppColors.textPrimary : AppColors.textSecondary,
           ),

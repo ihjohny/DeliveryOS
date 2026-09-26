@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/api_constants.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../../core/utils/phone_call_launcher.dart';
@@ -67,14 +66,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+          title: Text('Edit Profile', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Full Name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                Text('Full Name', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: nameController,
@@ -82,13 +81,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     hintText: 'Your Full Name',
                     filled: true,
                     fillColor: AppColors.background,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: const BorderSide(color: AppColors.border)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Text('Email Address', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                Text('Email Address', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: emailController,
@@ -97,9 +96,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     hintText: 'e.g. name@example.com',
                     filled: true,
                     fillColor: AppColors.background,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: const BorderSide(color: AppColors.border)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
                   ),
                 ),
               ],
@@ -108,7 +107,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: AppTypography.labelMedium.copyWith(color: AppColors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: isSaving
@@ -136,12 +135,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                foregroundColor: AppColors.white,
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
               ),
               child: isSaving
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Save'),
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2))
+                  : Text('Save', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -157,8 +156,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Profile & Account', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-        backgroundColor: Colors.white,
+        title: Text('My Profile & Account', style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800)),
+        backgroundColor: AppColors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         actions: [
@@ -172,13 +171,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               children: [
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    color: AppColors.white,
+                    borderRadius: AppRadius.borderLg,
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
@@ -193,29 +192,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         child: Center(
                           child: Text(
                             _fullName.isNotEmpty ? _fullName.substring(0, 1).toUpperCase() : 'C',
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.primary),
+                            style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.w900, color: AppColors.primary),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: AppSpacing.lg),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               _fullName,
-                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                              style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             Text(
                               _phone,
-                              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                              style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
                             ),
                             if (_email.isNotEmpty) ...[
-                              const SizedBox(height: 2),
+                              const SizedBox(height: AppSpacing.xxs),
                               Text(
                                 _email,
-                                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                                style: AppTypography.caption.copyWith(color: AppColors.textMuted),
                               ),
                             ],
                           ],
@@ -224,62 +223,62 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
                 Row(
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg, horizontal: AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          color: AppColors.white,
+                          borderRadius: AppRadius.borderMd,
                           border: Border.all(color: AppColors.border),
                         ),
                         child: Column(
                           children: [
-                            const Text('TOTAL ORDERS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
-                            const SizedBox(height: 4),
-                            Text('$_totalOrders', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primary)),
+                            Text('TOTAL ORDERS', style: AppTypography.caption.copyWith(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text('$_totalOrders', style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.w900, color: AppColors.primary)),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg, horizontal: AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          color: AppColors.white,
+                          borderRadius: AppRadius.borderMd,
                           border: Border.all(color: AppColors.border),
                         ),
                         child: Column(
                           children: [
-                            const Text('SAVED ADDRESSES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
-                            const SizedBox(height: 4),
-                            Text('$_totalAddresses', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.secondary)),
+                            Text('SAVED ADDRESSES', style: AppTypography.caption.copyWith(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text('$_totalAddresses', style: AppTypography.headlineSmall.copyWith(fontWeight: FontWeight.w900, color: AppColors.secondary)),
                           ],
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                const Text('Account Preferences', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.xl),
+                Text('Account Preferences', style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.sm),
 
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    color: AppColors.white,
+                    borderRadius: AppRadius.borderLg,
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Column(
                     children: [
                       ListTile(
                         leading: const Icon(Icons.place_outlined, color: AppColors.primary),
-                        title: const Text('Saved Delivery Addresses', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                        subtitle: const Text('Manage home, office, and preferred drop points', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        title: Text('Saved Delivery Addresses', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
+                        subtitle: Text('Manage home, office, and preferred drop points', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
                         trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
                         onTap: () {
                           Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressBookScreen()));
@@ -288,8 +287,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const Divider(height: 1, color: AppColors.border),
                       ListTile(
                         leading: const Icon(Icons.receipt_long_outlined, color: AppColors.primary),
-                        title: const Text('My Order History', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                        subtitle: const Text('View and reorder previous meals and groceries', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        title: Text('My Order History', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
+                        subtitle: Text('View and reorder previous meals and groceries', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
                         trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
                         onTap: () {
                           Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
@@ -298,14 +297,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const Divider(height: 1, color: AppColors.border),
                       ListTile(
                         leading: const Icon(Icons.language_rounded, color: AppColors.primary),
-                        title: const Text('Language / ভাষা', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                        title: Text('Language / ভাষা', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
                         subtitle: Text(
                           currentLocale.languageCode == 'bn'
                               ? 'বাংলা (Bengali)'
                               : currentLocale.languageCode == 'ar'
                                   ? 'العربية (Arabic)'
                                   : 'English (US)',
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                         ),
                         trailing: PopupMenuButton<String>(
                           initialValue: currentLocale.languageCode,
@@ -323,29 +322,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const Divider(height: 1, color: AppColors.border),
                       ListTile(
                         leading: const Icon(Icons.support_agent_rounded, color: AppColors.primary),
-                        title: const Text('24/7 Customer Support', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                        subtitle: const Text('Call +880 1700-000000 for order inquiries & help', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        title: Text('24/7 Customer Support', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
+                        subtitle: Text('Call +880 1700-000000 for order inquiries & help', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
                         trailing: const Icon(Icons.phone_in_talk_rounded, color: AppColors.primary, size: 20),
                         onTap: () => makeDirectPhoneCall('+8801700000000'),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
                 OutlinedButton.icon(
                   onPressed: () async {
                     final shouldLogout = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: const Text('Logout', style: TextStyle(fontWeight: FontWeight.w800)),
-                        content: const Text('Are you sure you want to log out of DeliveryOS?'),
+                        shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+                        title: Text('Logout', style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800)),
+                        content: Text('Are you sure you want to log out of DeliveryOS?', style: AppTypography.bodyMedium),
                         actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: Text('Cancel', style: AppTypography.labelMedium.copyWith(color: AppColors.textSecondary)),
+                          ),
                           ElevatedButton(
                             onPressed: () => Navigator.pop(ctx, true),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                            child: const Text('Logout'),
+                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: AppColors.white),
+                            child: Text('Logout', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
                           ),
                         ],
                       ),
@@ -361,12 +363,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       }
                     }
                   },
-                  icon: const Icon(Icons.logout_rounded, color: Colors.red),
-                  label: Text(l10n.translate('logout'), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
+                  icon: const Icon(Icons.logout_rounded, color: AppColors.error),
+                  label: Text(l10n.translate('logout'), style: AppTypography.labelMedium.copyWith(color: AppColors.error, fontWeight: FontWeight.w700)),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.redAccent),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    side: const BorderSide(color: AppColors.errorBorderLight),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
                   ),
                 ),
               ],

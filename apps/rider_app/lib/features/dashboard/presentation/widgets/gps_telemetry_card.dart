@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../domain/duty_models.dart';
 
 class GpsTelemetryCard extends StatelessWidget {
@@ -13,10 +13,10 @@ class GpsTelemetryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.roundedLg,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -25,7 +25,7 @@ class GpsTelemetryCard extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: dutyState.isOnline ? AppColors.dutyOnlineBackground : AppColors.dutyOfflineBackground,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.roundedMd,
             ),
             child: Icon(
               dutyState.isOnline ? Icons.radar_rounded : Icons.location_off_rounded,
@@ -41,31 +41,35 @@ class GpsTelemetryCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Flexible(
+                    Flexible(
                       child: Text(
                         'GPS LOCATION RADAR',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textSecondary),
+                        style: AppTypography.badgeText.copyWith(color: AppColors.textSecondary),
                       ),
                     ),
                     if (dutyState.isOnline) ...[
                       const SizedBox(width: 6),
-                      const Text(
+                      Text(
                         'Beaconing (5s)',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.dutyOnline),
+                        style: AppTypography.caption.copyWith(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.dutyOnline,
+                        ),
                       ),
                     ],
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   dutyState.isOnline
                       ? '${dutyState.latitude.toStringAsFixed(4)}° N, ${dutyState.longitude.toStringAsFixed(4)}° E'
                       : 'Location streaming paused while offline',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  style: AppTypography.bodyBold.copyWith(fontSize: 13),
                 ),
               ],
             ),

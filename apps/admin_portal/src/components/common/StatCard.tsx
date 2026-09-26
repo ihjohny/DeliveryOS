@@ -6,8 +6,11 @@ export interface StatCardProps {
   title: string;
   value: string | number;
   subtitle?: React.ReactNode;
-  icon?: LucideIcon;
+  icon?: LucideIcon | React.ReactNode;
   iconColorClass?: string;
+  iconBgColor?: string;
+  iconTextColor?: string;
+  valueColor?: string;
   onClick?: () => void;
   active?: boolean;
   isLoading?: boolean;
@@ -18,13 +21,31 @@ export const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
   subtitle,
-  icon: Icon,
-  iconColorClass = 'text-primary-600 bg-primary-50 dark:bg-primary-950/50',
+  icon,
+  iconColorClass,
+  iconBgColor,
+  iconTextColor,
+  valueColor,
   onClick,
   active,
   isLoading,
   className,
 }) => {
+  const renderIcon = () => {
+    if (!icon) return null;
+    if (React.isValidElement(icon)) {
+      return icon;
+    }
+    const IconComp = icon as LucideIcon;
+    return <IconComp className="h-4 w-4 sm:h-5 sm:w-5" />;
+  };
+
+  const computedIconContainer =
+    iconColorClass ||
+    (iconBgColor && iconTextColor
+      ? cn(iconBgColor, iconTextColor)
+      : 'text-primary-600 bg-primary-50 dark:bg-primary-950/50 dark:text-primary-400');
+
   return (
     <div
       onClick={onClick}
@@ -39,18 +60,23 @@ export const StatCard: React.FC<StatCardProps> = ({
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
           {title}
         </span>
-        {Icon && (
-          <div className={cn('rounded-lg p-2', iconColorClass)}>
-            <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+        {icon && (
+          <div className={cn('rounded-lg p-2 shrink-0', computedIconContainer)}>
+            {renderIcon()}
           </div>
         )}
       </div>
       <div className="mt-2.5">
-        <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+        <div
+          className={cn(
+            'text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100',
+            valueColor
+          )}
+        >
           {isLoading ? '...' : value}
         </div>
         {subtitle && (
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             {subtitle}
           </div>
         )}

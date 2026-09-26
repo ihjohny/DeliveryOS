@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 
 class EarningsSummaryCard extends StatelessWidget {
@@ -26,9 +26,9 @@ class EarningsSummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'TOTAL EARNINGS',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 0.6),
+            style: AppTypography.badgeText.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 6),
           Row(
@@ -37,16 +37,16 @@ class EarningsSummaryCard extends StatelessWidget {
             children: [
               Text(
                 formatCurrency(totalEarnings),
-                style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+                style: AppTypography.statNumber.copyWith(fontSize: 34),
               ),
-              const SizedBox(width: 8),
-              const Text(
+              const SizedBox(width: AppSpacing.sm),
+              Text(
                 'BDT',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                style: AppTypography.bodyBold.copyWith(color: AppColors.textSecondary),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           const Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 14),
           Row(
@@ -55,7 +55,7 @@ class EarningsSummaryCard extends StatelessWidget {
               Expanded(
                 child: _buildMiniMetric('Completed Trips', '$totalTrips Trips', Icons.check_circle_outline_rounded, AppColors.dutyOnline),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _buildMiniMetric('Avg per Trip', formatCurrency(avgPerTrip), Icons.insights_rounded, AppColors.primary),
               ),
@@ -70,7 +70,7 @@ class EarningsSummaryCard extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, size: 18, color: iconColor),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,13 +79,13 @@ class EarningsSummaryCard extends StatelessWidget {
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                style: AppTypography.bodyBold,
               ),
               Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),

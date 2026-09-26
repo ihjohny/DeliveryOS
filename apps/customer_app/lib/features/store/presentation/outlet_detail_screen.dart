@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/error_retry_view.dart';
 import '../../../core/widgets/store_status_badge.dart';
@@ -147,10 +147,10 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         border: Border(top: BorderSide(color: AppColors.border)),
         boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, -3)),
+          BoxShadow(color: AppColors.black12, blurRadius: 8, offset: Offset(0, -3)),
         ],
       ),
       child: SafeArea(
@@ -165,9 +165,9 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -177,32 +177,41 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppColors.white.withValues(alpha: 0.25),
+                          borderRadius: AppRadius.borderSm,
                         ),
                         child: Text(
                           '${cart.totalItemCount}',
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+                          style: AppTypography.labelMedium.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Flexible(
+                      Flexible(
                         child: Text(
                           'View Cart',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                          style: AppTypography.titleSmall.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.white,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   CurrencyFormatter.format(cart.grossSubtotal),
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                  style: AppTypography.titleMedium.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.white,
+                  ),
                 ),
               ],
             ),
@@ -226,7 +235,7 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
             icon: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: AppColors.white.withValues(alpha: 0.9),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: AppColors.textPrimary),
@@ -239,7 +248,7 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
                 icon: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: AppColors.white.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.phone_rounded, size: 18, color: AppColors.primary),
@@ -247,7 +256,7 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
                 tooltip: 'Call Store',
                 onPressed: () => _makeCall(catalog.contactPhone!),
               ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
           ],
           flexibleSpace: FlexibleSpaceBar(
             background: Stack(
@@ -258,21 +267,21 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
                     : Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Color(0xFFFF7A33), Color(0xFFFF5200)],
+                            colors: [AppColors.primaryLight, AppColors.primary],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                         ),
                         child: const Center(
-                          child: Icon(Icons.restaurant_rounded, size: 64, color: Colors.white24),
+                          child: Icon(Icons.restaurant_rounded, size: 64, color: AppColors.white24),
                         ),
                       ),
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.black.withValues(alpha: 0.6),
-                        Colors.transparent,
+                        AppColors.black.withValues(alpha: 0.6),
+                        AppColors.transparent,
                       ],
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
@@ -286,8 +295,8 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
 
         SliverToBoxAdapter(
           child: Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
+            color: AppColors.white,
+            padding: AppSpacing.edgeInsetsLg,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -297,10 +306,9 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
                     Expanded(
                       child: Text(
                         catalog.name,
-                        style: const TextStyle(
+                        style: AppTypography.headlineMedium.copyWith(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -314,11 +322,11 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
                 Row(
                   children: [
                     const Icon(Icons.place_outlined, size: 14, color: AppColors.textSecondary),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: Text(
                         catalog.addressText,
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: AppTypography.bodySmall,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -327,7 +335,7 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
                 ),
                 const SizedBox(height: 10),
                 Wrap(
-                  spacing: 8,
+                  spacing: AppSpacing.sm,
                   runSpacing: 6,
                   children: [
                     _buildMetaBadge(
@@ -341,7 +349,7 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
                     _buildMetaBadge(
                       icon: Icons.star_rounded,
                       label: '4.8 (240+)',
-                      color: const Color(0xFFF59E0B),
+                      color: AppColors.amber,
                     ),
                   ],
                 ),
@@ -364,7 +372,7 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
 
         if (activeCategory != null && activeCategory.products.isNotEmpty)
           SliverPadding(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.edgeInsetsLg,
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -379,12 +387,12 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
             ),
           )
         else
-          const SliverFillRemaining(
+          SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
               child: Text(
                 'No products available in this category',
-                style: TextStyle(color: AppColors.textMuted),
+                style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
               ),
             ),
           ),
@@ -398,30 +406,25 @@ class _OutletDetailScreenState extends ConsumerState<OutletDetailScreen> {
     Color? color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.borderSm,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: color ?? AppColors.textSecondary),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xs),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+            style: AppTypography.labelSmall,
           ),
         ],
       ),
     );
   }
-
 }
 
 class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
@@ -445,26 +448,25 @@ class _CategoryHeaderDelegate extends SliverPersistentHeaderDelegate {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: AppSpacing.edgeInsetsHorizontalLg,
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final isSelected = index == selectedIndex;
           return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: ChoiceChip(
               label: Text(categories[index].name),
               selected: isSelected,
               selectedColor: AppColors.primary,
               backgroundColor: AppColors.background,
-              labelStyle: TextStyle(
-                fontSize: 12,
+              labelStyle: AppTypography.labelMedium.copyWith(
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+                color: isSelected ? AppColors.white : AppColors.textPrimary,
               ),
               side: BorderSide(
                 color: isSelected ? AppColors.primary : AppColors.border,

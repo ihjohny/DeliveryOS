@@ -71,7 +71,7 @@ class _CustomerAppState extends ConsumerState<CustomerApp> {
         ),
         scaffoldBackgroundColor: AppColors.background,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.white,
           foregroundColor: AppColors.textPrimary,
           elevation: 0,
         ),

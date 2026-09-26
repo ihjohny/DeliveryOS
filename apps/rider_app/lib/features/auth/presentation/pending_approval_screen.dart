@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/design_tokens.dart';
 import '../../dashboard/presentation/rider_dashboard_screen.dart';
 import '../domain/auth_models.dart';
 import '../providers/auth_provider.dart';
@@ -20,204 +20,195 @@ class PendingApprovalScreen extends ConsumerWidget {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.xl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.4), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.warningBackground,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.xxl),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.4), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withValues(alpha: 0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                      child: const Icon(
-                        Icons.hourglass_top_rounded,
-                        color: AppColors.warning,
-                        size: 48,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Account Pending Approval',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.warningBackground,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.warning),
-                      ),
-                      child: const Text(
-                        'STATUS: PENDING_APPROVAL',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          color: AppColors.warningBackground,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                        ),
+                        child: const Icon(
+                          Icons.hourglass_top_rounded,
                           color: AppColors.warning,
-                          letterSpacing: 0.5,
+                          size: 48,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Welcome ${profile?.fullName ?? "Rider"}! Your application to join DeliveryOS is currently under review by our operations team.',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                        height: 1.4,
+                      const SizedBox(height: AppSpacing.lg),
+                      const Text(
+                        'Account Pending Approval',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.h2,
                       ),
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.sm),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+                        decoration: BoxDecoration(
+                          color: AppColors.warningBackground,
+                          borderRadius: AppRadius.roundedMd,
+                          border: Border.all(color: AppColors.warning),
+                        ),
+                        child: Text(
+                          'STATUS: PENDING_APPROVAL',
+                          style: AppTypography.badgeText.copyWith(color: AppColors.warning),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      Text(
+                        'Welcome ${profile?.fullName ?? "Rider"}! Your application to join DeliveryOS is currently under review by our operations team.',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.caption.copyWith(fontSize: 13, height: 1.4),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
 
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Column(
+                          children: [
+                            _buildDetailRow('Rider Name', profile?.fullName ?? 'New Applicant'),
+                            const Divider(height: AppSpacing.lg, color: AppColors.border),
+                            _buildDetailRow('Mobile Phone', profile?.phone ?? authState.phoneNumber ?? '-'),
+                            const Divider(height: AppSpacing.lg, color: AppColors.border),
+                            _buildDetailRow('Vehicle Type', profile?.vehicleType.displayName ?? 'Motorcycle'),
+                          ],
+                        ),
                       ),
-                      child: Column(
-                        children: [
-                          _buildDetailRow('Rider Name', profile?.fullName ?? 'New Applicant'),
-                          const Divider(height: 16, color: AppColors.border),
-                          _buildDetailRow('Mobile Phone', profile?.phone ?? authState.phoneNumber ?? '-'),
-                          const Divider(height: 16, color: AppColors.border),
-                          _buildDetailRow('Vehicle Type', profile?.vehicleType.displayName ?? 'Motorcycle'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xl),
 
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.errorBackground,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.shield_outlined, color: AppColors.error, size: 20),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Duty Switch is locked until account approval per fleet safety compliance.',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.error),
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.errorBackground,
+                          borderRadius: AppRadius.roundedMd,
+                          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.shield_outlined, color: AppColors.error, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Duty Switch is locked until account approval per fleet safety compliance.',
+                                style: AppTypography.caption.copyWith(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.error,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+
+                SizedBox(
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: authState.isLoading
+                        ? null
+                        : () async {
+                            await ref.read(riderAuthProvider.notifier).refreshApprovalStatus();
+                            final updated = ref.read(riderAuthProvider);
+                            if (context.mounted && updated.isAuthenticated) {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (_) => const RiderDashboardScreen()),
+                                (route) => false,
+                              );
+                            }
+                          },
+                    icon: authState.isLoading
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh_rounded, size: 20),
+                    label: Text(
+                      'Check Approval Status',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.buttonText.copyWith(fontSize: 15),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              SizedBox(
-                height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: authState.isLoading
-                      ? null
-                      : () async {
-                          await ref.read(riderAuthProvider.notifier).refreshApprovalStatus();
-                          final updated = ref.read(riderAuthProvider);
-                          if (context.mounted && updated.isAuthenticated) {
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (_) => const RiderDashboardScreen()),
-                              (route) => false,
-                            );
-                          }
-                        },
-                  icon: authState.isLoading
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh_rounded, size: 20),
-                  label: const Text(
-                    'Check Approval Status',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
 
-              if (kDebugMode) ...[
-                OutlinedButton.icon(
-                  onPressed: () {
-                    ref.read(riderAuthProvider.notifier).forceApproveForDev();
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const RiderDashboardScreen()),
-                      (route) => false,
-                    );
+                if (kDebugMode) ...[
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      ref.read(riderAuthProvider.notifier).forceApproveForDev();
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const RiderDashboardScreen()),
+                        (route) => false,
+                      );
+                    },
+                    icon: const Icon(Icons.bolt_rounded, size: 18, color: AppColors.dutyOnline),
+                    label: Text(
+                      'Simulate Admin Approval (Dev Mode)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodyBold.copyWith(fontSize: 13, color: AppColors.dutyOnline),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.dutyOnline),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+
+                TextButton.icon(
+                  onPressed: () async {
+                    await ref.read(riderAuthProvider.notifier).logout();
+                    if (context.mounted) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const PhoneLoginScreen()),
+                        (route) => false,
+                      );
+                    }
                   },
-                  icon: const Icon(Icons.bolt_rounded, size: 18, color: AppColors.dutyOnline),
-                  label: const Text(
-                    'Simulate Admin Approval (Dev Mode)',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.dutyOnline),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
+                  icon: const Icon(Icons.logout_rounded, size: 16, color: AppColors.textSecondary),
+                  label: Text('Log Out', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600)),
                 ),
-                const SizedBox(height: 12),
               ],
-
-              TextButton.icon(
-                onPressed: () async {
-                  await ref.read(riderAuthProvider.notifier).logout();
-                  if (context.mounted) {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const PhoneLoginScreen()),
-                      (route) => false,
-                    );
-                  }
-                },
-                icon: const Icon(Icons.logout_rounded, size: 16, color: AppColors.textSecondary),
-                label: const Text('Log Out', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-              ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildDetailRow(String label, String value) {
@@ -226,16 +217,16 @@ class PendingApprovalScreen extends ConsumerWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+          style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
             value,
             textAlign: TextAlign.end,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: AppTypography.bodyBold.copyWith(fontSize: 13),
           ),
         ),
       ],

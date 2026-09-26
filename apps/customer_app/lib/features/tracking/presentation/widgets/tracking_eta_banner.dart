@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 import '../../domain/tracking_models.dart';
 
-/// Modular ETA, Delivery status, and Cancellation banner widget.
 class TrackingEtaBanner extends StatelessWidget {
   final OrderTrackingState state;
 
@@ -26,32 +25,32 @@ class TrackingEtaBanner extends StatelessWidget {
     Color subtitleColor = AppColors.textSecondary;
 
     if (isCancelled) {
-      bgColor = const Color(0xFFFEF2F2);
-      borderColor = const Color(0xFFFECACA);
-      iconBgColor = const Color(0xFFDC2626);
+      bgColor = AppColors.errorContainer;
+      borderColor = AppColors.errorBorder;
+      iconBgColor = AppColors.errorDark;
       icon = Icons.cancel_rounded;
       title = 'Order Cancelled';
       subtitle = state.cancellationReason != null && state.cancellationReason!.isNotEmpty
           ? 'Reason: ${state.cancellationReason}'
           : 'This order has been cancelled.';
-      titleColor = const Color(0xFF991B1B);
-      subtitleColor = const Color(0xFFB91C1C);
+      titleColor = AppColors.errorText;
+      subtitleColor = AppColors.errorTextMedium;
     } else if (isDelivered) {
-      bgColor = const Color(0xFFECFDF5);
-      borderColor = const Color(0xFFA7F3D0);
-      iconBgColor = const Color(0xFF059669);
+      bgColor = AppColors.successContainer;
+      borderColor = AppColors.successBorder;
+      iconBgColor = AppColors.successDark;
       icon = Icons.task_alt_rounded;
       title = 'Delivered Successfully!';
       subtitle = 'Order completed at ${state.customer.address.split(',').first}';
-      titleColor = const Color(0xFF065F46);
-      subtitleColor = const Color(0xFF047857);
+      titleColor = AppColors.successText;
+      subtitleColor = AppColors.successMedium;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.borderLg,
         border: Border.all(color: borderColor),
       ),
       child: Row(
@@ -64,7 +63,7 @@ class TrackingEtaBanner extends StatelessWidget {
             ),
             child: Icon(
               icon,
-              color: Colors.white,
+              color: AppColors.white,
               size: 24,
             ),
           ),
@@ -75,8 +74,7 @@ class TrackingEtaBanner extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: AppTypography.titleMedium.copyWith(
                     fontWeight: FontWeight.w900,
                     color: titleColor,
                   ),
@@ -84,10 +82,7 @@ class TrackingEtaBanner extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: subtitleColor,
-                  ),
+                  style: AppTypography.bodySmall.copyWith(color: subtitleColor),
                 ),
               ],
             ),

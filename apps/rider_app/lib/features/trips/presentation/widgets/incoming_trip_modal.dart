@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../dashboard/providers/duty_provider.dart';
 import '../../domain/trip_models.dart';
@@ -26,10 +26,10 @@ class IncomingTripModal extends ConsumerWidget {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       backgroundColor: AppColors.card,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -49,53 +49,48 @@ class IncomingTripModal extends ConsumerWidget {
                       size: 26,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'NEW TRIP BROADCAST',
-                          style: TextStyle(
+                          style: AppTypography.badgeText.copyWith(
                             fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.8,
                             color: AppColors.dutyOnline,
+                            letterSpacing: 0.8,
                           ),
                         ),
                         Text(
                           'Expires in ${remainingSecs}s',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
+                    decoration: const BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.roundedMd,
                     ),
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           'EARN',
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white70),
+                          style: AppTypography.badgeText.copyWith(fontSize: 9, color: AppColors.white70),
                         ),
                         Text(
                           formatCurrency(trip.payout),
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white),
+                          style: AppTypography.h3.copyWith(fontWeight: FontWeight.w900, color: AppColors.white),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
@@ -107,12 +102,12 @@ class IncomingTripModal extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.background,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: AppRadius.roundedLg,
                   border: Border.all(color: AppColors.border),
                 ),
                 child: Column(
@@ -128,13 +123,13 @@ class IncomingTripModal extends ConsumerWidget {
                             children: [
                               Text(
                                 trip.store.name,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                                style: AppTypography.bodyBold,
                               ),
                               Text(
                                 '${trip.distanceKm} km away • ${trip.store.address}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                style: AppTypography.caption.copyWith(fontSize: 11),
                               ),
                             ],
                           ),
@@ -162,13 +157,13 @@ class IncomingTripModal extends ConsumerWidget {
                             children: [
                               Text(
                                 trip.customer.name,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                                style: AppTypography.bodyBold,
                               ),
                               Text(
                                 trip.customer.address,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                style: AppTypography.caption.copyWith(fontSize: 11),
                               ),
                             ],
                           ),
@@ -180,7 +175,7 @@ class IncomingTripModal extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: trip.isCod ? AppColors.warningBackground : AppColors.dutyOnlineBackground,
                   borderRadius: BorderRadius.circular(10),
@@ -205,9 +200,8 @@ class IncomingTripModal extends ConsumerWidget {
                               trip.isCod ? 'Cash on Delivery: ৳${trip.totalAmount.toStringAsFixed(0)}' : 'Paid Online (Prepaid)',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
+                              style: AppTypography.badgeText.copyWith(
                                 fontSize: 12,
-                                fontWeight: FontWeight.w800,
                                 color: trip.isCod ? AppColors.warning : AppColors.dutyOnline,
                               ),
                             ),
@@ -215,21 +209,21 @@ class IncomingTripModal extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     Text(
                       '${trip.itemsCount} items',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                      style: AppTypography.caption.copyWith(fontSize: 11, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               if (isBlockedByCashLimit) ...[
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.errorBackground,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.roundedMd,
                     border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
                   ),
                   child: Row(
@@ -239,7 +233,7 @@ class IncomingTripModal extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           'COD Safety Limit Reached (${formatCurrency(dutyState.codCashInHand)} / ${formatCurrency(dutyState.cashSafetyLimit)}). Deposit cash at the hub before taking new COD orders.',
-                          style: const TextStyle(
+                          style: AppTypography.caption.copyWith(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: AppColors.error,
@@ -250,7 +244,7 @@ class IncomingTripModal extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
               ],
               if (tripState.error != null) ...[
                 Container(
@@ -262,10 +256,10 @@ class IncomingTripModal extends ConsumerWidget {
                   ),
                   child: Text(
                     tripState.error!,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.error),
+                    style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600, color: AppColors.error),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
               ],
               SizedBox(
                 height: 56,
@@ -283,9 +277,9 @@ class IncomingTripModal extends ConsumerWidget {
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isBlockedByCashLimit ? AppColors.borderStrong : AppColors.dutyOnline,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                     disabledBackgroundColor: AppColors.borderStrong.withValues(alpha: 0.5),
-                    disabledForegroundColor: Colors.white70,
+                    disabledForegroundColor: AppColors.white70,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     elevation: 0,
                   ),
@@ -293,19 +287,19 @@ class IncomingTripModal extends ConsumerWidget {
                       ? const SizedBox(
                           height: 22,
                           width: 22,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                          child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2.5),
                         )
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(isBlockedByCashLimit ? Icons.lock_rounded : Icons.check_circle_rounded, size: 22),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             Flexible(
                               child: Text(
                                 isBlockedByCashLimit ? 'COD LIMIT REACHED' : 'ACCEPT ORDER',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                                style: AppTypography.buttonText.copyWith(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                               ),
                             ),
                           ],
@@ -319,9 +313,9 @@ class IncomingTripModal extends ConsumerWidget {
                     ref.read(riderTripProvider.notifier).dismissIncomingAlert();
                     Navigator.of(context).pop();
                   },
-                  child: const Text(
+                  child: Text(
                     'Decline / Pass',
-                    style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w700),
+                    style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),

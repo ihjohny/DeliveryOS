@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../domain/store_catalog_model.dart';
 
-/// Reusable product menu card displaying item details, stock availability,
-/// formatted currency pricing, and an ADD / UNAVAILABLE button.
 class ProductMenuCard extends StatelessWidget {
   final ProductModel product;
   final VoidCallback onAdd;
@@ -18,10 +16,10 @@ class ProductMenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.white,
+        borderRadius: AppRadius.borderLg,
         border: Border.all(color: AppColors.border),
       ),
       child: Padding(
@@ -38,9 +36,8 @@ class ProductMenuCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           product.name,
-                          style: TextStyle(
+                          style: AppTypography.titleSmall.copyWith(
                             fontSize: 15,
-                            fontWeight: FontWeight.w700,
                             color: product.isInStock ? AppColors.textPrimary : AppColors.textMuted,
                           ),
                         ),
@@ -48,14 +45,13 @@ class ProductMenuCard extends StatelessWidget {
                       if (!product.isInStock)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.errorContainer,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: AppRadius.borderXs,
                           ),
-                          child: const Text(
+                          child: Text(
                             'Sold Out',
-                            style: TextStyle(
-                              fontSize: 10,
+                            style: AppTypography.caption.copyWith(
                               fontWeight: FontWeight.w700,
                               color: AppColors.error,
                             ),
@@ -69,11 +65,7 @@ class ProductMenuCard extends StatelessWidget {
                       product.description!,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                        height: 1.3,
-                      ),
+                      style: AppTypography.bodySmall,
                     ),
                   ],
                   const SizedBox(height: 10),
@@ -85,14 +77,13 @@ class ProductMenuCard extends StatelessWidget {
                           CurrencyFormatter.format(product.basePrice),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: AppTypography.titleMedium.copyWith(
                             fontWeight: FontWeight.w800,
                             color: product.isInStock ? AppColors.primary : AppColors.textMuted,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       ElevatedButton(
                         onPressed: product.isInStock ? onAdd : null,
                         style: ElevatedButton.styleFrom(
@@ -102,19 +93,16 @@ class ProductMenuCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: const BorderSide(color: AppColors.primary),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: AppRadius.borderSm,
+                            side: BorderSide(color: AppColors.primary),
                           ),
                           disabledBackgroundColor: AppColors.background,
                           disabledForegroundColor: AppColors.textMuted,
                         ),
                         child: Text(
                           product.isInStock ? 'ADD +' : 'UNAVAILABLE',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800),
                         ),
                       ),
                     ],

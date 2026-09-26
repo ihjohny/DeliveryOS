@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../domain/user_model.dart';
@@ -90,7 +90,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 20),
@@ -101,7 +101,10 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xxl,
+                vertical: AppSpacing.md,
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight - 24.0),
                 child: IntrinsicHeight(
@@ -110,21 +113,17 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                     children: [
                       Text(
                         l10n.translate('otp_title'),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.w800),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       RichText(
                         text: TextSpan(
-                          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                          style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
                           children: [
                             TextSpan(text: '${l10n.translate('otp_subtitle')} '),
                             TextSpan(
                               text: widget.phoneNumber,
-                              style: const TextStyle(
+                              style: AppTypography.bodyMedium.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.textPrimary,
                               ),
@@ -147,23 +146,22 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                                   keyboardType: TextInputType.number,
                                   textAlign: TextAlign.center,
                                   maxLength: 1,
-                                  style: const TextStyle(
+                                  style: AppTypography.titleLarge.copyWith(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
                                   ),
                                   decoration: InputDecoration(
                                     counterText: '',
                                     filled: true,
-                                    fillColor: Colors.white,
+                                    fillColor: AppColors.white,
                                     contentPadding: EdgeInsets.zero,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(color: AppColors.border),
+                                    border: const OutlineInputBorder(
+                                      borderRadius: AppRadius.borderMd,
+                                      borderSide: BorderSide(color: AppColors.border),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                                    focusedBorder: const OutlineInputBorder(
+                                      borderRadius: AppRadius.borderMd,
+                                      borderSide: BorderSide(color: AppColors.primary, width: 2),
                                     ),
                                   ),
                                   onChanged: (val) {
@@ -182,7 +180,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                           );
                         }),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       if (kDebugMode)
                         Center(
                           child: TextButton.icon(
@@ -190,8 +188,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                             icon: const Icon(Icons.auto_fix_high_rounded, size: 16, color: AppColors.primary),
                             label: Text(
                               l10n.translate('dev_otp_hint'),
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: AppTypography.labelMedium.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.primary,
                               ),
@@ -199,11 +196,11 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                           ),
                         ),
                       if (authState.errorMessage != null) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Center(
                           child: Text(
                             authState.errorMessage!,
-                            style: const TextStyle(
+                            style: AppTypography.bodySmall.copyWith(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: AppColors.error,
@@ -212,12 +209,15 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                         ),
                       ],
                       const Spacer(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSpacing.xxl),
                       Center(
                         child: _resendCountdown > 0
                             ? Text(
                                 '${l10n.translate('resend_in')} ${_resendCountdown}s',
-                                style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                                style: AppTypography.bodySmall.copyWith(
+                                  fontSize: 13,
+                                  color: AppColors.textMuted,
+                                ),
                               )
                             : TextButton(
                                 onPressed: () {
@@ -226,15 +226,13 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                                 },
                                 child: Text(
                                   l10n.translate('resend_code'),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
+                                  style: AppTypography.labelLarge.copyWith(
                                     color: AppColors.primary,
                                   ),
                                 ),
                               ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       SizedBox(
                         width: double.infinity,
                         height: 52,
@@ -243,10 +241,10 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.white,
                             elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.borderLg,
                             ),
                           ),
                           child: isLoading
@@ -255,14 +253,14 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                                   width: 22,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2.5,
-                                    color: Colors.white,
+                                    color: AppColors.white,
                                   ),
                                 )
                               : Text(
                                   l10n.translate('verify_btn'),
-                                  style: const TextStyle(
+                                  style: AppTypography.labelLarge.copyWith(
                                     fontSize: 16,
-                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.white,
                                   ),
                                 ),
                         ),

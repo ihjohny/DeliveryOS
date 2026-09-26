@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/design_tokens.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../domain/trip_models.dart';
 import '../providers/trip_provider.dart';
@@ -38,7 +38,7 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
         ),
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -47,21 +47,21 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
                   color: isCancelled ? AppColors.error : AppColors.dutyOnline,
                   size: 64,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
                 Text(
                   isCancelled ? 'Order Cancelled' : 'Trip Completed Successfully!',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  style: AppTypography.h2,
                   textAlign: TextAlign.center,
                 ),
                 if (tripState.error != null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     tripState.error!,
-                    style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                    style: AppTypography.body.copyWith(color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(),
                   child: const Text('Return to Dashboard'),
@@ -78,7 +78,7 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         elevation: 0.5,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
@@ -91,32 +91,32 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
               'Trip ${trip.orderNumber}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+              style: AppTypography.h3.copyWith(fontWeight: FontWeight.w900),
             ),
             Text(
               trip.itemsSummary,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              style: AppTypography.caption.copyWith(fontSize: 11),
             ),
           ],
         ),
         actions: [
           Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            margin: const EdgeInsets.only(right: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
             decoration: BoxDecoration(
               color: AppColors.dutyOnlineBackground,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.roundedMd,
               border: Border.all(color: AppColors.dutyOnlineLight),
             ),
             child: Row(
               children: [
                 const Icon(Icons.account_balance_wallet_rounded, size: 14, color: AppColors.dutyOnline),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   '+${formatCurrency(trip.payout)}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.dutyOnline),
+                  style: AppTypography.badgeText.copyWith(fontSize: 12, color: AppColors.dutyOnline),
                 ),
               ],
             ),
@@ -129,7 +129,7 @@ class _ActiveTripScreenState extends ConsumerState<ActiveTripScreen> {
             TripTimelineHeader(currentStep: currentStep),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 children: [
                   if (currentStep == TripStep.pickup)
                     PickupStepCard(

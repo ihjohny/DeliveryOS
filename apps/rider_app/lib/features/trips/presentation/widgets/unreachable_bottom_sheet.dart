@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../../../core/utils/native_launcher.dart';
 import '../../domain/trip_models.dart';
 
@@ -48,10 +48,10 @@ class _UnreachableBottomSheetState extends State<UnreachableBottomSheet> {
       child: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
+            top: AppSpacing.xl,
+            bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xxl,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -60,17 +60,17 @@ class _UnreachableBottomSheetState extends State<UnreachableBottomSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Row(
                       children: [
-                        Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 24),
-                        SizedBox(width: 8),
+                        const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 24),
+                        const SizedBox(width: AppSpacing.sm),
                         Flexible(
                           child: Text(
                             'Customer Unreachable',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                            style: AppTypography.h2.copyWith(fontSize: 18),
                           ),
                         ),
                       ],
@@ -85,17 +85,17 @@ class _UnreachableBottomSheetState extends State<UnreachableBottomSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               const Text(
                 'Standard Operating Procedure:\n'
                 '1. Call the customer at least twice.\n'
                 '2. Ring the doorbell / knock at door.\n'
                 '3. Wait minimum 5 minutes before reporting delivery failure.',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                style: AppTypography.caption,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: AppSpacing.lg),
                 decoration: BoxDecoration(
                   color: AppColors.warningBackground,
                   borderRadius: BorderRadius.circular(14),
@@ -106,13 +106,12 @@ class _UnreachableBottomSheetState extends State<UnreachableBottomSheet> {
                   children: [
                     const Text(
                       'SOP Wait Timer:',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                      style: AppTypography.bodyBold,
                     ),
                     Text(
                       '$minutes:$seconds',
-                      style: const TextStyle(
+                      style: AppTypography.h2.copyWith(
                         fontSize: 22,
-                        fontWeight: FontWeight.w900,
                         color: AppColors.primary,
                         fontFamily: 'monospace',
                       ),
@@ -120,26 +119,27 @@ class _UnreachableBottomSheetState extends State<UnreachableBottomSheet> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               OutlinedButton.icon(
                 onPressed: () {
                   _startTimer();
                   makeDirectPhoneCall(widget.trip.customer.phone);
                 },
                 icon: const Icon(Icons.phone_rounded, size: 18),
-                label: const Text(
+                label: Text(
                   'Call Customer',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: AppTypography.buttonText.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textPrimary,
                   side: const BorderSide(color: AppColors.borderStrong),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  shape: const RoundedRectangleBorder(borderRadius: AppRadius.roundedMd),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               ElevatedButton.icon(
                 onPressed: () async {
                   _timer?.cancel();
@@ -147,17 +147,17 @@ class _UnreachableBottomSheetState extends State<UnreachableBottomSheet> {
                   await widget.onReportIssue('Customer unreachable at doorstep after 5 min wait');
                 },
                 icon: const Icon(Icons.report_problem_rounded, size: 18),
-                label: const Text(
+                label: Text(
                   'Report Unresponsive & Release Order',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.w800),
+                  style: AppTypography.buttonText.copyWith(fontWeight: FontWeight.w800),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: const RoundedRectangleBorder(borderRadius: AppRadius.roundedMd),
                   elevation: 0,
                 ),
               ),
@@ -177,9 +177,9 @@ void showUnreachableBottomSheet({
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    backgroundColor: AppColors.white,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.xxl)),
     ),
     builder: (_) => UnreachableBottomSheet(
       trip: trip,

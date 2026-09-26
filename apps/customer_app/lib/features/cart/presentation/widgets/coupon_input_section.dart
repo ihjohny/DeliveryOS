@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/utils/currency_formatter.dart';
 
 class CouponInputSection extends StatefulWidget {
@@ -40,20 +40,20 @@ class _CouponInputSectionState extends State<CouponInputSection> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.primaryContainer.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.borderMd,
           border: Border.all(color: AppColors.primary),
         ),
         child: Row(
           children: [
             const Icon(Icons.confirmation_number_rounded, color: AppColors.primary, size: 20),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Code "${widget.appliedCoupon}" Applied',
-                    style: const TextStyle(
+                    style: AppTypography.titleSmall.copyWith(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                       color: AppColors.primaryDark,
@@ -61,7 +61,10 @@ class _CouponInputSectionState extends State<CouponInputSection> {
                   ),
                   Text(
                     'Saved ${CurrencyFormatter.format(widget.couponDiscount)} on your order',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    style: AppTypography.labelSmall.copyWith(
+                      fontWeight: FontWeight.normal,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -88,23 +91,23 @@ class _CouponInputSectionState extends State<CouponInputSection> {
               child: Container(
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppColors.white,
+                  borderRadius: AppRadius.borderSm,
                   border: Border.all(color: AppColors.border),
                 ),
                 child: TextField(
                   controller: _controller,
                   textCapitalization: TextCapitalization.characters,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Enter coupon (e.g. WELCOME50)',
-                    hintStyle: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             SizedBox(
               height: 44,
               child: ElevatedButton(
@@ -117,20 +120,24 @@ class _CouponInputSectionState extends State<CouponInputSection> {
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
+                  padding: AppSpacing.edgeInsetsHorizontalLg,
                 ),
                 child: widget.isLoading
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
                       )
-                    : const Text(
+                    : Text(
                         'Apply',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                        style: AppTypography.labelMedium.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.white,
+                        ),
                       ),
               ),
             ),
@@ -140,9 +147,7 @@ class _CouponInputSectionState extends State<CouponInputSection> {
           const SizedBox(height: 6),
           Text(
             widget.message!,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+            style: AppTypography.labelSmall.copyWith(
               color: widget.message!.contains('applied') ? AppColors.secondary : AppColors.error,
             ),
           ),

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../domain/banner_model.dart';
 import '../providers/banner_provider.dart';
 
@@ -77,7 +77,7 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
             },
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(banners.length, (index) {
@@ -89,7 +89,7 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
               height: 6,
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primary : AppColors.border,
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: AppRadius.borderFull,
               ),
             );
           }),
@@ -102,19 +102,19 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
     return GestureDetector(
       onTap: () => widget.onBannerTap?.call(banner),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
+        margin: const EdgeInsets.all(AppSpacing.xs),
+        decoration: const BoxDecoration(
+          borderRadius: AppRadius.borderLg,
+          boxShadow: [
             BoxShadow(
-              color: Colors.black12,
+              color: AppColors.black12,
               blurRadius: 6,
               offset: Offset(0, 3),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.borderLg,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -124,7 +124,7 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
                 errorBuilder: (_, __, ___) => Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFFFF7A33), Color(0xFFFF5200)],
+                      colors: [AppColors.primaryLight, AppColors.primary],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -135,9 +135,9 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withValues(alpha: 0.75),
-                      Colors.black.withValues(alpha: 0.15),
-                      Colors.transparent,
+                      AppColors.black.withValues(alpha: 0.75),
+                      AppColors.black.withValues(alpha: 0.15),
+                      AppColors.transparent,
                     ],
                     begin: Alignment.bottomLeft,
                     end: Alignment.topRight,
@@ -145,7 +145,7 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: AppSpacing.edgeInsetsLg,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,11 +154,10 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
                       banner.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
+                      style: AppTypography.titleMedium.copyWith(
+                        color: AppColors.white,
                         fontWeight: FontWeight.w800,
-                        shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                        shadows: const [Shadow(color: AppColors.black54, blurRadius: 4)],
                       ),
                     ),
                     if (banner.subtitle != null && banner.subtitle!.isNotEmpty) ...[
@@ -167,9 +166,8 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
                         banner.subtitle!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 12,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.white90,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

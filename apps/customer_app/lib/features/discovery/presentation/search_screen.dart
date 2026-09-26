@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/vendor_conflict_dialog.dart';
 import '../../cart/presentation/cart_screen.dart';
@@ -37,7 +37,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         elevation: 0.5,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
@@ -51,7 +51,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           autofocus: true,
           decoration: InputDecoration(
             hintText: 'Search dishes, groceries, outlets...',
-            hintStyle: const TextStyle(fontSize: 14, color: AppColors.textMuted),
+            hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
             border: InputBorder.none,
             suffixIcon: _controller.text.isNotEmpty
                 ? IconButton(
@@ -89,18 +89,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: AppSpacing.edgeInsetsXl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Popular Searches',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               _buildSuggestionChip('Kacchi Biryani'),
               _buildSuggestionChip('Borhani'),
@@ -122,17 +122,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ref.read(searchProvider.notifier).onQueryChanged(label);
         setState(() {});
       },
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: AppRadius.borderFull,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: AppColors.white,
+          borderRadius: AppRadius.borderFull,
           border: Border.all(color: AppColors.border),
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+          style: AppTypography.labelMedium,
         ),
       ),
     );
@@ -140,14 +140,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Widget _buildResultsList(SearchResult results) {
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       children: [
         if (results.outlets.isNotEmpty) ...[
           Text(
             'Stores & Restaurants (${results.outlets.length})',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           ...results.outlets.map(
             (outlet) => SearchStoreCard(
               outlet: outlet,
@@ -163,15 +163,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
         ],
 
         if (results.items.isNotEmpty) ...[
           Text(
             'Dishes & Groceries (${results.items.length})',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           ...results.items.map(
             (item) => SearchItemCard(
               item: item,
@@ -269,7 +269,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         backgroundColor: AppColors.secondary,
         action: SnackBarAction(
           label: 'VIEW CART',
-          textColor: Colors.white,
+          textColor: AppColors.white,
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const CartScreen()),

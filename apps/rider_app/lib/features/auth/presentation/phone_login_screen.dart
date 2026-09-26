@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/design_tokens.dart';
 import '../domain/auth_models.dart';
 import '../providers/auth_provider.dart';
 import 'otp_verification_screen.dart';
@@ -99,18 +99,18 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.xl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
                   decoration: BoxDecoration(
                     color: AppColors.cardDark,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppSpacing.xl),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: AppColors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -119,32 +119,29 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                   child: Column(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: const BoxDecoration(
                           color: AppColors.dutyOnline,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: AppRadius.roundedLg,
                         ),
                         child: const Icon(
                           Icons.delivery_dining_rounded,
                           size: 40,
-                          color: Colors.white,
+                          color: AppColors.white,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      const Text(
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
                         'DeliveryOS Rider Fleet',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                        style: AppTypography.h2.copyWith(
+                          color: AppColors.white,
                           letterSpacing: 0.2,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
                         'Partner Delivery Portal',
-                        style: TextStyle(
-                          fontSize: 13,
+                        style: AppTypography.caption.copyWith(
                           fontWeight: FontWeight.w600,
                           color: AppColors.textMuted,
                         ),
@@ -152,10 +149,10 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
 
                 Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: AppColors.card,
                     borderRadius: BorderRadius.circular(14),
@@ -167,9 +164,9 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                         child: GestureDetector(
                           onTap: () => setState(() => _isRegistering = false),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                             decoration: BoxDecoration(
-                              color: !_isRegistering ? AppColors.primary : Colors.transparent,
+                              color: !_isRegistering ? AppColors.primary : AppColors.transparent,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -177,10 +174,9 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                               textAlign: TextAlign.center,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 14,
+                              style: AppTypography.bodyBold.copyWith(
                                 fontWeight: FontWeight.w800,
-                                color: !_isRegistering ? Colors.white : AppColors.textSecondary,
+                                color: !_isRegistering ? AppColors.white : AppColors.textSecondary,
                               ),
                             ),
                           ),
@@ -190,9 +186,9 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                         child: GestureDetector(
                           onTap: () => setState(() => _isRegistering = true),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                             decoration: BoxDecoration(
-                              color: _isRegistering ? AppColors.primary : Colors.transparent,
+                              color: _isRegistering ? AppColors.primary : AppColors.transparent,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -200,10 +196,9 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                               textAlign: TextAlign.center,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 14,
+                              style: AppTypography.bodyBold.copyWith(
                                 fontWeight: FontWeight.w800,
-                                color: _isRegistering ? Colors.white : AppColors.textSecondary,
+                                color: _isRegistering ? AppColors.white : AppColors.textSecondary,
                               ),
                             ),
                           ),
@@ -212,10 +207,10 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xl),
 
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
                   decoration: BoxDecoration(
                     color: AppColors.card,
                     borderRadius: BorderRadius.circular(18),
@@ -225,95 +220,70 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (_isRegistering) ...[
-                        const Text(
+                        Text(
                           'FULL NAME',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: AppTypography.badgeText.copyWith(color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 6),
                         TextField(
                           controller: _nameController,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                          decoration: InputDecoration(
+                          style: AppTypography.h3,
+                          decoration: const InputDecoration(
                             hintText: 'e.g. Tanvir Hossain',
-                            prefixIcon: const Icon(Icons.person_rounded, color: AppColors.primary),
+                            prefixIcon: Icon(Icons.person_rounded, color: AppColors.primary),
                             filled: true,
                             fillColor: AppColors.background,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: AppColors.border),
+                              borderRadius: AppRadius.roundedMd,
+                              borderSide: BorderSide(color: AppColors.border),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
                           'VEHICLE TYPE',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: AppTypography.badgeText.copyWith(color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 6),
                         VehicleTypeSelector(
                           selectedVehicle: _selectedVehicle,
                           onVehicleSelected: (type) => setState(() => _selectedVehicle = type),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.lg),
                       ],
 
-                      const Text(
+                      Text(
                         'MOBILE NUMBER',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                          color: AppColors.textSecondary,
-                        ),
+                        style: AppTypography.badgeText.copyWith(color: AppColors.textSecondary),
                       ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
-                        style: const TextStyle(
+                        style: AppTypography.h2.copyWith(
                           fontSize: 18,
-                          fontWeight: FontWeight.w900,
                           letterSpacing: 1.0,
-                          color: AppColors.textPrimary,
                         ),
                         decoration: InputDecoration(
                           prefixIcon: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                            child: const Text(
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
+                            child: Text(
                               '🇧🇩 +880',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
-                              ),
+                              style: AppTypography.bodyBold.copyWith(fontWeight: FontWeight.w800),
                             ),
                           ),
                           hintText: '1700112233',
                           filled: true,
                           fillColor: AppColors.background,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.border),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
+                          border: const OutlineInputBorder(
+                            borderRadius: AppRadius.roundedMd,
+                            borderSide: BorderSide(color: AppColors.border),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.xl),
 
                       SizedBox(
                         width: double.infinity,
@@ -322,7 +292,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                           onPressed: authState.isLoading ? null : _handleProceed,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             elevation: 0,
                           ),
@@ -330,7 +300,7 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                               ? const SizedBox(
                                   height: 22,
                                   width: 22,
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                                  child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2.5),
                                 )
                               : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -338,12 +308,12 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                                     Flexible(
                                       child: Text(
                                         _isRegistering ? 'Submit Application' : 'Send Verification OTP',
-                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                                        style: AppTypography.buttonText.copyWith(fontSize: 16),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: AppSpacing.sm),
                                     const Icon(Icons.arrow_forward_rounded, size: 20),
                                   ],
                                 ),
@@ -353,10 +323,10 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                   ),
                 ),
                 if (kDebugMode) ...[
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.xl),
 
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: AppColors.dutyOnlineBackground,
                       borderRadius: BorderRadius.circular(14),
@@ -364,13 +334,13 @@ class _PhoneLoginScreenState extends ConsumerState<PhoneLoginScreen> {
                     ),
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           '⚡ PILOT TEST ACCOUNTS (DEBUG ONLY)',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
+                          style: AppTypography.badgeText.copyWith(color: AppColors.dutyOnline),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Wrap(
-                          spacing: 8,
+                          spacing: AppSpacing.sm,
                           children: [
                             ActionChip(
                               avatar: const Icon(Icons.check_circle_rounded, color: AppColors.dutyOnline, size: 16),

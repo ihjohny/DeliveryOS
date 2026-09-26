@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 import '../../domain/cart_item_model.dart';
 
 class PaymentMethodSelector extends StatelessWidget {
@@ -22,7 +22,7 @@ class PaymentMethodSelector extends StatelessWidget {
           subtitle: 'Pay with cash upon receipt',
           icon: Icons.money_rounded,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         _buildOption(
           method: PaymentMethod.onlineCard,
           title: 'Online Card / Mobile Wallet',
@@ -42,12 +42,12 @@ class PaymentMethodSelector extends StatelessWidget {
     final isSelected = selectedMethod == method;
     return InkWell(
       onTap: () => onMethodChanged(method),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.borderMd,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryContainer.withValues(alpha: 0.3) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? AppColors.primaryContainer.withValues(alpha: 0.3) : AppColors.white,
+          borderRadius: AppRadius.borderMd,
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.border,
             width: isSelected ? 1.5 : 1,
@@ -56,23 +56,25 @@ class PaymentMethodSelector extends StatelessWidget {
         child: Row(
           children: [
             Icon(icon, color: isSelected ? AppColors.primary : AppColors.textSecondary, size: 22),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: AppTypography.labelMedium.copyWith(
                       fontSize: 13,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    style: AppTypography.labelSmall.copyWith(
+                      fontWeight: FontWeight.normal,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),

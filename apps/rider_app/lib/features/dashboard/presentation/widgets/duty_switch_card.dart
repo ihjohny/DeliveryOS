@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../domain/duty_models.dart';
 
 class DutySwitchCard extends StatelessWidget {
@@ -23,13 +23,13 @@ class DutySwitchCard extends StatelessWidget {
         : 'Duty toggle is off • You will not receive delivery alerts';
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: (isOnline ? AppColors.dutyOnline : Colors.black).withValues(alpha: 0.25),
+            color: (isOnline ? AppColors.dutyOnline : AppColors.black).withValues(alpha: 0.25),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -48,7 +48,7 @@ class DutySwitchCard extends StatelessWidget {
                       width: 14,
                       height: 14,
                       decoration: BoxDecoration(
-                        color: isOnline ? Colors.white : Colors.white54,
+                        color: isOnline ? AppColors.white : AppColors.white54,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -58,10 +58,9 @@ class DutySwitchCard extends StatelessWidget {
                         statusTitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: AppTypography.h2.copyWith(
                           fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: AppColors.white,
                           letterSpacing: 0.8,
                         ),
                       ),
@@ -69,32 +68,32 @@ class DutySwitchCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: AppColors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   isOnline ? 'DUTY ACTIVE' : 'DUTY OFF',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
+                  style: AppTypography.badgeText.copyWith(color: AppColors.white),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             statusSubtitle,
-            style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w500),
+            style: AppTypography.caption.copyWith(fontSize: 13, color: AppColors.white70),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           SizedBox(
             height: 56,
             child: ElevatedButton.icon(
               onPressed: dutyState.isToggling ? null : onToggleDuty,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: AppColors.white,
                 foregroundColor: isOnline ? AppColors.dutyOnline : AppColors.textPrimary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 elevation: 0,
@@ -114,7 +113,7 @@ class DutySwitchCard extends StatelessWidget {
                 isOnline ? 'GO OFFLINE (END SHIFT)' : 'GO ONLINE (START SHIFT)',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTypography.buttonText.copyWith(
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.4,

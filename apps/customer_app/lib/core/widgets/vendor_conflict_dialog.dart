@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import '../constants/constants.dart';
 
-/// Reusable dialog shown when adding an item from a different store
-/// while the cart already has items from another store.
 class VendorConflictDialog extends StatelessWidget {
   final String newVendorName;
   final VoidCallback onConfirm;
@@ -18,14 +16,14 @@ class VendorConflictDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text(
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+      title: Text(
         'Replace Cart Items?',
-        style: TextStyle(fontWeight: FontWeight.w800),
+        style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800),
       ),
       content: Text(
         'Your cart already contains items from a different store. Clear cart and add from $newVendorName?',
-        style: const TextStyle(fontSize: 14),
+        style: AppTypography.bodyMedium,
       ),
       actions: [
         TextButton(
@@ -33,7 +31,10 @@ class VendorConflictDialog extends StatelessWidget {
             Navigator.of(context).pop(false);
             onCancel?.call();
           },
-          child: const Text('Cancel'),
+          child: Text(
+            'Cancel',
+            style: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary),
+          ),
         ),
         ElevatedButton(
           onPressed: () {
@@ -42,16 +43,18 @@ class VendorConflictDialog extends StatelessWidget {
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.white,
           ),
-          child: const Text('Replace & Add'),
+          child: Text(
+            'Replace & Add',
+            style: AppTypography.labelLarge.copyWith(color: AppColors.white),
+          ),
         ),
       ],
     );
   }
 }
 
-/// Helper function to display the [VendorConflictDialog] cleanly.
 Future<bool?> showVendorConflictDialog({
   required BuildContext context,
   required String newVendorName,

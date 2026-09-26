@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../domain/auth_models.dart';
 
 class VehicleTypeSelector extends StatelessWidget {
@@ -21,13 +21,13 @@ class VehicleTypeSelector extends StatelessWidget {
           icon: Icons.two_wheeler_rounded,
           label: 'Motorcycle',
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         _buildOption(
           type: VehicleType.bicycle,
           icon: Icons.pedal_bike_rounded,
           label: 'Bicycle',
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         _buildOption(
           type: VehicleType.car,
           icon: Icons.directions_car_rounded,
@@ -47,10 +47,10 @@ class VehicleTypeSelector extends StatelessWidget {
       child: GestureDetector(
         onTap: () => onVehicleSelected(type),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: AppSpacing.xs),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primaryLight.withValues(alpha: 0.1) : AppColors.background,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.roundedMd,
             border: Border.all(
               color: isSelected ? AppColors.primary : AppColors.border,
               width: isSelected ? 1.8 : 1.0,
@@ -59,12 +59,12 @@ class VehicleTypeSelector extends StatelessWidget {
           child: Column(
             children: [
               Icon(icon, color: isSelected ? AppColors.primary : AppColors.textSecondary, size: 22),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: AppTypography.caption.copyWith(
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   color: isSelected ? AppColors.primary : AppColors.textSecondary,

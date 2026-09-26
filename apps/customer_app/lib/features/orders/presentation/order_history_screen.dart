@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../cart/presentation/cart_screen.dart';
@@ -20,15 +20,15 @@ class OrderHistoryScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         elevation: 0.5,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'My Orders',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800, color: AppColors.textPrimary),
         ),
         actions: [
           IconButton(
@@ -42,7 +42,7 @@ class OrderHistoryScreen extends ConsumerWidget {
           : orders.isEmpty
               ? _buildEmptyState(context)
               : ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   itemCount: orders.length,
                   itemBuilder: (context, index) {
                     final order = orders[index];
@@ -66,12 +66,12 @@ class OrderHistoryScreen extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.white,
+        borderRadius: AppRadius.borderLg,
         border: Border.all(color: AppColors.border),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+        boxShadow: const [BoxShadow(color: AppColors.black12, blurRadius: 4, offset: Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,17 +84,17 @@ class OrderHistoryScreen extends ConsumerWidget {
                   order.orderNumber,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                  style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               _buildStatusBadge(order.status),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             formattedDate,
-            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+            style: AppTypography.caption.copyWith(color: AppColors.textMuted),
           ),
           const Divider(height: 20, color: AppColors.border),
 
@@ -107,32 +107,32 @@ class OrderHistoryScreen extends ConsumerWidget {
                   order.vendorName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           ...order.items.map((item) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
               child: Row(
                 children: [
                   Text(
                     '${item.quantity}x ',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                    style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700, color: AppColors.primary),
                   ),
                   Expanded(
                     child: Text(
                       item.name + (item.variantName != null ? ' (${item.variantName})' : ''),
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Text(
                     CurrencyFormatter.format(item.totalPrice),
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -144,21 +144,21 @@ class OrderHistoryScreen extends ConsumerWidget {
           Wrap(
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Total Paid', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                  Text('Total Paid', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
                   Text(
                     CurrencyFormatter.format(order.totalAmount),
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+                    style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w900, color: AppColors.textPrimary),
                   ),
                 ],
               ),
               Wrap(
-                spacing: 8,
+                spacing: AppSpacing.sm,
                 runSpacing: 6,
                 children: [
                   if (order.isActive)
@@ -174,13 +174,13 @@ class OrderHistoryScreen extends ConsumerWidget {
                         );
                       },
                       icon: const Icon(Icons.radar_rounded, size: 16),
-                      label: const Text('Track Order', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                      label: Text('Track Order', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                        shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
                       ),
                     ),
 
@@ -231,12 +231,12 @@ class OrderHistoryScreen extends ConsumerWidget {
                       );
                     },
                     icon: const Icon(Icons.replay_rounded, size: 16),
-                    label: const Text('Re-order', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    label: Text('Re-order', style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
                     ),
                   ),
                 ],
@@ -262,18 +262,18 @@ class OrderHistoryScreen extends ConsumerWidget {
         break;
       case 'PREPARING':
       case 'ACCEPTED':
-        bg = const Color(0xFFFEF3C7);
-        fg = const Color(0xFFB45309);
+        bg = AppColors.warningLight;
+        fg = AppColors.warningTextDark;
         label = 'PREPARING';
         break;
       case 'DELIVERED':
-        bg = const Color(0xFFECFDF5);
-        fg = const Color(0xFF059669);
+        bg = AppColors.successContainer;
+        fg = AppColors.successDark;
         label = 'DELIVERED';
         break;
       case 'CANCELLED':
-        bg = const Color(0xFFFEF2F2);
-        fg = const Color(0xFFDC2626);
+        bg = AppColors.errorContainer;
+        fg = AppColors.errorDark;
         label = 'CANCELLED';
         break;
       default:
@@ -282,15 +282,15 @@ class OrderHistoryScreen extends ConsumerWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: AppRadius.borderXs),
       child: MediaQuery.withClampedTextScaling(
         maxScaleFactor: 1.15,
         child: Text(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: fg),
+          style: AppTypography.caption.copyWith(fontSize: 10, fontWeight: FontWeight.w800, color: fg),
         ),
       ),
     );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../location/providers/location_provider.dart';
 import '../domain/address_model.dart';
 import '../providers/address_provider.dart';
@@ -34,7 +34,6 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
     final deliveryNoteController = TextEditingController(text: existingAddress?.deliveryNote ?? '');
     bool isDefault = existingAddress?.isDefault ?? false;
 
-    // Default coords from current device location if new
     final currentLoc = ref.read(locationProvider).location;
     final lat = existingAddress?.latitude ?? currentLoc.latitude;
     final lng = existingAddress?.longitude ?? currentLoc.longitude;
@@ -46,9 +45,9 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: AppRadius.radiusXl),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) => Container(
@@ -56,10 +55,10 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
             maxHeight: MediaQuery.of(ctx).size.height * 0.85,
           ),
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
+            top: AppSpacing.xl,
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -72,7 +71,7 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
                     Expanded(
                       child: Text(
                         existingAddress != null ? 'Edit Address' : 'Add New Address',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                        style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -82,22 +81,21 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                const Text('Address Label', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.md),
+                Text('Address Label', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.sm),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: labelOptions.map((l) {
                       final isSelected = selectedLabel == l;
                       return Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.only(right: AppSpacing.sm),
                         child: ChoiceChip(
                           label: Text(l),
                           selected: isSelected,
                           selectedColor: AppColors.primary.withValues(alpha: 0.15),
-                          labelStyle: TextStyle(
-                            fontSize: 12,
+                          labelStyle: AppTypography.caption.copyWith(
                             fontWeight: FontWeight.w700,
                             color: isSelected ? AppColors.primary : AppColors.textSecondary,
                           ),
@@ -109,55 +107,55 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
                     }).toList(),
                   ),
                 ),
-                const SizedBox(height: 12),
-                const Text('Street Address & Area', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.md),
+                Text('Street Address & Area', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: addressLineController,
                   decoration: InputDecoration(
                     hintText: 'e.g. House 42, Road 11, Banani, Dhaka',
-                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    hintStyle: AppTypography.caption.copyWith(color: AppColors.textMuted),
                     filled: true,
                     fillColor: AppColors.background,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: const BorderSide(color: AppColors.border)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
                   ),
                 ),
-                const SizedBox(height: 12),
-                const Text('Apartment / Building / Floor (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.md),
+                Text('Apartment / Building / Floor (Optional)', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: buildingFloorController,
                   decoration: InputDecoration(
                     hintText: 'e.g. Apt 4B, 4th Floor',
-                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    hintStyle: AppTypography.caption.copyWith(color: AppColors.textMuted),
                     filled: true,
                     fillColor: AppColors.background,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: const BorderSide(color: AppColors.border)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
                   ),
                 ),
-                const SizedBox(height: 12),
-                const Text('Delivery Instructions (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.md),
+                Text('Delivery Instructions (Optional)', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: deliveryNoteController,
                   decoration: InputDecoration(
                     hintText: 'e.g. Call when outside, leave with security...',
-                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    hintStyle: AppTypography.caption.copyWith(color: AppColors.textMuted),
                     filled: true,
                     fillColor: AppColors.background,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: AppRadius.borderSm, borderSide: const BorderSide(color: AppColors.border)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
                   ),
                 ),
                 const SizedBox(height: 10),
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Set as default delivery address', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  title: Text('Set as default delivery address', style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
                   value: isDefault,
                   activeColor: AppColors.primary,
                   onChanged: (val) {
@@ -196,11 +194,11 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
                     ),
-                    child: Text(existingAddress != null ? 'Update Address' : 'Save Address', style: const TextStyle(fontWeight: FontWeight.w800)),
+                    child: Text(existingAddress != null ? 'Update Address' : 'Save Address', style: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800)),
                   ),
                 ),
               ],
@@ -220,10 +218,10 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
       appBar: AppBar(
         title: Text(
           widget.isSelectionMode ? 'Select Delivery Address' : 'Saved Addresses',
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800),
         ),
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         foregroundColor: AppColors.textPrimary,
         actions: [
           IconButton(
@@ -238,38 +236,38 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
           : addressState.addresses.isEmpty
               ? Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(AppSpacing.xxxl),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(AppSpacing.xl),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.location_off_rounded, size: 48, color: AppColors.primary),
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
                           'No Saved Addresses',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
                           'Add your delivery locations for fast single-tap checkout.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: AppSpacing.xl),
                         ElevatedButton.icon(
                           onPressed: () => _showAddEditAddressSheet(),
                           icon: const Icon(Icons.add),
                           label: const Text('Add First Address'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            foregroundColor: AppColors.white,
+                            shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
                           ),
                         ),
                       ],
@@ -277,9 +275,9 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
                   ),
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   itemCount: addressState.addresses.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
                   itemBuilder: (context, index) {
                     final address = addressState.addresses[index];
                     final isSelected = addressState.selectedAddress?.id == address.id;
@@ -291,19 +289,19 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
                           Navigator.pop(context, address);
                         }
                       },
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: AppRadius.borderLg,
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
+                          color: AppColors.white,
+                          borderRadius: AppRadius.borderLg,
                           border: Border.all(
                             color: isSelected ? AppColors.primary : AppColors.border,
                             width: isSelected ? 1.8 : 1.0,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
+                              color: AppColors.black.withValues(alpha: 0.03),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -323,26 +321,26 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
                                   size: 18,
                                   color: AppColors.primary,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: AppSpacing.sm),
                                 Flexible(
                                   child: Text(
                                     address.label,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.textPrimary),
+                                    style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                                   ),
                                 ),
                                 if (address.isDefault) ...[
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: AppSpacing.sm),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
                                     decoration: BoxDecoration(
                                       color: AppColors.secondary.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: AppRadius.borderSm,
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'DEFAULT',
-                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.secondary),
+                                      style: AppTypography.caption.copyWith(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.secondary),
                                     ),
                                   ),
                                 ],
@@ -362,7 +360,7 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
                                     if (!address.isDefault)
                                       const PopupMenuItem(value: 'default', child: Text('Set as Default')),
                                     const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                                    const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
+                                    PopupMenuItem(value: 'delete', child: Text('Delete', style: AppTypography.bodyMedium.copyWith(color: AppColors.error))),
                                   ],
                                 ),
                               ],
@@ -370,13 +368,13 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
                             const SizedBox(height: 6),
                             Text(
                               address.addressLine,
-                              style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+                              style: AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
                             ),
                             if (address.buildingFloor != null && address.buildingFloor!.isNotEmpty) ...[
                               const SizedBox(height: 2),
                               Text(
                                 address.buildingFloor!,
-                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                               ),
                             ],
                             if (address.deliveryNote != null && address.deliveryNote!.isNotEmpty) ...[
@@ -388,7 +386,7 @@ class _AddressBookScreenState extends ConsumerState<AddressBookScreen> {
                                   Expanded(
                                     child: Text(
                                       address.deliveryNote!,
-                                      style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppColors.textMuted),
+                                      style: AppTypography.caption.copyWith(fontStyle: FontStyle.italic, color: AppColors.textMuted),
                                     ),
                                   ),
                                 ],

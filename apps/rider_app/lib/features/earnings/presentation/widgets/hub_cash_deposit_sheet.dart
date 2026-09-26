@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../dashboard/domain/duty_models.dart';
 
@@ -17,7 +17,7 @@ class HubCashDepositSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.xxxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -32,29 +32,29 @@ class HubCashDepositSheet extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            const Row(
+            const SizedBox(height: AppSpacing.lg),
+            Row(
               children: [
-                Icon(Icons.account_balance_rounded, color: AppColors.primary, size: 24),
-                SizedBox(width: 10),
+                const Icon(Icons.account_balance_rounded, color: AppColors.primary, size: 24),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Hub Cash Settlement',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+                    style: AppTypography.h2.copyWith(fontSize: 18),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            const Text(
+            const SizedBox(height: AppSpacing.sm),
+            Text(
               'Submit your collected physical cash to the station cashier at your local hub counter to reset your COD safety limit.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.3),
+              style: AppTypography.caption.copyWith(fontSize: 13, height: 1.3),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(14),
@@ -63,23 +63,23 @@ class HubCashDepositSheet extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Outstanding Cash to Submit:',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      style: AppTypography.bodyBold.copyWith(fontSize: 13),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Text(
                     formatCurrency(dutyState.codCashInHand),
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
+                    style: AppTypography.h2.copyWith(color: AppColors.primary),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xxl),
             SizedBox(
               height: 52,
               child: ElevatedButton.icon(
@@ -92,11 +92,11 @@ class HubCashDepositSheet extends StatelessWidget {
                   'CONFIRM FULL DEPOSIT (${formatCurrency(dutyState.codCashInHand)})',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                  style: AppTypography.buttonText.copyWith(fontSize: 14, fontWeight: FontWeight.w900),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.dutyOnline,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
               ),
@@ -105,7 +105,7 @@ class HubCashDepositSheet extends StatelessWidget {
             Center(
               child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w700)),
+                child: Text('Cancel', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -125,7 +125,7 @@ void showHubCashDepositSheet({
     isScrollControlled: true,
     backgroundColor: AppColors.card,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.xxl)),
     ),
     builder: (_) => HubCashDepositSheet(
       dutyState: dutyState,

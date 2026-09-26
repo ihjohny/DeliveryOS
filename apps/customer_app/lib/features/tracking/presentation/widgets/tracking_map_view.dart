@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 import '../../domain/tracking_models.dart';
 
 class TrackingMapView extends StatefulWidget {
@@ -38,7 +38,6 @@ class _TrackingMapViewState extends State<TrackingMapView> {
     final customer = widget.state.customer;
     final rider = widget.state.rider;
 
-    // 1. Store Marker
     markers.add(
       Marker(
         markerId: const MarkerId('store_marker'),
@@ -51,7 +50,6 @@ class _TrackingMapViewState extends State<TrackingMapView> {
       ),
     );
 
-    // 2. Customer Destination Marker
     markers.add(
       Marker(
         markerId: const MarkerId('customer_marker'),
@@ -64,7 +62,6 @@ class _TrackingMapViewState extends State<TrackingMapView> {
       ),
     );
 
-    // 3. Live Courier Marker (if assigned)
     if (rider != null) {
       markers.add(
         Marker(
@@ -160,19 +157,19 @@ class _TrackingMapViewState extends State<TrackingMapView> {
         ),
 
         Positioned(
-          left: 16,
-          top: 16,
+          left: AppSpacing.lg,
+          top: AppSpacing.lg,
           right: 64,
           child: Align(
             alignment: Alignment.centerLeft,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(20),
+                color: AppColors.white.withValues(alpha: 0.95),
+                borderRadius: AppRadius.borderXl,
                 boxShadow: const [
                   BoxShadow(
-                    color: Colors.black12,
+                    color: AppColors.black12,
                     blurRadius: 8,
                     offset: Offset(0, 2),
                   ),
@@ -186,12 +183,12 @@ class _TrackingMapViewState extends State<TrackingMapView> {
                     height: 8,
                     decoration: BoxDecoration(
                       color: widget.state.stage == OrderStage.dispatched
-                          ? const Color(0xFF10B981)
+                          ? AppColors.secondary
                           : AppColors.primary,
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Flexible(
                     child: Text(
                       widget.state.stage == OrderStage.dispatched
@@ -199,10 +196,9 @@ class _TrackingMapViewState extends State<TrackingMapView> {
                           : widget.state.stage.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: AppTypography.caption.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -213,10 +209,10 @@ class _TrackingMapViewState extends State<TrackingMapView> {
         ),
 
         Positioned(
-          right: 16,
-          bottom: 16,
+          right: AppSpacing.lg,
+          bottom: AppSpacing.lg,
           child: FloatingActionButton.small(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.white,
             foregroundColor: AppColors.primary,
             elevation: 3,
             onPressed: () {

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../domain/search_result_model.dart';
 
-/// Modular search dish/item card displaying item name, stock badge,
-/// vendor name, description, formatted price with unit, and an ADD / UNAVAILABLE button.
 class SearchItemCard extends StatelessWidget {
   final SearchItem item;
   final VoidCallback onAdd;
@@ -18,11 +16,11 @@ class SearchItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: AppSpacing.edgeInsetsMd,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.white,
+        borderRadius: AppRadius.borderMd,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -37,9 +35,7 @@ class SearchItemCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         item.name,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.titleSmall.copyWith(
                           color: item.isInStock ? AppColors.textPrimary : AppColors.textMuted,
                         ),
                       ),
@@ -47,14 +43,13 @@ class SearchItemCard extends StatelessWidget {
                     if (!item.isInStock)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.errorContainer,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: AppRadius.borderXs,
                         ),
-                        child: const Text(
+                        child: Text(
                           'Sold Out',
-                          style: TextStyle(
-                            fontSize: 10,
+                          style: AppTypography.caption.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppColors.error,
                           ),
@@ -67,8 +62,7 @@ class SearchItemCard extends StatelessWidget {
                   'from ${item.vendorName}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: AppTypography.labelSmall.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,
                   ),
@@ -79,13 +73,13 @@ class SearchItemCard extends StatelessWidget {
                     item.description!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: AppTypography.labelSmall.copyWith(
+                      fontWeight: FontWeight.normal,
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ],
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -94,36 +88,33 @@ class SearchItemCard extends StatelessWidget {
                         CurrencyFormatter.formatWithUnit(item.basePrice, item.unitType),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: AppTypography.titleSmall.copyWith(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: item.isInStock ? AppColors.textPrimary : AppColors.textMuted,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     ElevatedButton(
                       onPressed: item.isInStock ? onAdd : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryContainer,
                         foregroundColor: AppColors.primary,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: const BorderSide(color: AppColors.primary),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.borderSm,
+                          side: BorderSide(color: AppColors.primary),
                         ),
                         disabledBackgroundColor: AppColors.background,
                         disabledForegroundColor: AppColors.textMuted,
                       ),
                       child: Text(
                         item.isInStock ? 'ADD +' : 'UNAVAILABLE',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),
                   ],

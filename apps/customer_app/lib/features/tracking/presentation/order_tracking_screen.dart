@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/constants.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/phone_call_launcher.dart';
 import '../domain/tracking_models.dart';
@@ -28,7 +28,7 @@ class OrderTrackingScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         elevation: 0.5,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
@@ -37,13 +37,13 @@ class OrderTrackingScreen extends ConsumerWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Live Order Tracking',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800, color: AppColors.textPrimary),
             ),
             Text(
               orderNumber ?? trackingState.orderNumber,
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+              style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -71,10 +71,10 @@ class OrderTrackingScreen extends ConsumerWidget {
           Expanded(
             flex: 5,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
               decoration: const BoxDecoration(
                 color: AppColors.background,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: BorderRadius.vertical(top: AppRadius.radiusXl),
               ),
               child: ListView(
                 padding: EdgeInsets.zero,
@@ -108,17 +108,17 @@ class OrderTrackingScreen extends ConsumerWidget {
                   ],
 
                   TrackingEtaBanner(state: trackingState),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
 
                   if (trackingState.isCancelled &&
                       (trackingState.paymentStatus == 'REFUNDED' ||
                           trackingState.paymentMethod == 'ONLINE')) ...[
                     _buildRefundBanner(trackingState),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                   ],
 
                   OrderStepperWidget(currentStage: trackingState.stage),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
 
                   if (trackingState.rider != null && !trackingState.isCancelled) ...[
                     TrackingContactCard(
@@ -131,10 +131,10 @@ class OrderTrackingScreen extends ConsumerWidget {
                       titleTrailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 14),
+                          const Icon(Icons.star_rounded, color: AppColors.star, size: 14),
                           Text(
                             trackingState.rider!.rating.toString(),
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                            style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
@@ -150,15 +150,15 @@ class OrderTrackingScreen extends ConsumerWidget {
                         }
                       },
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: AppSpacing.sm),
                   ],
 
                   TrackingContactCard(
                     leading: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppRadius.borderSm,
                       ),
                       child: const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 22),
                     ),
@@ -175,11 +175,11 @@ class OrderTrackingScreen extends ConsumerWidget {
                       }
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
 
                   if (trackingState.canCancel) ...[
                     _buildCancelOrderButton(context, ref, trackingState),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
                 ],
               ),
@@ -189,46 +189,45 @@ class OrderTrackingScreen extends ConsumerWidget {
       ),
     );
   }
+
   Widget _buildRefundBanner(OrderTrackingState state) {
     final isRefunded = state.paymentStatus == 'REFUNDED';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
+        color: AppColors.infoLight,
+        borderRadius: AppRadius.borderLg,
+        border: Border.all(color: AppColors.infoBorder),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: const BoxDecoration(
-              color: Color(0xFF2563EB),
+              color: AppColors.infoBlue,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.currency_exchange_rounded, color: Colors.white, size: 20),
+            child: const Icon(Icons.currency_exchange_rounded, color: AppColors.white, size: 20),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   isRefunded ? 'Refund Processed' : 'Refund Pending',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: AppTypography.titleSmall.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E40AF),
+                    color: AppColors.infoDark,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   isRefunded
                       ? '${CurrencyFormatter.format(state.totalAmount)} has been refunded to your original payment method.'
                       : 'Your refund will be returned to your original payment method shortly.',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF1E3A8A),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.infoText,
                   ),
                 ),
               ],
@@ -248,20 +247,19 @@ class OrderTrackingScreen extends ConsumerWidget {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () => _showCancelDialog(context, ref, state),
-        icon: const Icon(Icons.cancel_outlined, size: 16, color: Color(0xFFDC2626)),
-        label: const Text(
+        icon: const Icon(Icons.cancel_outlined, size: 16, color: AppColors.error),
+        label: Text(
           'Cancel Order',
-          style: TextStyle(
-            fontSize: 13,
+          style: AppTypography.labelMedium.copyWith(
             fontWeight: FontWeight.w700,
-            color: Color(0xFFDC2626),
+            color: AppColors.error,
           ),
         ),
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFFCA5A5)),
-          backgroundColor: const Color(0xFFFEF2F2),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          side: const BorderSide(color: AppColors.errorBorderLight),
+          backgroundColor: AppColors.errorLight,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
         ),
       ),
     );
@@ -286,14 +284,14 @@ class OrderTrackingScreen extends ConsumerWidget {
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+          title: Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626)),
-              SizedBox(width: 8),
+              const Icon(Icons.warning_amber_rounded, color: AppColors.error),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 'Cancel Order?',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w800),
               ),
             ],
           ),
@@ -302,29 +300,29 @@ class OrderTrackingScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Are you sure you want to cancel this order? You can cancel for free before the kitchen starts preparing your meal.',
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
                 ),
                 if (state.paymentStatus == 'PAID' || state.paymentMethod == 'ONLINE') ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AppSpacing.sm),
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                      color: AppColors.infoLight,
+                      borderRadius: AppRadius.borderSm,
+                      border: Border.all(color: AppColors.infoBorder),
                     ),
                     child: Text(
                       'Your payment of ${CurrencyFormatter.format(state.totalAmount)} will be automatically refunded.',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E40AF)),
+                      style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600, color: AppColors.infoDark),
                     ),
                   ),
                 ],
-                const SizedBox(height: 14),
-                const Text(
+                const SizedBox(height: AppSpacing.md),
+                Text(
                   'Reason for cancellation',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 6),
                 Wrap(
@@ -336,8 +334,7 @@ class OrderTrackingScreen extends ConsumerWidget {
                       label: Text(preset),
                       selected: isSelected,
                       selectedColor: AppColors.primaryContainer,
-                      labelStyle: TextStyle(
-                        fontSize: 11,
+                      labelStyle: AppTypography.caption.copyWith(
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                         color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
                       ),
@@ -357,13 +354,13 @@ class OrderTrackingScreen extends ConsumerWidget {
                   }).toList(),
                 ),
                 if (selectedPreset == 'Other') ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   TextField(
                     controller: reasonController,
                     decoration: const InputDecoration(
                       hintText: 'Please specify reason...',
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
                     ),
                     maxLines: 2,
                   ),
@@ -374,7 +371,7 @@ class OrderTrackingScreen extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Keep Order', style: TextStyle(color: AppColors.textSecondary)),
+              child: Text('Keep Order', style: AppTypography.labelMedium.copyWith(color: AppColors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -392,7 +389,7 @@ class OrderTrackingScreen extends ConsumerWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Order cancelled successfully.'),
-                        backgroundColor: Color(0xFF059669),
+                        backgroundColor: AppColors.successGreen,
                       ),
                     );
                   } else {
@@ -400,15 +397,15 @@ class OrderTrackingScreen extends ConsumerWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(err),
-                        backgroundColor: const Color(0xFFDC2626),
+                        backgroundColor: AppColors.error,
                       ),
                     );
                   }
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.error,
+                foregroundColor: AppColors.white,
               ),
               child: const Text('Confirm Cancel'),
             ),

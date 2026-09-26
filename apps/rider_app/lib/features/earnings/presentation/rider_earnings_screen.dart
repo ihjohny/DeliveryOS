@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/design_tokens.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../dashboard/providers/duty_provider.dart';
 import 'widgets/cod_cash_limit_card.dart';
@@ -49,9 +49,9 @@ class _RiderEarningsScreenState extends ConsumerState<RiderEarningsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Earnings & COD Wallet',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.textPrimary),
+          style: AppTypography.h2.copyWith(fontSize: 18),
         ),
         backgroundColor: AppColors.card,
         elevation: 0,
@@ -62,24 +62,24 @@ class _RiderEarningsScreenState extends ConsumerState<RiderEarningsScreen> {
         child: RefreshIndicator(
           onRefresh: () => ref.read(riderDutyProvider.notifier).fetchDailyTrips(),
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
             children: [
               EarningsTimeframeSelector(
                 selectedTimeframe: _selectedTimeframe,
                 onTimeframeChanged: (tf) => setState(() => _selectedTimeframe = tf),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               EarningsSummaryCard(
                 totalEarnings: totalEarnings,
                 totalTrips: totalTrips,
                 avgPerTrip: avgPerTrip,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               CodCashLimitCard(
                 dutyState: dutyState,
                 onDepositCash: () => _handleDepositCash(context, dutyNotifier),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -88,18 +88,16 @@ class _RiderEarningsScreenState extends ConsumerState<RiderEarningsScreen> {
                       isToday ? 'TODAY\'S COMPLETED TRIPS' : 'THIS WEEK\'S COMPLETED TRIPS',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: AppTypography.badgeText.copyWith(
                         fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.6,
                         color: AppColors.textSecondary,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Text(
                     '${tripsToShow.length} Orders',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                    style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700, color: AppColors.primary),
                   ),
                 ],
               ),

@@ -42,7 +42,6 @@ export const StockToggleSwitch: React.FC<StockToggleSwitchProps> = ({
         className
       )}
     >
-      {/* Sliding Knob */}
       <span
         className={cn(
           'inline-flex items-center justify-center rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out',
@@ -68,7 +67,6 @@ export const StockToggleSwitch: React.FC<StockToggleSwitchProps> = ({
         )}
       </span>
 
-      {/* Text Label */}
       <span
         className={cn(
           'absolute transition-opacity duration-150',

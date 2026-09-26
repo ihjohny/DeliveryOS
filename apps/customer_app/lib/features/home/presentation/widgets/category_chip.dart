@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 
-/// Reusable category filter pill for the discovery and home feeds.
 class CategoryChip extends StatelessWidget {
   final String label;
   final bool isSelected;
@@ -18,13 +17,16 @@ class CategoryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: AppRadius.borderFull,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? AppColors.primary : AppColors.white,
+          borderRadius: AppRadius.borderFull,
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.border,
           ),
@@ -40,10 +42,10 @@ class CategoryChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: AppTypography.labelMedium.copyWith(
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            color: isSelected ? Colors.white : AppColors.textSecondary,
+            color: isSelected ? AppColors.white : AppColors.textSecondary,
           ),
         ),
       ),

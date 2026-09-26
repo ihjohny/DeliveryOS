@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../../auth/domain/auth_models.dart';
 
 class RiderTopBar extends StatelessWidget {
@@ -17,10 +17,10 @@ class RiderTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.roundedLg,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -30,7 +30,7 @@ class RiderTopBar extends StatelessWidget {
             backgroundColor: AppColors.primaryLight.withValues(alpha: 0.15),
             child: const Icon(Icons.person_pin_rounded, color: AppColors.primary, size: 28),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,11 +42,7 @@ class RiderTopBar extends StatelessWidget {
                         profile?.fullName ?? 'Rider Partner',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: AppTypography.h3.copyWith(fontWeight: FontWeight.w900),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -59,11 +55,11 @@ class RiderTopBar extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.star_rounded, size: 13, color: Color(0xFFF59E0B)),
+                          const Icon(Icons.star_rounded, size: 13, color: AppColors.star),
                           const SizedBox(width: 2),
                           Text(
                             profile?.rating.toString() ?? '5.0',
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
+                            style: AppTypography.badgeText.copyWith(color: AppColors.dutyOnline),
                           ),
                         ],
                       ),
@@ -78,23 +74,23 @@ class RiderTopBar extends StatelessWidget {
                       size: 14,
                       color: AppColors.textSecondary,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: AppSpacing.xs),
                     Flexible(
                       child: Text(
                         profile?.vehicleType.displayName ?? 'Motorcycle',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                        style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                     if (profile?.phone != null && profile!.phone.isNotEmpty) ...[
-                      const Text(' • ', style: TextStyle(color: AppColors.textMuted)),
+                      Text(' • ', style: AppTypography.caption.copyWith(color: AppColors.textMuted)),
                       Flexible(
                         child: Text(
                           profile!.phone,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                          style: AppTypography.caption.copyWith(color: AppColors.textMuted),
                         ),
                       ),
                     ],

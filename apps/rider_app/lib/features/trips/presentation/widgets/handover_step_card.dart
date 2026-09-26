@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../domain/trip_models.dart';
 
@@ -28,7 +28,7 @@ class HandoverStepCard extends StatelessWidget {
       children: [
         if (trip.isCod) ...[
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpacing.xl),
             decoration: BoxDecoration(
               color: AppColors.warningBackground,
               borderRadius: BorderRadius.circular(18),
@@ -40,42 +40,42 @@ class HandoverStepCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Row(
                         children: [
-                          Icon(Icons.payments_rounded, color: AppColors.warning, size: 26),
-                          SizedBox(width: 8),
+                          const Icon(Icons.payments_rounded, color: AppColors.warning, size: 26),
+                          const SizedBox(width: AppSpacing.sm),
                           Flexible(
                             child: Text(
                               'CASH ON DELIVERY',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.warning),
+                              style: AppTypography.badgeText.copyWith(fontSize: 13, color: AppColors.warning),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     Text(
                       formatCurrency(trip.totalAmount),
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+                      style: AppTypography.statNumber.copyWith(fontSize: 24),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                const Text(
+                const SizedBox(height: AppSpacing.md),
+                Text(
                   'Please collect the exact cash amount shown above from the customer before releasing the food package.',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
+                  style: AppTypography.caption.copyWith(height: 1.3),
                 ),
                 const SizedBox(height: 14),
                 InkWell(
                   onTap: () => onCashVerifiedChanged(!cashCollectedVerified),
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.white,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: cashCollectedVerified ? AppColors.dutyOnline : AppColors.border),
                     ),
@@ -89,7 +89,7 @@ class HandoverStepCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'I have collected ${formatCurrency(trip.totalAmount)} in cash from customer',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                            style: AppTypography.bodyBold.copyWith(fontSize: 13),
                           ),
                         ),
                       ],
@@ -101,28 +101,28 @@ class HandoverStepCard extends StatelessWidget {
           ),
         ] else ...[
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpacing.xl),
             decoration: BoxDecoration(
               color: AppColors.dutyOnlineBackground,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: AppColors.dutyOnline, width: 1.5),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.check_circle_rounded, color: AppColors.dutyOnline, size: 28),
-                SizedBox(width: 12),
+                const Icon(Icons.check_circle_rounded, color: AppColors.dutyOnline, size: 28),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'PREPAID ONLINE ORDER',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.dutyOnline),
+                        style: AppTypography.badgeText.copyWith(fontSize: 13, color: AppColors.dutyOnline),
                       ),
-                      SizedBox(height: 2),
-                      Text(
+                      const SizedBox(height: 2),
+                      const Text(
                         'No cash to collect. Hand over food package to customer.',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: AppTypography.caption,
                       ),
                     ],
                   ),
@@ -131,7 +131,7 @@ class HandoverStepCard extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.xxl),
         SizedBox(
           height: 56,
           child: ElevatedButton(
@@ -140,7 +140,7 @@ class HandoverStepCard extends StatelessWidget {
                 : onCompleteDelivery,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.dutyOnline,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               elevation: 0,
             ),
@@ -148,26 +148,26 @@ class HandoverStepCard extends StatelessWidget {
                 ? const SizedBox(
                     height: 22,
                     width: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                    child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2.5),
                   )
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.task_alt_rounded, size: 22),
-                      SizedBox(width: 8),
+                      const Icon(Icons.task_alt_rounded, size: 22),
+                      const SizedBox(width: AppSpacing.sm),
                       Flexible(
                         child: Text(
                           'COMPLETE DELIVERY',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                          style: AppTypography.buttonText.copyWith(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                         ),
                       ),
                     ],
                   ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         OutlinedButton.icon(
           onPressed: onReportIssue,
           icon: const Icon(Icons.person_off_rounded, size: 18, color: AppColors.error),
@@ -179,8 +179,8 @@ class HandoverStepCard extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.error,
             side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            shape: const RoundedRectangleBorder(borderRadius: AppRadius.roundedMd),
           ),
         ),
       ],

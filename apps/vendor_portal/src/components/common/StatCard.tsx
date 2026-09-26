@@ -1,14 +1,19 @@
 import React from 'react';
+import { LucideIcon } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 export interface StatCardProps {
   title: string;
   value: string | number;
-  subtitle?: string;
-  icon: React.ReactNode;
+  subtitle?: React.ReactNode;
+  icon?: LucideIcon | React.ReactNode;
+  iconColorClass?: string;
   iconBgColor?: string;
   iconTextColor?: string;
   valueColor?: string;
+  onClick?: () => void;
+  active?: boolean;
+  isLoading?: boolean;
   className?: string;
 }
 
@@ -17,15 +22,37 @@ export const StatCard: React.FC<StatCardProps> = ({
   value,
   subtitle,
   icon,
-  iconBgColor = 'bg-primary-50 dark:bg-primary-950/50',
-  iconTextColor = 'text-primary-600 dark:text-primary-400',
-  valueColor = 'text-slate-900 dark:text-slate-100',
+  iconColorClass,
+  iconBgColor,
+  iconTextColor,
+  valueColor,
+  onClick,
+  active,
+  isLoading,
   className,
 }) => {
+  const renderIcon = () => {
+    if (!icon) return null;
+    if (React.isValidElement(icon)) {
+      return icon;
+    }
+    const IconComp = icon as LucideIcon;
+    return <IconComp className="h-4 w-4 sm:h-5 sm:w-5" />;
+  };
+
+  const computedIconContainer =
+    iconColorClass ||
+    (iconBgColor && iconTextColor
+      ? cn(iconBgColor, iconTextColor)
+      : 'text-primary-600 bg-primary-50 dark:bg-primary-950/50 dark:text-primary-400');
+
   return (
     <div
+      onClick={onClick}
       className={cn(
-        'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 transition-all hover:border-slate-300 dark:hover:border-slate-700',
+        'rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm transition-all dark:border-slate-800 dark:bg-slate-900',
+        onClick && 'cursor-pointer hover:border-slate-300 dark:hover:border-slate-700',
+        active && 'border-primary-500 bg-primary-50/20 ring-1 ring-primary-500',
         className
       )}
     >
@@ -33,15 +60,26 @@ export const StatCard: React.FC<StatCardProps> = ({
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
           {title}
         </span>
-        <div className={cn('rounded-xl p-2.5 shrink-0', iconBgColor, iconTextColor)}>
-          {icon}
-        </div>
+        {icon && (
+          <div className={cn('rounded-lg p-2 shrink-0', computedIconContainer)}>
+            {renderIcon()}
+          </div>
+        )}
       </div>
-      <div className="mt-3">
-        <span className={cn('text-2xl font-extrabold tracking-tight', valueColor)}>
-          {value}
-        </span>
-        {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}
+      <div className="mt-2.5">
+        <div
+          className={cn(
+            'text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100',
+            valueColor
+          )}
+        >
+          {isLoading ? '...' : value}
+        </div>
+        {subtitle && (
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {subtitle}
+          </div>
+        )}
       </div>
     </div>
   );

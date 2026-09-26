@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/constants.dart';
 
-/// Modular payment recovery banner allowing customer to switch to Cash on Delivery (COD)
-/// when an online gateway transaction is pending or failed.
 class PaymentRecoveryBanner extends StatelessWidget {
   final VoidCallback onSwitchToCOD;
   final VoidCallback onRefresh;
@@ -15,71 +14,70 @@ class PaymentRecoveryBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFDE68A), width: 1.5),
+        color: AppColors.warningContainer,
+        borderRadius: AppRadius.borderLg,
+        border: Border.all(color: AppColors.warningBorder, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.payment_rounded, color: Color(0xFFD97706), size: 22),
-              SizedBox(width: 8),
+              const Icon(Icons.payment_rounded, color: AppColors.warningDark, size: 22),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   'Online Payment Pending',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: AppTypography.titleSmall.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF92400E),
+                    color: AppColors.warningText,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Kitchen preparation and courier dispatch will begin immediately once payment is confirmed.',
-            style: TextStyle(fontSize: 12, color: Color(0xFFB45309)),
+            style: AppTypography.bodySmall.copyWith(color: AppColors.warningTextDark),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               ElevatedButton.icon(
                 onPressed: onSwitchToCOD,
                 icon: const Icon(Icons.money_rounded, size: 16),
-                label: const Text(
+                label: Text(
                   'Switch to Cash (COD)',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                  style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w800, color: AppColors.white),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD97706),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.warningDark,
+                  foregroundColor: AppColors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+                  shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
                 ),
               ),
               OutlinedButton.icon(
                 onPressed: onRefresh,
                 icon: const Icon(Icons.sync_rounded, size: 16),
-                label: const Text(
+                label: Text(
                   'Refresh',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                  style: AppTypography.labelMedium.copyWith(fontWeight: FontWeight.w700, color: AppColors.warningText),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF92400E),
-                  side: const BorderSide(color: Color(0xFFF59E0B)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  foregroundColor: AppColors.warningText,
+                  side: const BorderSide(color: AppColors.warning),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+                  shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
                 ),
               ),
             ],

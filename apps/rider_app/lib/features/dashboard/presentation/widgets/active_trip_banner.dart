@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../../trips/domain/trip_models.dart';
 
 class ActiveTripBanner extends StatelessWidget {
@@ -15,7 +15,7 @@ class ActiveTripBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.circular(18),
@@ -36,29 +36,33 @@ class ActiveTripBanner extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    const Icon(Icons.navigation_rounded, color: Colors.white, size: 20),
-                    const SizedBox(width: 8),
+                    const Icon(Icons.navigation_rounded, color: AppColors.white, size: 20),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
                         'ACTIVE TRIP: ${trip.orderNumber}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5),
+                        style: AppTypography.badgeText.copyWith(
+                          fontSize: 13,
+                          color: AppColors.white,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.white.withValues(alpha: 0.2),
+                  borderRadius: AppRadius.roundedSm,
                 ),
                 child: Text(
                   trip.currentStep.stepTitle,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
+                  style: AppTypography.badgeText.copyWith(color: AppColors.white),
                 ),
               ),
             ],
@@ -68,18 +72,28 @@ class ActiveTripBanner extends StatelessWidget {
             '${trip.store.name} ➔ ${trip.customer.address}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w600),
+            style: AppTypography.caption.copyWith(
+              fontSize: 13,
+              color: AppColors.white70,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 14),
           ElevatedButton.icon(
             onPressed: onResumeTrip,
             icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-            label: const Text('RESUME FULFILLMENT', style: TextStyle(fontWeight: FontWeight.w900)),
+            label: Text(
+              'RESUME FULFILLMENT',
+              style: AppTypography.buttonText.copyWith(
+                fontWeight: FontWeight.w900,
+                color: AppColors.primary,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
+              backgroundColor: AppColors.white,
               foregroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: const RoundedRectangleBorder(borderRadius: AppRadius.roundedMd),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
             ),
           ),
         ],

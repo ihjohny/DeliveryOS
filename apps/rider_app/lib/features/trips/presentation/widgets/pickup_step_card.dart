@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../../../core/utils/native_launcher.dart';
 import '../../domain/trip_models.dart';
 
@@ -36,47 +36,47 @@ class PickupStepCard extends StatelessWidget {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.roundedMd,
                     ),
                     child: const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 26),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           trip.store.name,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+                          style: AppTypography.h3.copyWith(fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           trip.store.address,
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          style: AppTypography.caption,
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => openNativeTurnByTurnNavigation(trip.store.latitude, trip.store.longitude),
                       icon: const Icon(Icons.navigation_rounded, size: 18),
-                      label: const Text(
+                      label: Text(
                         'Directions to Store',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontWeight: FontWeight.w800),
+                        style: AppTypography.buttonText.copyWith(fontWeight: FontWeight.w800),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        foregroundColor: AppColors.white,
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.roundedMd),
                       ),
                     ),
                   ),
@@ -84,17 +84,17 @@ class PickupStepCard extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: () => makeDirectPhoneCall(trip.store.phone),
                     icon: const Icon(Icons.phone_rounded, size: 18),
-                    label: const Text(
+                    label: Text(
                       'Call Store',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                      style: AppTypography.buttonText.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.textPrimary,
                       side: const BorderSide(color: AppColors.borderStrong),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: AppSpacing.md),
+                      shape: const RoundedRectangleBorder(borderRadius: AppRadius.roundedMd),
                     ),
                   ),
                 ],
@@ -102,20 +102,20 @@ class PickupStepCard extends StatelessWidget {
               if (trip.store.instructions != null) ...[
                 const SizedBox(height: 14),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.roundedMd,
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.info_outline_rounded, size: 18, color: AppColors.textSecondary),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
                           trip.store.instructions!,
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                          style: AppTypography.caption,
                         ),
                       ),
                     ],
@@ -125,29 +125,29 @@ class PickupStepCard extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: AppColors.dutyOnlineBackground,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadius.roundedLg,
             border: Border.all(color: AppColors.dutyOnline.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
               const Icon(Icons.inventory_2_rounded, color: AppColors.dutyOnline, size: 28),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'LOOK FOR PACKAGE BAG',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.dutyOnline),
+                      style: AppTypography.badgeText.copyWith(color: AppColors.dutyOnline),
                     ),
                     Text(
                       'Order ${trip.orderNumber}',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+                      style: AppTypography.h3.copyWith(fontWeight: FontWeight.w900),
                     ),
                   ],
                 ),
@@ -155,14 +155,14 @@ class PickupStepCard extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.xxl),
         SizedBox(
           height: 56,
           child: ElevatedButton(
             onPressed: isUpdating ? null : onConfirmPickup,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.dutyOnline,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               elevation: 0,
             ),
@@ -170,19 +170,19 @@ class PickupStepCard extends StatelessWidget {
                 ? const SizedBox(
                     height: 22,
                     width: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                    child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2.5),
                   )
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.takeout_dining_rounded, size: 22),
-                      SizedBox(width: 8),
+                      const Icon(Icons.takeout_dining_rounded, size: 22),
+                      const SizedBox(width: AppSpacing.sm),
                       Flexible(
                         child: Text(
                           'ORDER PICKED UP ➔ START DELIVERY',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 0.3),
+                          style: AppTypography.buttonText.copyWith(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 0.3),
                         ),
                       ),
                     ],

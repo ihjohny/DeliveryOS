@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/constants.dart';
 import '../../domain/tracking_models.dart';
 
 class OrderStepperWidget extends StatelessWidget {
@@ -25,11 +25,11 @@ class OrderStepperWidget extends StatelessWidget {
     final activeIndex = currentStage.stepperIndex;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isCancelled ? const Color(0xFFFECACA) : AppColors.border),
+        color: AppColors.white,
+        borderRadius: AppRadius.borderLg,
+        border: Border.all(color: isCancelled ? AppColors.errorBorder : AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,57 +42,54 @@ class OrderStepperWidget extends StatelessWidget {
                   currentStage.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: AppTypography.titleMedium.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: isCancelled ? const Color(0xFFDC2626) : AppColors.textPrimary,
+                    color: isCancelled ? AppColors.errorDark : AppColors.textPrimary,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
-                  color: isCancelled ? const Color(0xFFFEE2E2) : AppColors.primaryContainer,
-                  borderRadius: BorderRadius.circular(6),
+                  color: isCancelled ? AppColors.errorLight : AppColors.primaryContainer,
+                  borderRadius: AppRadius.borderSm,
                 ),
                 child: Text(
                   isCancelled ? 'Cancelled' : 'Stage ${activeIndex + 1} of 6',
-                  style: TextStyle(
-                    fontSize: 11,
+                  style: AppTypography.labelSmall.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: isCancelled ? const Color(0xFFDC2626) : AppColors.primaryDark,
+                    color: isCancelled ? AppColors.errorDark : AppColors.primaryDark,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             currentStage.description,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: AppTypography.bodySmall,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           if (isCancelled)
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: AppSpacing.edgeInsetsMd,
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFECACA)),
+                color: AppColors.errorContainer,
+                borderRadius: AppRadius.borderSm,
+                border: Border.all(color: AppColors.errorBorder),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.cancel_outlined, color: Color(0xFFDC2626), size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.cancel_outlined, color: AppColors.errorDark, size: 20),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       'This order has been cancelled and will not be prepared or delivered.',
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: AppTypography.labelMedium.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF991B1B),
+                        color: AppColors.errorText,
                       ),
                     ),
                   ),
@@ -146,16 +143,16 @@ class OrderStepperWidget extends StatelessWidget {
                           child: Icon(
                             isCompleted ? Icons.check_rounded : (_steps[stepIndex]['icon'] as IconData),
                             size: 13,
-                            color: isCompleted || isCurrent ? Colors.white : AppColors.textMuted,
+                            color: isCompleted || isCurrent ? AppColors.white : AppColors.textMuted,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         Text(
                           _steps[stepIndex]['title'] as String,
                           textAlign: TextAlign.center,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: AppTypography.caption.copyWith(
                             fontSize: 9,
                             fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
                             color: isCurrent ? AppColors.primary : AppColors.textSecondary,

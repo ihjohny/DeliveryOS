@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/design_tokens.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../dashboard/domain/duty_models.dart';
 
@@ -17,11 +17,11 @@ class CompletedTripCard extends StatelessWidget {
         '${trip.completedAt.hour.toString().padLeft(2, '0')}:${trip.completedAt.minute.toString().padLeft(2, '0')}';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.roundedLg,
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -37,52 +37,52 @@ class CompletedTripCard extends StatelessWidget {
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: AppColors.primaryLight.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.roundedSm,
                       ),
                       child: const Icon(Icons.local_shipping_rounded, size: 16, color: AppColors.primary),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     Flexible(
                       child: Text(
                         trip.orderNumber,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+                        style: AppTypography.bodyBold.copyWith(fontWeight: FontWeight.w900),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       '• $timeStr',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                      style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
+                decoration: const BoxDecoration(
                   color: AppColors.dutyOnlineBackground,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppRadius.roundedSm,
                 ),
                 child: Text(
                   '+${formatCurrency(trip.payout)}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.dutyOnline),
+                  style: AppTypography.badgeText.copyWith(fontSize: 12, color: AppColors.dutyOnline),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             trip.storeName,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: AppTypography.bodyBold,
           ),
           const SizedBox(height: 2),
           Text(
             trip.customerAddress,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            style: AppTypography.caption.copyWith(fontSize: 11),
           ),
           const SizedBox(height: 10),
           Row(
@@ -90,7 +90,7 @@ class CompletedTripCard extends StatelessWidget {
             children: [
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
                   decoration: BoxDecoration(
                     color: trip.isCod ? AppColors.warningBackground : AppColors.border.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(6),
@@ -103,15 +103,14 @@ class CompletedTripCard extends StatelessWidget {
                         size: 13,
                         color: trip.isCod ? AppColors.warning : AppColors.textSecondary,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       Flexible(
                         child: Text(
                           trip.isCod ? 'COD Collected: ${formatCurrency(trip.codCollected)}' : 'Online Prepaid',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: AppTypography.badgeText.copyWith(
                             fontSize: 10,
-                            fontWeight: FontWeight.w800,
                             color: trip.isCod ? AppColors.warning : AppColors.textSecondary,
                           ),
                         ),
@@ -120,10 +119,14 @@ class CompletedTripCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 '${trip.distanceKm.toStringAsFixed(1)} km',
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted),
+                style: AppTypography.caption.copyWith(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMuted,
+                ),
               ),
             ],
           ),
